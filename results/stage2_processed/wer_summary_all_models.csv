@@ -1,0 +1,17 @@
+model,mode,reference_source,normalized,corpus_wer_pct,mean_wer_pct,median_wer_pct,std_wer_pct,p90_wer_pct,p95_wer_pct,num_samples,total_ref_words,total_errors
+base,transcript_raw,Transcript,no,27.95,29.42,24.58,22.18,50.0,63.89,986,51755,14468
+base,transcript_clean,Transcript,yes,17.44,18.29,13.33,16.99,38.16,50.0,985,52178,9098
+base,hf_raw,Normalised_Transcript,no,31.76,33.05,29.09,21.25,53.33,66.67,986,52331,16622
+base,hf_clean,Normalised_Transcript,yes,18.0,18.78,14.0,16.76,38.16,50.0,985,52313,9418
+medium,transcript_raw,Transcript,no,24.14,25.46,21.43,21.19,42.65,53.85,986,51755,12496
+medium,transcript_clean,Transcript,yes,14.72,15.39,10.91,15.92,31.58,38.46,985,52178,7678
+medium,hf_raw,Normalised_Transcript,no,29.83,31.12,28.0,20.54,49.15,59.09,986,52331,15611
+medium,hf_clean,Normalised_Transcript,yes,15.73,16.38,12.0,15.86,32.2,43.75,985,52313,8230
+large,transcript_raw,Transcript,no,25.62,27.28,21.85,24.38,46.55,63.16,986,51755,13259
+large,transcript_clean,Transcript,yes,15.88,16.83,11.36,19.27,35.21,48.94,985,52178,8287
+large,hf_raw,Normalised_Transcript,no,30.95,32.34,27.94,23.58,51.35,67.35,986,52331,16199
+large,hf_clean,Normalised_Transcript,yes,16.91,17.79,12.5,19.37,36.36,51.06,985,52313,8845
+youtube,transcript_raw,Transcript,no,100.0,100.0,100.0,0.0,100.0,100.0,986,51755,51755
+youtube,transcript_clean,Transcript,yes,100.0,100.0,100.0,0.0,100.0,100.0,985,52178,52178
+youtube,hf_raw,Normalised_Transcript,no,100.0,100.0,100.0,0.0,100.0,100.0,986,52331,52331
+youtube,hf_clean,Normalised_Transcript,yes,100.0,100.0,100.0,0.0,100.0,100.0,985,52313,52313
