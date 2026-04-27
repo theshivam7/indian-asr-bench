@@ -1,0 +1,13 @@
+model,Speech_Class,corpus_wer_pct,num_samples
+base,AVG,15.89,199
+base,FAST,16.35,413
+base,SLOW,19.85,373
+medium,AVG,13.41,199
+medium,FAST,13.46,413
+medium,SLOW,17.21,373
+large,AVG,16.0,199
+large,FAST,13.77,413
+large,SLOW,18.69,373
+youtube,AVG,100.0,199
+youtube,FAST,100.0,413
+youtube,SLOW,100.0,373

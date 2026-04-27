@@ -1,0 +1,29 @@
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environments
+*.egg-info/
+
+# Cache
+hf_cache/
+hf_hub_cache/
+pip_cache/
+
+# Partial/temp files
+*_partial.csv
+*.wav
+*.tmp
+
+# Cluster job scripts
+job_*.pbs
+
+# Logs — keep locally, not on GitHub
+logs/
+
+# Local analysis/planning files
+PAPER_REPORT.md

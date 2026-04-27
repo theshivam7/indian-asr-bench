@@ -1,0 +1,9 @@
+datasets
+jiwer
+openai-whisper
+torch
+pandas
+tqdm
+librosa
+numpy
+num2words
