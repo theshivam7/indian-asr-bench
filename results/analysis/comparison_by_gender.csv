@@ -1,0 +1,9 @@
+model,Gender,corpus_wer_pct,num_samples
+base,F,13.88,58
+base,M,17.65,927
+medium,F,12.02,58
+medium,M,14.88,927
+large,F,12.49,58
+large,M,16.09,927
+youtube,F,100.0,58
+youtube,M,100.0,927

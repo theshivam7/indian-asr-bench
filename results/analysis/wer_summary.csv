@@ -1,0 +1,5 @@
+model,transcript_raw,transcript_clean,hf_raw,hf_clean
+base,27.95,17.44,31.76,18.0
+medium,24.14,14.72,29.83,15.73
+large,25.62,15.88,30.95,16.91
+youtube,100.0,100.0,100.0,100.0
