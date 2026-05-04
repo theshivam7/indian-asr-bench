@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from utils.wer_compute import compute_corpus_wer
 from utils.normalize import MODES
 
-MODELS = ("base", "medium", "large", "youtube")
+MODELS = ("base", "medium", "large", "youtube_aligned")
 PRIMARY_MODE = "transcript_clean"  # gold standard mode for breakdowns and charts
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
