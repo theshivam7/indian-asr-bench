@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from utils.normalize import MODES, normalize_text, get_reference_source
 from utils.wer_compute import compute_sample_wer, compute_corpus_wer
 
-MODELS = ("base", "medium", "large", "youtube")
+MODELS = ("base", "medium", "large", "youtube_aligned")
 STAGE1_DIR = os.path.join(os.path.dirname(__file__), "results", "stage1_raw_transcripts")
 STAGE2_DIR = os.path.join(os.path.dirname(__file__), "results", "stage2_processed")
 

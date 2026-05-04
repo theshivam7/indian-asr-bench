@@ -1,4 +1,4 @@
-# WER Analysis Summary — Whisper on Indian English (TIE_shorts)
+# WER Analysis Summary — Whisper + YouTube on Indian English (TIE_shorts)
 
 ## Dataset
 
@@ -11,11 +11,14 @@
 
 ## Main Results (transcript_clean — gold standard)
 
-| Model | Corpus WER | Mean WER | Median WER | Std Dev | P90 | P95 |
-|-------|:----------:|:--------:|:----------:|:-------:|:---:|:---:|
-| **Whisper Medium** | **14.72%** | **15.39%** | **10.91%** | **15.92%** | **31.58%** | **38.46%** |
-| Whisper Large | 15.88% | 16.83% | 11.36% | 19.27% | 35.21% | 48.94% |
-| Whisper Base | 17.44% | 18.29% | 13.33% | 16.99% | 38.16% | 50.00% |
+| Model | Corpus WER | Mean WER | Median WER | Std Dev | P90 | P95 | Samples |
+|-------|:----------:|:--------:|:----------:|:-------:|:---:|:---:|:-------:|
+| **Whisper Medium** | **14.72%** | **15.39%** | **10.91%** | **15.92%** | **31.58%** | **38.46%** | 986 |
+| Whisper Large | 15.88% | 16.83% | 11.36% | 19.27% | 35.21% | 48.94% | 986 |
+| Whisper Base | 17.44% | 18.29% | 13.33% | 16.99% | 38.16% | 50.00% | 986 |
+| YouTube (clip-aligned) | 51.88% | 51.59% | 50.00% | 8.35% | — | — | 190† |
+
+†YouTube WER computed only on the 190 samples with manual English captions (19.3% of 986).
 
 **Whisper Medium is the best model for Indian English speech.**
 
@@ -23,16 +26,16 @@
 
 ## Normalization Impact
 
-| Mode | Description | Base | Medium | Large |
-|------|-------------|:----:|:------:|:-----:|
-| `transcript_raw` | No normalization | 27.95% | 24.14% | 25.62% |
-| `transcript_clean` | Forward normalization, clean ref | **17.44%** | **14.72%** | **15.88%** |
-| `hf_raw` | Dataset's broken normalization | 31.76% | 29.83% | 30.95% |
-| `hf_clean` | Dataset norm + our fix | 18.00% | 15.73% | 16.91% |
+| Mode | Description | Base | Medium | Large | YouTube† |
+|------|-------------|:----:|:------:|:-----:|:--------:|
+| `transcript_raw` | No normalization | 27.95% | 24.14% | 25.62% | 51.72% |
+| `transcript_clean` | Forward normalization, clean ref | **17.44%** | **14.72%** | **15.88%** | **51.88%** |
+| `hf_raw` | Dataset's broken normalization | 31.76% | 29.83% | 30.95% | 65.94% |
+| `hf_clean` | Dataset norm + our fix | 18.00% | 15.73% | 16.91% | 53.35% |
 
 **Critical finding:** `hf_raw` is 3.81–5.69 pp **worse** than even the raw mode, proving the dataset's `Normalised_Transcript` column contains harmful errors. Using it as a reference without correction gives invalid WER.
 
-**Normalization reduces WER by ~10 pp** — larger than the gap between any two models.
+**Normalization reduces WER by ~10 pp for Whisper** — larger than the gap between any two models. For YouTube, normalization has near-zero impact (<0.2 pp), indicating errors are vocabulary/content mismatches not formatting differences.
 
 ---
 
@@ -138,7 +141,83 @@ Engineering lectures have slightly higher WER (~1.2 pp) due to domain-specific m
 
 ## YouTube Captions
 
-All 986 samples returned errors due to YouTube IP blocking on the NSCC server. Re-run `task4_youtube_captions/fetch_youtube_captions.py` from a different network — the script supports checkpoint resume.
+YouTube captions fetched via Google Colab (`task4_youtube_captions/fetch_youtube_captions_colab.ipynb`) to bypass IP blocking on the NSCC server. Clip alignment implemented via sliding-window Jaccard (`task4_youtube_captions/align_youtube_captions.py`).
+
+---
+
+## YouTube Results
+
+### Coverage
+
+| Metric | Value |
+|--------|-------|
+| Total samples | 986 |
+| With English captions | 190 (19.3%) |
+| Unavailable | 796 (80.7%) |
+| Caption type | manual only |
+
+### WER — Raw vs Clip-Aligned (available samples only, n=190)
+
+Full-video hypothesis (~6,300 words mean) vs short clip reference (~53 words mean). Direct WER is ~11,000%. After sliding-window Jaccard alignment (window = ref_len × 1.5):
+
+| Mode | Full Video WER | Clip-Aligned WER | Reduction |
+|------|:--------------:|:----------------:|:---------:|
+| `transcript_raw` | 11,156% | **51.72%** | −11,104 pp |
+| `transcript_clean` | 11,877% | **51.88%** | −11,825 pp |
+| `hf_raw` | 11,034% | 65.94% | −10,968 pp |
+| `hf_clean` | 11,841% | 53.35% | −11,788 pp |
+
+Normalization has minimal impact for YouTube (51.72% → 51.88%), unlike Whisper where it reduces WER by ~10 pp. The `hf_raw` mode is 14 pp worse — consistent with the broken `Normalised_Transcript` effect seen on all models.
+
+### Fair Model Comparison — Same 190 Samples (transcript_clean)
+
+| Model | Corpus WER | Mean WER | Median WER | Samples |
+|-------|:----------:|:--------:|:----------:|:-------:|
+| **Whisper Medium** | **13.67%** | **14.65%** | **11.04%** | 190 |
+| Whisper Large | 14.35% | 14.98% | 10.57% | 190 |
+| Whisper Base | 15.66% | 16.23% | 13.11% | 190 |
+| YouTube (clip-aligned) | 51.88% | 51.59% | 50.00% | 190 |
+
+YouTube WER is **3.8× worse** than Whisper Medium on identical samples. Low std dev (8.35%) indicates consistently poor performance — alignment locates the correct window, but YouTube ASR struggles with Indian-accented academic speech and domain vocabulary.
+
+### Breakdown by Region (transcript_clean, same 190 samples)
+
+| Region | YouTube | Medium | n |
+|:------:|:-------:|:------:|:-:|
+| EAST | 50.99% | 14.39% | 63 |
+| WEST | 51.63% | 14.99% | 16 |
+| NORTH | 52.09% | 12.38% | 39 |
+| SOUTH | 52.54% | 13.48% | 72 |
+
+### Breakdown by Speech Rate (transcript_clean, same 190 samples)
+
+| Speech Rate | YouTube | Medium | n |
+|:-----------:|:-------:|:------:|:-:|
+| AVG | 51.35% | 11.54% | 45 |
+| FAST | 52.06% | 12.22% | 77 |
+| SLOW | 52.00% | 17.16% | 68 |
+
+Unlike Whisper (5.6 pp spread across speech rates on this subset), YouTube shows near-zero variation (~0.7 pp) — dominant error source is vocabulary/content mismatch, not speaking rate.
+
+### Coverage by Region / Speech Rate / Discipline
+
+| Region | With Captions | Total | Coverage |
+|:------:|:-------------:|:-----:|:--------:|
+| WEST | 16 | 69 | 23.2% |
+| SOUTH | 72 | 363 | 19.8% |
+| NORTH | 39 | 202 | 19.3% |
+| EAST | 63 | 352 | 17.9% |
+
+| Speech Rate | With Captions | Total | Coverage |
+|:-----------:|:-------------:|:-----:|:--------:|
+| AVG | 45 | 199 | 22.6% |
+| FAST | 77 | 413 | 18.6% |
+| SLOW | 68 | 374 | 18.2% |
+
+| Discipline | With Captions | Total | Coverage |
+|:----------:|:-------------:|:-----:|:--------:|
+| Non-Engineering | 67 | 295 | 22.7% |
+| Engineering | 123 | 691 | 17.8% |
 
 ---
 
@@ -149,3 +228,4 @@ All 986 samples returned errors due to YouTube IP blocking on the NSCC server. R
 3. **The dataset's `Normalised_Transcript` is unreliable** — contains systematic errors that inflate WER by 3.8–5.7 pp
 4. **SLOW speech and 60s+ audio** are the hardest conditions (+3.7 pp and +23 pp respectively)
 5. **Forward normalization** (digits → words, contraction expansion, symmetric) is the correct approach for research-grade WER
+6. **YouTube (clip-aligned) WER is 51.88%** — 3.8× worse than Whisper Medium on the same 190 clips. Only 19.3% of videos have English captions. Low variance (std 8.35%) indicates consistent failure, not random errors. Normalization has near-zero impact for YouTube (<0.2 pp), confirming errors stem from vocabulary/content mismatch rather than formatting.
