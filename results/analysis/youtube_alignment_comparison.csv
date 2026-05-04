@@ -1,0 +1,5 @@
+mode,full_corpus_wer_pct,full_mean_wer_pct,full_median_wer_pct,aligned_corpus_wer_pct,aligned_mean_wer_pct,aligned_median_wer_pct,num_samples
+transcript_raw,11156.6,13081.92,11253.82,51.72,51.51,50.0,190
+transcript_clean,11877.5,13962.11,11905.87,51.88,51.59,50.0,190
+hf_raw,11034.83,12956.1,11034.35,65.94,66.27,66.93,190
+hf_clean,11841.04,13928.01,11876.67,53.35,53.1,50.37,190

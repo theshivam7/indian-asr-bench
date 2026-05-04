@@ -5,5 +5,5 @@ medium,F,12.02,58
 medium,M,14.88,927
 large,F,12.49,58
 large,M,16.09,927
-youtube,F,100.0,58
-youtube,M,100.0,927
+youtube_aligned,F,50.0,17
+youtube_aligned,M,52.04,173
