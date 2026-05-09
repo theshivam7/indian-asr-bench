@@ -55,21 +55,27 @@ echo "STAGE 1: Whisper Large Transcription"
 echo "================================================================"
 python task3_whisper_large/wer_whisper_large.py
 
-# --------------- Stage 1: Parakeet-TDT ---------------
+# --------------- Stage 1: Parakeet-TDT (separate env) ---------------
 echo ""
 echo "================================================================"
 echo "STAGE 1: Parakeet-TDT-0.6B-v2 Transcription"
 echo "================================================================"
+conda activate parakeet_env
+export HF_HOME=$HF_DATASETS_CACHE
 python task4_parakeet/wer_parakeet.py
 
-# --------------- Stage 1: Qwen3-ASR ---------------
+# --------------- Stage 1: Qwen3-ASR (separate env) ---------------
 echo ""
 echo "================================================================"
 echo "STAGE 1: Qwen3-ASR-1.7B Transcription"
 echo "================================================================"
+conda activate qwen3_env
+export HF_HOME=$HF_DATASETS_CACHE
 python task5_qwen3_asr/wer_qwen3.py
 
-# --------------- Stage 2: Normalization + WER ---------------
+# --------------- Stage 2 + Analysis (whisper env has all deps) ---------------
+conda activate whisper
+
 echo ""
 echo "================================================================"
 echo "STAGE 2: Normalization + WER Computation"

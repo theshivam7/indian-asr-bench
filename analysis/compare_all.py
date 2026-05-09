@@ -314,8 +314,8 @@ report_lines = [
     "",
     "- `reference_raw`: original Transcript before normalization (for manual verification)",
     "- `reference`: text used for WER after normalization",
-    "- `hypothesis_raw`: raw Whisper output before normalization",
-    "- `hypothesis`: Whisper output after normalization",
+    "- `hypothesis_raw`: raw ASR output before normalization",
+    "- `hypothesis`: ASR output after normalization",
     "",
 ]
 
@@ -326,7 +326,7 @@ for mode in MODES:
     if valid.empty:
         continue
     best = valid.loc[valid[mode].idxmin()]
-    report_lines.append(f"- **{mode}**: Whisper {best['model']} ({best[mode]:.2f}%)")
+    report_lines.append(f"- **{mode}**: {MODEL_DISPLAY.get(best['model'], best['model'])} ({best[mode]:.2f}%)")
 report_lines.append("")
 
 report_path = os.path.join(ANALYSIS_DIR, "summary_report.md")

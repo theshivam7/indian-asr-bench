@@ -5,7 +5,10 @@ import os
 import pandas as pd
 from datasets import load_dataset
 
-HF_CACHE = os.path.join(os.path.expanduser("~"), "hf_cache")
+HF_CACHE = os.environ.get(
+    "HF_DATASETS_CACHE",
+    os.path.join(os.path.expanduser("~"), "hf_cache"),
+)
 os.makedirs(HF_CACHE, exist_ok=True)
 os.environ.setdefault("HF_DATASETS_CACHE", HF_CACHE)
 

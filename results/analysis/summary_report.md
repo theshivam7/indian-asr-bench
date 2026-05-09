@@ -7,7 +7,8 @@
 | base | 27.95 | 17.44 | 31.76 | 18.0 |
 | medium | 24.14 | 14.72 | 29.83 | 15.73 |
 | large | 25.62 | 15.88 | 30.95 | 16.91 |
-| youtube_aligned | 51.72 | 51.88 | 65.94 | 53.35 |
+| parakeet | N/A | N/A | N/A | N/A |
+| qwen3 | N/A | N/A | N/A | N/A |
 
 ## Evaluation Modes
 
@@ -34,12 +35,12 @@ Each result CSV contains:
 
 - `reference_raw`: original Transcript before normalization (for manual verification)
 - `reference`: text used for WER after normalization
-- `hypothesis_raw`: raw Whisper output before normalization
-- `hypothesis`: Whisper output after normalization
+- `hypothesis_raw`: raw ASR output before normalization
+- `hypothesis`: ASR output after normalization
 
 ## Best Model per Mode
 
-- **transcript_raw**: Whisper medium (24.14%)
-- **transcript_clean**: Whisper medium (14.72%)
-- **hf_raw**: Whisper medium (29.83%)
-- **hf_clean**: Whisper medium (15.73%)
+- **transcript_raw**: Whisper Medium (24.14%)
+- **transcript_clean**: Whisper Medium (14.72%)
+- **hf_raw**: Whisper Medium (29.83%)
+- **hf_clean**: Whisper Medium (15.73%)
