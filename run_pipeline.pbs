@@ -9,7 +9,7 @@
 #PBS -j oe
 
 echo "================================================================"
-echo "TIE WER Pipeline — Stage 1 (Base) + Stage 2 + Analysis"
+echo "TIE WER Pipeline — Stage 1 (All 5 Models) + Stage 2 + Analysis"
 echo "Job started: $(date)"
 echo "Node: $(hostname)"
 echo "================================================================"
@@ -55,13 +55,19 @@ echo "STAGE 1: Whisper Large Transcription"
 echo "================================================================"
 python task3_whisper_large/wer_whisper_large.py
 
-# --------------- Stage 1: YouTube Captions ---------------
+# --------------- Stage 1: Parakeet-TDT ---------------
 echo ""
 echo "================================================================"
-echo "STAGE 1: YouTube Captions Fetch (no GPU needed)"
+echo "STAGE 1: Parakeet-TDT-0.6B-v2 Transcription"
 echo "================================================================"
-pip install youtube-transcript-api -q
-python task4_youtube_captions/fetch_youtube_captions.py
+python task4_parakeet/wer_parakeet.py
+
+# --------------- Stage 1: Qwen3-ASR ---------------
+echo ""
+echo "================================================================"
+echo "STAGE 1: Qwen3-ASR-1.7B Transcription"
+echo "================================================================"
+python task5_qwen3_asr/wer_qwen3.py
 
 # --------------- Stage 2: Normalization + WER ---------------
 echo ""

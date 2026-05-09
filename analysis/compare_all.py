@@ -20,8 +20,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from utils.wer_compute import compute_corpus_wer
 from utils.normalize import MODES
 
-MODELS = ("base", "medium", "large", "youtube_aligned")
+MODELS = ("base", "medium", "large", "parakeet", "qwen3")
 PRIMARY_MODE = "transcript_clean"  # gold standard mode for breakdowns and charts
+
+MODEL_DISPLAY = {
+    "base": "Whisper Base",
+    "medium": "Whisper Medium",
+    "large": "Whisper Large",
+    "parakeet": "Parakeet-TDT-0.6B",
+    "qwen3": "Qwen3-ASR-1.7B",
+}
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
 STAGE2_DIR = os.path.join(RESULTS_DIR, "stage2_processed")
@@ -121,7 +129,7 @@ print("GENERATING CHARTS")
 print("=" * 70)
 
 plt.rcParams.update({"figure.dpi": 150, "font.size": 10})
-bar_width = 0.25
+bar_width = 0.15
 
 # Chart 1: WER by model and mode (grouped bar)
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -134,8 +142,8 @@ for i, model in enumerate(MODELS):
         row = df_summary[df_summary["model"] == model]
         val = row[mode].values[0] if not row.empty and pd.notna(row[mode].values[0]) else 0
         values.append(val)
-    offset = (i - 1) * bar_width
-    bars = ax.bar([xi + offset for xi in x], values, bar_width, label=f"Whisper {model}")
+    offset = (i - (len(MODELS) - 1) / 2) * bar_width
+    bars = ax.bar([xi + offset for xi in x], values, bar_width, label=MODEL_DISPLAY.get(model, model))
     for bar, val in zip(bars, values):
         if val > 0:
             ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.3,
@@ -161,7 +169,7 @@ for model_name in MODELS:
     if key not in all_data:
         continue
     wer_vals = all_data[key]["wer"].dropna().values
-    ax.hist(wer_vals, bins=50, alpha=0.5, label=f"Whisper {model_name}", range=(0, 2.0))
+    ax.hist(wer_vals, bins=50, alpha=0.5, label=MODEL_DISPLAY.get(model_name, model_name), range=(0, 2.0))
 ax.set_xlabel("WER")
 ax.set_ylabel("Number of Samples")
 ax.set_title(f"WER Distribution (mode: {PRIMARY_MODE})")
@@ -199,8 +207,8 @@ if duration_data:
     x = range(len(buckets))
     for i, model_name in enumerate(MODELS):
         values = [duration_data.get(b, {}).get(model_name, 0) for b in buckets]
-        offset = (i - 1) * bar_width
-        ax.bar([xi + offset for xi in x], values, bar_width, label=f"Whisper {model_name}")
+        offset = (i - (len(MODELS) - 1) / 2) * bar_width
+        ax.bar([xi + offset for xi in x], values, bar_width, label=MODEL_DISPLAY.get(model_name, model_name))
     ax.set_xlabel("Duration Bucket")
     ax.set_ylabel("WER (%)")
     ax.set_title(f"WER by Duration (mode: {PRIMARY_MODE})")
@@ -253,8 +261,8 @@ for col, chart_name in [("Native_Region", "wer_by_region.png"), ("Speech_Class",
 
     for i, model in enumerate(MODELS):
         values = [region_data.get(g, {}).get(model, 0) for g in groups]
-        offset = (i - 1) * bar_width
-        ax.bar([xi + offset for xi in x], values, bar_width, label=f"Whisper {model}")
+        offset = (i - (len(MODELS) - 1) / 2) * bar_width
+        ax.bar([xi + offset for xi in x], values, bar_width, label=MODEL_DISPLAY.get(model, model))
 
     ax.set_xlabel(col)
     ax.set_ylabel("WER (%)")

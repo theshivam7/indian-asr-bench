@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from utils.normalize import MODES, normalize_text, get_reference_source
 from utils.wer_compute import compute_sample_wer, compute_corpus_wer
 
-MODELS = ("base", "medium", "large", "youtube_aligned")
+MODELS = ("base", "medium", "large", "parakeet", "qwen3")
 STAGE1_DIR = os.path.join(os.path.dirname(__file__), "results", "stage1_raw_transcripts")
 STAGE2_DIR = os.path.join(os.path.dirname(__file__), "results", "stage2_processed")
 
@@ -134,7 +134,7 @@ os.makedirs(STAGE2_DIR, exist_ok=True)
 all_summary = []
 
 for model in MODELS:
-    print(f"\n--- Model: whisper-{model} ---")
+    print(f"\n--- Model: {model} ---")
     df_raw = load_raw(model)
     if df_raw is None:
         continue
