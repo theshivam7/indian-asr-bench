@@ -1,0 +1,8 @@
+qwen-asr
+torch
+datasets
+pandas
+tqdm
+librosa
+numpy
+num2words
