@@ -14,14 +14,17 @@ import warnings
 import wave
 
 import librosa
+import nemo.collections.asr as nemo_asr
 import numpy as np
 import pandas as pd
 import torch
 from tqdm import tqdm
 
-# Suppress NeMo verbose logging
+# Suppress NeMo verbose logging (must be after nemo import so handlers exist)
 logging.getLogger("nemo_logger").setLevel(logging.WARNING)
 logging.getLogger("nemo").setLevel(logging.WARNING)
+logging.getLogger("lightning").setLevel(logging.WARNING)
+logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
 warnings.filterwarnings("ignore")
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -63,7 +66,11 @@ def transcribe_sample_parakeet(model, sample: dict) -> str:
 
     try:
         output = model.transcribe([tmp_path])
-        return output[0].text.strip()
+        # NeMo returns List[str] (return_hypotheses=False, default) or
+        # List[Hypothesis] (return_hypotheses=True). Handle both.
+        result = output[0]
+        text = result.text if hasattr(result, "text") else str(result)
+        return text.strip()
     except Exception as e:
         sample_id = sample.get("ID", "?")
         print(f"  [WARN] Failed to transcribe {sample_id}: {e}")
@@ -72,11 +79,8 @@ def transcribe_sample_parakeet(model, sample: dict) -> str:
         os.unlink(tmp_path)
 
 
-import nemo.collections.asr as nemo_asr
-
-print(f"Loading {MODEL_ID} ...")
 device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Device: {device}")
+print(f"Loading {MODEL_ID} on device: {device} ...")
 model = nemo_asr.models.ASRModel.from_pretrained(MODEL_ID)
 if device == "cuda":
     model = model.cuda()
@@ -87,12 +91,14 @@ ds = load_dataset_test()
 
 checkpoint_path = os.path.join(results_dir(), f"wer_{MODEL_NAME}_partial.csv")
 completed_ids: set[str] = set()
-checkpoint_rows: list[dict] = []
+ckpt_map: dict[str, dict] = {}
 
 if os.path.exists(checkpoint_path):
     df_partial = pd.read_csv(checkpoint_path)
-    completed_ids = set(df_partial["ID"].astype(str).tolist())
-    checkpoint_rows = df_partial.to_dict("records")
+    for r in df_partial.to_dict("records"):
+        sid = str(r["ID"])
+        completed_ids.add(sid)
+        ckpt_map[sid] = r
     print(f"  Resuming from checkpoint: {len(completed_ids)} samples already done\n")
 
 all_rows: list[dict] = []
@@ -104,15 +110,12 @@ for sample in tqdm(ds, desc="test (transcribing)"):
     if not transcript:
         continue
 
-    sample_id = sample.get("ID", "")
+    sample_id = str(sample.get("ID", ""))
 
-    hyp_raw = None
-    if str(sample_id) in completed_ids:
-        ckpt_row = next((r for r in checkpoint_rows if str(r["ID"]) == str(sample_id)), None)
-        if ckpt_row is not None:
-            hyp_raw = str(ckpt_row.get("hypothesis_raw") or "")
-
-    if hyp_raw is None:
+    if sample_id in completed_ids:
+        ckpt_row = ckpt_map.get(sample_id)
+        hyp_raw = str(ckpt_row.get("hypothesis_raw") or "") if ckpt_row else ""
+    else:
         hyp_raw = transcribe_sample_parakeet(model, sample)
 
     row = {
@@ -131,10 +134,9 @@ for sample in tqdm(ds, desc="test (transcribing)"):
     }
 
     all_rows.append(row)
-    checkpoint_rows.append(row)
 
     if len(all_rows) % 200 == 0:
-        save_checkpoint(checkpoint_rows, MODEL_NAME)
+        save_checkpoint(all_rows, MODEL_NAME)
         print(f"  [checkpoint] {len(all_rows)} samples saved")
 
 out_path = os.path.join(stage1_raw_dir(), f"wer_{MODEL_NAME}_raw.csv")

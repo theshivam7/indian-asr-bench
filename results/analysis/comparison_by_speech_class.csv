@@ -8,6 +8,3 @@ medium,SLOW,17.21,373
 large,AVG,16.0,199
 large,FAST,13.77,413
 large,SLOW,18.69,373
-youtube_aligned,AVG,51.35,45
-youtube_aligned,FAST,52.06,77
-youtube_aligned,SLOW,52.0,68

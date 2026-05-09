@@ -16,6 +16,7 @@ import librosa
 import numpy as np
 import pandas as pd
 import torch
+from qwen_asr import Qwen3ASRModel
 from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
@@ -58,8 +59,11 @@ def transcribe_sample_qwen3(model, sample: dict) -> str:
             wf.writeframes(audio_int16.tobytes())
 
     try:
-        results = model.transcribe(audio=tmp_path)
-        return results[0].text.strip()
+        # language="English" for determinism; model auto-detects otherwise
+        results = model.transcribe(audio=tmp_path, language="English")
+        result = results[0]
+        text = result.text if hasattr(result, "text") else str(result)
+        return text.strip()
     except Exception as e:
         sample_id = sample.get("ID", "?")
         print(f"  [WARN] Failed to transcribe {sample_id}: {e}")
@@ -68,27 +72,37 @@ def transcribe_sample_qwen3(model, sample: dict) -> str:
         os.unlink(tmp_path)
 
 
-from qwen_asr import Qwen3ASRModel
-
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Loading {MODEL_ID} on device: {device} ...")
-model = Qwen3ASRModel.from_pretrained(
-    MODEL_ID,
-    dtype=torch.bfloat16,
-    device_map=device,
-)
+
+# bfloat16 on GPU for efficiency; float32 on CPU for compatibility
+if device == "cuda":
+    model = Qwen3ASRModel.from_pretrained(
+        MODEL_ID,
+        dtype=torch.bfloat16,
+        device_map="auto",
+        max_new_tokens=512,
+    )
+else:
+    model = Qwen3ASRModel.from_pretrained(
+        MODEL_ID,
+        device_map="cpu",
+        max_new_tokens=512,
+    )
 print("Model loaded.\n")
 
 ds = load_dataset_test()
 
 checkpoint_path = os.path.join(results_dir(), f"wer_{MODEL_NAME}_partial.csv")
 completed_ids: set[str] = set()
-checkpoint_rows: list[dict] = []
+ckpt_map: dict[str, dict] = {}
 
 if os.path.exists(checkpoint_path):
     df_partial = pd.read_csv(checkpoint_path)
-    completed_ids = set(df_partial["ID"].astype(str).tolist())
-    checkpoint_rows = df_partial.to_dict("records")
+    for r in df_partial.to_dict("records"):
+        sid = str(r["ID"])
+        completed_ids.add(sid)
+        ckpt_map[sid] = r
     print(f"  Resuming from checkpoint: {len(completed_ids)} samples already done\n")
 
 all_rows: list[dict] = []
@@ -100,15 +114,12 @@ for sample in tqdm(ds, desc="test (transcribing)"):
     if not transcript:
         continue
 
-    sample_id = sample.get("ID", "")
+    sample_id = str(sample.get("ID", ""))
 
-    hyp_raw = None
-    if str(sample_id) in completed_ids:
-        ckpt_row = next((r for r in checkpoint_rows if str(r["ID"]) == str(sample_id)), None)
-        if ckpt_row is not None:
-            hyp_raw = str(ckpt_row.get("hypothesis_raw") or "")
-
-    if hyp_raw is None:
+    if sample_id in completed_ids:
+        ckpt_row = ckpt_map.get(sample_id)
+        hyp_raw = str(ckpt_row.get("hypothesis_raw") or "") if ckpt_row else ""
+    else:
         hyp_raw = transcribe_sample_qwen3(model, sample)
 
     row = {
@@ -127,10 +138,9 @@ for sample in tqdm(ds, desc="test (transcribing)"):
     }
 
     all_rows.append(row)
-    checkpoint_rows.append(row)
 
     if len(all_rows) % 200 == 0:
-        save_checkpoint(checkpoint_rows, MODEL_NAME)
+        save_checkpoint(all_rows, MODEL_NAME)
         print(f"  [checkpoint] {len(all_rows)} samples saved")
 
 out_path = os.path.join(stage1_raw_dir(), f"wer_{MODEL_NAME}_raw.csv")
