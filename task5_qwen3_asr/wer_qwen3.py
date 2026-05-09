@@ -1,0 +1,142 @@
+"""
+Stage 1: ASR Transcription — Qwen3-ASR-1.7B.
+
+Saves to results/stage1_raw_transcripts/wer_qwen3_raw.csv.
+DO NOT re-run unless you need new transcriptions.
+Run normalize_and_score.py for WER evaluation.
+"""
+
+import os
+import sys
+import tempfile
+import warnings
+import wave
+
+import librosa
+import numpy as np
+import pandas as pd
+import torch
+from tqdm import tqdm
+
+warnings.filterwarnings("ignore")
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from utils.io_helpers import (
+    load_dataset_test,
+    results_dir,
+    stage1_raw_dir,
+    save_checkpoint,
+    remove_checkpoint,
+)
+
+MODEL_NAME = "qwen3"
+MODEL_ID = "Qwen/Qwen3-ASR-1.7B"
+
+
+def transcribe_sample_qwen3(model, sample: dict) -> str:
+    """Transcribe a single HF dataset sample using Qwen3-ASR.
+
+    Saves audio to a temp WAV file and passes the path to the model.
+    Returns raw transcription string.
+    """
+    audio_data = sample["audio"]
+    audio_array = np.array(audio_data["array"], dtype=np.float32).flatten()
+    sr = audio_data["sampling_rate"]
+
+    if sr != 16000:
+        audio_array = librosa.resample(audio_array, orig_sr=sr, target_sr=16000)
+
+    audio_int16 = (np.clip(audio_array, -1.0, 1.0) * 32767).astype(np.int16)
+
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp_path = tmp.name
+        with wave.open(tmp_path, "w") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(16000)
+            wf.writeframes(audio_int16.tobytes())
+
+    try:
+        results = model.transcribe(audio=tmp_path)
+        return results[0].text.strip()
+    except Exception as e:
+        sample_id = sample.get("ID", "?")
+        print(f"  [WARN] Failed to transcribe {sample_id}: {e}")
+        return ""
+    finally:
+        os.unlink(tmp_path)
+
+
+from qwen_asr import Qwen3ASRModel
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Loading {MODEL_ID} on device: {device} ...")
+model = Qwen3ASRModel.from_pretrained(
+    MODEL_ID,
+    dtype=torch.bfloat16,
+    device_map=device,
+)
+print("Model loaded.\n")
+
+ds = load_dataset_test()
+
+checkpoint_path = os.path.join(results_dir(), f"wer_{MODEL_NAME}_partial.csv")
+completed_ids: set[str] = set()
+checkpoint_rows: list[dict] = []
+
+if os.path.exists(checkpoint_path):
+    df_partial = pd.read_csv(checkpoint_path)
+    completed_ids = set(df_partial["ID"].astype(str).tolist())
+    checkpoint_rows = df_partial.to_dict("records")
+    print(f"  Resuming from checkpoint: {len(completed_ids)} samples already done\n")
+
+all_rows: list[dict] = []
+
+print(f"--- Processing test split ({len(ds)} samples) ---")
+
+for sample in tqdm(ds, desc="test (transcribing)"):
+    transcript = (sample.get("Transcript") or "").strip()
+    if not transcript:
+        continue
+
+    sample_id = sample.get("ID", "")
+
+    hyp_raw = None
+    if str(sample_id) in completed_ids:
+        ckpt_row = next((r for r in checkpoint_rows if str(r["ID"]) == str(sample_id)), None)
+        if ckpt_row is not None:
+            hyp_raw = str(ckpt_row.get("hypothesis_raw") or "")
+
+    if hyp_raw is None:
+        hyp_raw = transcribe_sample_qwen3(model, sample)
+
+    row = {
+        "split": "test",
+        "ID": sample_id,
+        "Speaker_ID": sample.get("Speaker_ID", ""),
+        "Gender": sample.get("Gender", ""),
+        "Speech_Class": sample.get("Speech_Class", ""),
+        "Native_Region": sample.get("Native_Region", ""),
+        "Speech_Duration_seconds": sample.get("Speech_Duration_seconds") or "",
+        "Discipline_Group": sample.get("Discipline_Group", ""),
+        "Topic": sample.get("Topic", ""),
+        "transcript_raw": transcript,
+        "normalised_transcript_raw": str(sample.get("Normalised_Transcript") or "").strip(),
+        "hypothesis_raw": hyp_raw,
+    }
+
+    all_rows.append(row)
+    checkpoint_rows.append(row)
+
+    if len(all_rows) % 200 == 0:
+        save_checkpoint(checkpoint_rows, MODEL_NAME)
+        print(f"  [checkpoint] {len(all_rows)} samples saved")
+
+out_path = os.path.join(stage1_raw_dir(), f"wer_{MODEL_NAME}_raw.csv")
+pd.DataFrame(all_rows).to_csv(out_path, index=False)
+print(f"\nSaved: {out_path}  ({len(all_rows)} samples)")
+print("Run 'python normalize_and_score.py' for WER evaluation.")
+
+remove_checkpoint(MODEL_NAME)
+print("\nDone.")
