@@ -52,7 +52,9 @@ def save_mode_csv(
 
 def save_checkpoint(rows: list[dict], model_name: str) -> str:
     """Save a partial checkpoint CSV for crash recovery."""
-    out_path = os.path.join(results_dir(), f"wer_{model_name}_partial.csv")
+    out_dir = results_dir()
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, f"wer_{model_name}_partial.csv")
     pd.DataFrame(rows).to_csv(out_path, index=False)
     return out_path
 

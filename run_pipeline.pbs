@@ -15,7 +15,7 @@ echo "Node: $(hostname)"
 echo "================================================================"
 
 # --------------- Setup ---------------
-WORKDIR=/scratch/users/ntu/REDACTED_NSCC_USER/Tie_shorts
+WORKDIR=/scratch/users/ntu/REDACTED_NSCC_USER/indian-asr-bench
 cd $WORKDIR
 
 module load cuda/12.2.1
@@ -69,7 +69,7 @@ echo ""
 echo "================================================================"
 echo "STAGE 1: Qwen3-ASR-1.7B Transcription"
 echo "================================================================"
-conda activate qwen3_env
+conda activate /scratch/users/ntu/REDACTED_NSCC_USER/envs/qwen3_env
 export HF_HOME=$HF_DATASETS_CACHE
 python task5_qwen3_asr/wer_qwen3.py
 
