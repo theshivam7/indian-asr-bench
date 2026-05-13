@@ -11,7 +11,7 @@ module load cuda/12.2.1
 export LD_LIBRARY_PATH=/app/libs/cudnn/12-8.9.4.25/lib:$LD_LIBRARY_PATH
 
 source /app/apps/miniforge3/25.3.1/etc/profile.d/conda.sh
-conda activate parakeet_env
+conda activate /scratch/users/ntu/REDACTED_NSCC_USER/envs/parakeet_env
 
 export HF_DATASETS_CACHE=/scratch/users/ntu/REDACTED_NSCC_USER/hf_cache
 export HF_HOME=/scratch/users/ntu/REDACTED_NSCC_USER/hf_cache

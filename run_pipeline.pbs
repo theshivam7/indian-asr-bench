@@ -22,7 +22,7 @@ module load cuda/12.2.1
 export LD_LIBRARY_PATH=/app/libs/cudnn/12-8.9.4.25/lib:$LD_LIBRARY_PATH
 
 source /app/apps/miniforge3/25.3.1/etc/profile.d/conda.sh
-conda activate whisper
+conda activate /scratch/users/ntu/REDACTED_NSCC_USER/envs/whisper
 
 export HF_DATASETS_CACHE=/scratch/users/ntu/REDACTED_NSCC_USER/hf_cache
 export WHISPER_CACHE=/scratch/users/ntu/REDACTED_NSCC_USER/whisper_cache
@@ -60,7 +60,7 @@ echo ""
 echo "================================================================"
 echo "STAGE 1: Parakeet-TDT-0.6B-v2 Transcription"
 echo "================================================================"
-conda activate parakeet_env
+conda activate /scratch/users/ntu/REDACTED_NSCC_USER/envs/parakeet_env
 export HF_HOME=$HF_DATASETS_CACHE
 python task4_parakeet/wer_parakeet.py
 
@@ -74,7 +74,7 @@ export HF_HOME=$HF_DATASETS_CACHE
 python task5_qwen3_asr/wer_qwen3.py
 
 # --------------- Stage 2 + Analysis (whisper env has all deps) ---------------
-conda activate whisper
+conda activate /scratch/users/ntu/REDACTED_NSCC_USER/envs/whisper
 
 echo ""
 echo "================================================================"
