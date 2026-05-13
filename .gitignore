@@ -19,9 +19,6 @@ pip_cache/
 *.wav
 *.tmp
 
-# Cluster job scripts
-job_*.pbs
-
 # Logs — keep locally, not on GitHub
 logs/
 

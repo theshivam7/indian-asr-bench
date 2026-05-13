@@ -37,12 +37,14 @@ ds = load_dataset_test()
 
 checkpoint_path = os.path.join(results_dir(), f"wer_{MODEL_NAME}_partial.csv")
 completed_ids: set[str] = set()
-checkpoint_rows: list[dict] = []
+ckpt_map: dict[str, dict] = {}
 
 if os.path.exists(checkpoint_path):
     df_partial = pd.read_csv(checkpoint_path)
-    completed_ids = set(df_partial["ID"].astype(str).tolist())
-    checkpoint_rows = df_partial.to_dict("records")
+    for r in df_partial.to_dict("records"):
+        sid = str(r["ID"])
+        completed_ids.add(sid)
+        ckpt_map[sid] = r
     print(f"  Resuming from checkpoint: {len(completed_ids)} samples already done\n")
 
 all_rows: list[dict] = []
@@ -56,13 +58,9 @@ for sample in tqdm(ds, desc="test (transcribing)"):
 
     sample_id = sample.get("ID", "")
 
-    hyp_raw = None
     if str(sample_id) in completed_ids:
-        ckpt_row = next((r for r in checkpoint_rows if str(r["ID"]) == str(sample_id)), None)
-        if ckpt_row is not None:
-            hyp_raw = str(ckpt_row.get("hypothesis_raw") or "")
-
-    if hyp_raw is None:
+        hyp_raw = str(ckpt_map.get(str(sample_id), {}).get("hypothesis_raw") or "")
+    else:
         hyp_raw = transcribe_sample(model, sample, transcribe_kw)
 
     row = {
@@ -81,10 +79,9 @@ for sample in tqdm(ds, desc="test (transcribing)"):
     }
 
     all_rows.append(row)
-    checkpoint_rows.append(row)
 
     if len(all_rows) % 200 == 0:
-        save_checkpoint(checkpoint_rows, MODEL_NAME)
+        save_checkpoint(all_rows, MODEL_NAME)
         print(f"  [checkpoint] {len(all_rows)} samples saved")
 
 out_path = os.path.join(stage1_raw_dir(), f"wer_{MODEL_NAME}_raw.csv")
