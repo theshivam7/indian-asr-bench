@@ -22,6 +22,9 @@ from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
 
+# Disable cuDNN to avoid CUDNN_STATUS_NOT_INITIALIZED on NSCC for specific samples.
+torch.backends.cudnn.enabled = False
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.io_helpers import (

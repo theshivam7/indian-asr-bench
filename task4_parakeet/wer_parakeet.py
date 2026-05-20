@@ -28,6 +28,10 @@ logging.getLogger("lightning").setLevel(logging.WARNING)
 logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
 warnings.filterwarnings("ignore")
 
+# cuDNN LSTM flatten_parameters fails on NSCC (CUDNN_STATUS_NOT_INITIALIZED).
+# Disabling cuDNN routes LSTM ops through standard CUDA — still GPU-accelerated on A100.
+torch.backends.cudnn.enabled = False
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.io_helpers import (
