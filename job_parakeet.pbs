@@ -8,7 +8,7 @@
 #PBS -j oe
 
 module load cuda/11.8.0
-export LD_LIBRARY_PATH=/app/libs/cudnn/12-8.9.4.25/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/app/libs/cudnn/11-8.9.4.25/lib:$LD_LIBRARY_PATH
 
 source /app/apps/miniforge3/25.3.1/etc/profile.d/conda.sh
 conda activate /scratch/users/ntu/REDACTED_NSCC_USER/envs/parakeet_env
@@ -19,14 +19,16 @@ mkdir -p $HF_DATASETS_CACHE logs
 
 cd /scratch/users/ntu/REDACTED_NSCC_USER/indian-asr-bench
 
-# Fix torch CUDA version if still on CUDA 13.0 build
+# Fix torch CUDA version if not cu118 — use pip (conda has plugin issues on PBS nodes)
 TORCH_CUDA=$(python -c "import torch; print(torch.version.cuda)" 2>/dev/null || echo "none")
 echo "=== Detected torch CUDA build: $TORCH_CUDA ==="
 if [ "$TORCH_CUDA" != "11.8" ]; then
-    echo "=== Reinstalling torch cu118 (current: $TORCH_CUDA) ==="
-    conda remove -y pytorch torchaudio pytorch-cuda pytorch-mutex --force-remove 2>/dev/null || true
-    pip uninstall -y torch torchaudio torchvision 2>/dev/null || true
-    conda install -y "pytorch==2.5.1" "torchaudio==2.5.1" "pytorch-cuda=11.8" -c pytorch -c nvidia
+    echo "=== Reinstalling torch cu118 via pip (current: $TORCH_CUDA) ==="
+    pip install \
+        torch==2.5.1+cu118 \
+        torchaudio==2.5.1+cu118 \
+        --index-url https://download.pytorch.org/whl/cu118 \
+        --no-deps --quiet
     echo "=== Torch reinstall done ==="
 fi
 
