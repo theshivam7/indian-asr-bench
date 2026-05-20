@@ -1,91 +1,127 @@
-<h1 align="center">Indian-asr-bench</h1>
+<h1 align="center">Indian-ASR-Bench</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/Whisper-OpenAI-black?logo=openai&logoColor=white" />
+  <img src="https://img.shields.io/badge/Models-5%20ASR%20Systems-orange" />
   <img src="https://img.shields.io/badge/Dataset-Indian%20English-green" />
+  <img src="https://img.shields.io/badge/Samples-986-purple" />
   <a href="https://github.com/theshivam7/indian-asr-bench"><img src="https://img.shields.io/badge/GitHub-theshivam7%2Findian--asr--bench-black?logo=github" /></a>
 </p>
 
 <p align="center">
-  <b>Benchmarking ASR systems on Indian English academic speech — with rigorous WER analysis across models, regions, and normalization strategies.</b>
+  <b>Benchmarking 5 ASR systems on Indian English academic speech — with rigorous WER analysis across models, regions, speech rates, and normalization strategies.</b>
 </p>
 
 <p align="center">
   <a href="#key-results">Results</a> &nbsp;·&nbsp;
   <a href="#dataset">Dataset</a> &nbsp;·&nbsp;
+  <a href="#evaluation-modes">Modes</a> &nbsp;·&nbsp;
   <a href="#pipeline-architecture">Pipeline</a> &nbsp;·&nbsp;
   <a href="#quick-start">Quick-start</a>
 </p>
 
 ---
 
-Word Error Rate (WER) evaluation of **5 ASR systems** on Indian English academic lectures from the TIE (Talks in Indian English) dataset, with a comprehensive analysis of how normalization choices affect measured WER.
+Word Error Rate (WER) evaluation of **5 ASR systems** on Indian English academic lectures from the TIE (Talks in Indian English) dataset, with comprehensive analysis of how normalization choices affect measured WER.
 
 **ASR Systems evaluated:**
-- OpenAI Whisper Base (74M parameters) — completed
-- OpenAI Whisper Medium (769M parameters) — completed, best Whisper result
-- OpenAI Whisper Large (~1.5B parameters) — completed
-- NVIDIA Parakeet-TDT-0.6B-v2 — **results pending (NSCC run)**
-- Qwen3-ASR-1.7B — **results pending (NSCC run)**
+- OpenAI Whisper Base (74M parameters)
+- OpenAI Whisper Medium (769M parameters)
+- OpenAI Whisper Large (~1.5B parameters)
+- NVIDIA Parakeet-TDT-0.6B-v2 (600M parameters)
+- Qwen3-ASR-1.7B (1.7B parameters)
 
 > **Archived:** YouTube caption evaluation (clip-aligned, 190/986 samples) is preserved in `archived_tasks/youtube_captions/` but excluded from the main benchmark — the methodology differs fundamentally from direct ASR evaluation.
 
+---
+
 ## Key Results
 
-**Primary evaluation metric: `transcript_clean` mode** (gold standard — forward normalization applied symmetrically to both reference and hypothesis using original `Transcript` as ground truth)
+**Primary metric: `transcript_clean`** — forward normalization applied symmetrically to both reference and hypothesis using the original `Transcript` column as ground truth (gold standard).
 
-| Model | Corpus WER | Mean WER | Median WER | Std Dev | Samples |
-|-------|:----------:|:--------:|:----------:|:-------:|:-------:|
-| **Whisper Medium** | **14.72%** | **15.39%** | **10.91%** | **15.92%** | 986 |
-| Whisper Large | 15.88% | 16.83% | 11.36% | 19.27% | 986 |
-| Whisper Base | 17.44% | 18.29% | 13.33% | 16.99% | 986 |
-| Parakeet-TDT-0.6B | — | — | — | — | pending |
-| Qwen3-ASR-1.7B | — | — | — | — | pending |
+| Model | Corpus WER | Mean WER | Median WER | Std Dev | P90 | P95 | Samples |
+|-------|:----------:|:--------:|:----------:|:-------:|:---:|:---:|:-------:|
+| **Whisper Medium** | **14.72%** | **15.39%** | **10.91%** | 15.92% | 31.58% | 38.46% | 986 |
+| Parakeet-TDT-0.6B | 15.54% | 16.70% | 11.63% | 17.50% | 34.38% | 44.12% | 986 |
+| Whisper Large | 15.88% | 16.83% | 11.36% | 19.27% | 35.21% | 48.94% | 986 |
+| Qwen3-ASR-1.7B | 15.93% | 16.64% | **12.28%** | **15.88%** | **33.85%** | 44.90% | 986 |
+| Whisper Base | 17.44% | 18.29% | 13.33% | 16.99% | 38.16% | 50.00% | 986 |
 
-**Whisper Medium outperforms Whisper Large** — Large hallucinates on 75% of hard samples vs Medium's 40%, due to overconfidence on Indian-accented speech.
+### Key Findings
+
+1. **Whisper Medium (14.72%)** is the best overall model — 1.16 pp ahead of Parakeet and 1.16 pp ahead of Large.
+2. **Parakeet-TDT-0.6B (15.54%) beats Whisper Large (15.88%)** — a 0.6B specialized model outperforms a ~1.5B general-purpose model by 0.34 pp.
+3. **Qwen3-ASR-1.7B (15.93%)** is essentially tied with Whisper Large, and has the **lowest standard deviation** (15.88%) of any model — most consistent predictions.
+4. **Whisper Large underperforms its size** on Indian English, particularly on hard samples — 19.27% std dev vs Medium's 15.92%.
+5. **Normalization choice causes a ~10 pp swing** — larger than any inter-model gap.
 
 ### Impact of Normalization
 
 | Mode | Base | Medium | Large | Parakeet | Qwen3 |
 |------|:----:|:------:|:-----:|:--------:|:-----:|
-| `transcript_raw` (no normalization) | 27.95% | 24.14% | 25.62% | — | — |
-| `transcript_clean` (gold standard) | **17.44%** | **14.72%** | **15.88%** | — | — |
-| `hf_raw` (dataset's normalization, broken) | 31.76% | 29.83% | 30.95% | — | — |
-| `hf_clean` (dataset normalization + our fix) | 18.00% | 15.73% | 16.91% | — | — |
+| `transcript_raw` (no normalization) | 27.95% | 24.14% | 25.62% | 28.09% | 33.16% |
+| `transcript_clean` (**gold standard**) | **17.44%** | **14.72%** | **15.88%** | **15.54%** | **15.93%** |
+| `hf_raw` (dataset's broken normalization) | 31.76% | 29.83% | 30.95% | 33.85% | 36.36% |
+| `hf_clean` (dataset norm + our fix) | 18.00% | 15.73% | 16.91% | 16.34% | 16.87% |
 
-**Key finding:** Normalization causes a ~10 pp swing for Whisper — larger than any model difference.
+**Key finding:** The dataset's `Normalised_Transcript` column inflates WER by 3.8–5.7 pp due to systematic errors (e.g. `"1st"` → `"one s t"`). The `hf_raw` mode is worse than no normalization at all.
 
-The dataset's `Normalised_Transcript` inflates WER by 3.8–5.7 pp due to systematic errors (e.g. `"1st"` → `"one s t"`).
+Qwen3's `transcript_raw` (33.16%) is notably high — the model outputs text with heavy punctuation and casing that normalization fully corrects, explaining its competitive `transcript_clean` score.
 
-### Breakdown by Speech Rate (transcript_clean, all 986 samples)
+---
 
-| Speech Rate | Base | Medium | Large | Samples |
-|:-----------:|:----:|:------:|:-----:|:-------:|
-| FAST | 16.35% | **13.46%** | 13.77% | 413 |
-| AVG | 15.89% | **13.41%** | 16.00% | 199 |
-| SLOW | 19.85% | **17.21%** | 18.69% | 373 |
+### Breakdown by Speech Rate
 
-### Breakdown by Region (transcript_clean, all 986 samples)
+| Speech Rate | Base | Medium | Large | Parakeet | Qwen3 | Samples |
+|:-----------:|:----:|:------:|:-----:|:--------:|:-----:|:-------:|
+| FAST | 16.35% | **13.46%** | 13.77% | 14.30% | 14.76% | 413 |
+| AVG | 15.89% | **13.41%** | 16.00% | **13.89%** | 14.91% | 199 |
+| SLOW | 19.85% | 17.21% | 18.69% | 18.23% | **18.14%** | 373 |
 
-| Region | Base | Medium | Large | Samples |
-|:------:|:----:|:------:|:-----:|:-------:|
-| EAST | 16.78% | **13.92%** | 16.94% | 352 |
-| NORTH | 17.01% | **14.72%** | 15.08% | 202 |
-| SOUTH | 18.27% | **15.27%** | 15.58% | 362 |
-| WEST | 17.29% | **15.40%** | 14.98% | 69 |
+SLOW speech is consistently the hardest condition. Qwen3 and Parakeet lead on SLOW, while Medium dominates FAST and AVG.
 
-### Breakdown by Audio Duration (transcript_clean, all 986 samples)
+### Breakdown by Region
 
-| Duration | Base | Medium | Large |
-|:--------:|:----:|:------:|:-----:|
-| 0–5s | 25.0% | 25.0% | 25.0% |
-| 5–15s | 24.72% | 21.23% | 24.89% |
-| **15–30s** | **16.87%** | **13.78%** | **14.73%** |
-| 30–60s | 19.63% | 19.80% | 22.31% |
-| 60s+ | 33.33% | 37.31% | 38.23% |
+| Region | Base | Medium | Large | Parakeet | Qwen3 | Samples |
+|:------:|:----:|:------:|:-----:|:--------:|:-----:|:-------:|
+| EAST | 16.78% | **13.92%** | 16.94% | 15.42% | 15.42% | 352 |
+| NORTH | 17.01% | **14.72%** | 15.08% | 15.98% | 15.55% | 202 |
+| SOUTH | 18.27% | **15.27%** | 15.58% | 15.57% | 16.57% | 362 |
+| WEST | 17.29% | 15.40% | **14.98%** | **14.76%** | 16.01% | 69 |
 
-15–30s clips show best performance. 60s+ clips degrade sharply for all models.
+Moderate regional variation (~1.5 pp range). Parakeet leads for WEST; Medium leads for EAST, NORTH, SOUTH.
+
+### Breakdown by Gender
+
+| Gender | Base | Medium | Large | Parakeet | Qwen3 | Samples |
+|:------:|:----:|:------:|:-----:|:--------:|:-----:|:-------:|
+| Female | 13.88% | 12.02% | 12.49% | **11.61%** | 13.17% | 58 |
+| Male | 17.65% | **14.88%** | 16.09% | 15.78% | 16.09% | 927 |
+
+Parakeet achieves the best female-speaker WER (11.61%). Dataset is 94% male — interpret carefully.
+
+### Breakdown by Discipline
+
+| Discipline | Base | Medium | Large | Parakeet | Qwen3 | Samples |
+|:----------:|:----:|:------:|:-----:|:--------:|:-----:|:-------:|
+| Engineering | 17.92% | **15.06%** | 16.02% | 16.27% | 16.48% | 691 |
+| Non-Engineering | 16.30% | **13.90%** | 15.55% | **13.85%** | 14.63% | 294 |
+
+Non-Engineering lectures are uniformly easier. Parakeet is best for Non-Engineering (13.85%).
+
+### Breakdown by Audio Duration
+
+| Duration | Base | Medium | Large | Parakeet | Qwen3 |
+|:--------:|:----:|:------:|:-----:|:--------:|:-----:|
+| 0–5s | 25.00% | 25.00% | 25.00% | 40.00% | 30.00% |
+| 5–15s | 24.72% | 21.23% | 24.89% | 23.79% | 23.19% |
+| **15–30s** | 16.87% | **13.78%** | 14.73% | 14.90% | 15.20% |
+| 30–60s | 19.63% | 19.80% | 22.31% | **18.93%** | 20.15% |
+| **60s+** | 33.33% | 37.31% | 38.23% | **18.35%** | 20.49% |
+
+**Parakeet and Qwen3 dramatically outperform Whisper on 60s+ clips** — 18–20% vs 37–38%. Whisper hallucinates extensively on very long audio; Parakeet/Qwen3 are far more robust.
+
+15–30s clips are the sweet spot for all models.
 
 ---
 
@@ -99,7 +135,7 @@ The dataset's `Normalised_Transcript` inflates WER by 3.8–5.7 pp due to system
 | Speech rate | FAST 41.9% (413), SLOW 37.8% (373), AVG 20.2% (199) |
 | Region | SOUTH 36.7% (362), EAST 35.7% (352), NORTH 20.5% (202), WEST 7.0% (69) |
 | Discipline | Engineering 70.1% (691), Non-Engineering 29.9% (294) |
-| Total reference words | 52,178 (transcript_clean) |
+| Total reference words | ~52,178 (transcript_clean) |
 
 ---
 
@@ -107,45 +143,35 @@ The dataset's `Normalised_Transcript` inflates WER by 3.8–5.7 pp due to system
 
 4 modes covering 2 reference sources × 2 normalization states — all symmetric:
 
-| Mode | Reference Source | Before Norm | After Norm | Purpose |
-|------|-----------------|-------------|------------|---------|
-| `transcript_raw` | `Transcript` | as-is | as-is | Upper bound baseline |
-| `transcript_clean` | `Transcript` | `Transcript` | normalized | **Gold standard — paper primary** |
-| `hf_raw` | `Normalised_Transcript` | as-is | as-is | Quantifies dataset normalization errors |
-| `hf_clean` | `Normalised_Transcript` | `Normalised_Transcript` | normalized | HF normalization + our fix |
+| Mode | Reference Source | Normalization | Purpose |
+|------|-----------------|---------------|---------|
+| `transcript_raw` | `Transcript` | None | Upper bound baseline |
+| `transcript_clean` | `Transcript` | Forward | **Gold standard — paper primary** |
+| `hf_raw` | `Normalised_Transcript` | None | Quantifies dataset normalization errors |
+| `hf_clean` | `Normalised_Transcript` | Forward | HF normalization + our fix |
 
 ### Normalization Pipeline (`*_clean` modes)
 
-Applied **symmetrically** to both reference and hypothesis. Standard forward normalization — everything converted to lowercase word form, no symbols.
+Applied **symmetrically** to both reference and hypothesis:
 
-| Step | Before | After | Why |
-|------|--------|-------|-----|
-| Unicode NFC | `"café"` | `"café"` | fix encoding artifacts |
-| Expand contractions | `"don't"` | `"do not"` | avoid penalizing correct transcriptions |
-| Fix possessives | `"Bernoulli's"` | `"bernoulli s"` | remove apostrophe, keep the s |
-| Ordinals → words | `"1st"`, `"2nd"` | `"first"`, `"second"` | standard word form for WER |
-| Cardinals → words | `"100"`, `"60,000"` | `"one hundred"`, `"sixty thousand"` | digit/word mismatch causes false errors |
-| Decimals → words | `"3.14"` | `"three point one four"` | consistent spoken form |
-| Lowercase | `"The Second"` | `"the second"` | case differences are not speech errors |
-| Remove punctuation | `"hello, world."` | `"hello world"` | punctuation is editorial, not spoken |
-| Normalize whitespace | `"too  many  spaces"` | `"too many spaces"` | clean tokenization |
-
-**What we deliberately do NOT normalize:**
-- Greek letter names (`sigma`, `rho`, `pi`) — they are spoken as words
-- Variable names (`d0`, `s1`) — domain-specific identifiers
-- The word `"point"` — kept as a word, not converted to `.`
-- Filler words (`uh`, `um`) — removing selectively on one side would be unfair
-- Abbreviations (`MOSFET`, `CPU`, `NPTEL`) — kept as-is
+| Step | Example Before | Example After |
+|------|----------------|---------------|
+| Unicode NFC | encoding artifacts | fixed |
+| Expand contractions | `"don't"` | `"do not"` |
+| Fix possessives | `"Bernoulli's"` | `"bernoulli s"` |
+| Ordinals → words | `"1st"`, `"2nd"` | `"first"`, `"second"` |
+| Cardinals → words | `"100"`, `"60,000"` | `"one hundred"`, `"sixty thousand"` |
+| Lowercase | `"The Second"` | `"the second"` |
+| Remove punctuation | `"hello, world."` | `"hello world"` |
+| Normalize whitespace | `"too  many  spaces"` | `"too many spaces"` |
 
 **Why the dataset's `Normalised_Transcript` is wrong:**
 
 ```
 Original Transcript:    "the 1st component is..."
-Normalised_Transcript:  "the one s t component is..."   ← WRONG: splits "1st" into characters
-Our normalization:       "the first component is..."     ← CORRECT: ordinal → word
+Normalised_Transcript:  "the one s t component is..."   ← splits "1st" into characters
+Our normalization:       "the first component is..."     ← ordinal → word (correct)
 ```
-
-This error affects ~50+ samples and inflates `hf_raw` WER by 3.8–5.7 pp vs `transcript_raw`. The `hf_raw` mode (31.76% for Base) is *worse* than no normalization at all (27.95%).
 
 ---
 
@@ -158,8 +184,8 @@ This error affects ~50+ samples and inflates `hf_raw` WER by 3.8–5.7 pp vs `tr
 | Task 1 | `task1_whisper_base/wer_whisper_base.py` | Whisper Base | ~12 min |
 | Task 2 | `task2_whisper_medium/wer_whisper_medium.py` | Whisper Medium | ~35 min |
 | Task 3 | `task3_whisper_large/wer_whisper_large.py` | Whisper Large | ~90 min |
-| Task 4 | `task4_parakeet/wer_parakeet.py` | Parakeet-TDT-0.6B-v2 | ~20 min |
-| Task 5 | `task5_qwen3_asr/wer_qwen3.py` | Qwen3-ASR-1.7B | ~30 min |
+| Task 4 | `task4_parakeet/wer_parakeet.py` | Parakeet-TDT-0.6B-v2 | ~8 min |
+| Task 5 | `task5_qwen3_asr/wer_qwen3.py` | Qwen3-ASR-1.7B | ~15 min |
 
 Output: `results/stage1_raw_transcripts/wer_{model}_raw.csv`
 
@@ -168,24 +194,15 @@ Each script is independently resumable via checkpointing — safe to restart aft
 ### Stage 2 — Normalization + WER (CPU, re-run freely)
 
 ```bash
-python normalize_and_score.py    # ~1 min, no GPU
+python normalize_and_score.py    # ~1 min, no GPU needed
 python analysis/compare_all.py   # charts and breakdowns
 ```
 
-### Automated NSCC Run (individual jobs)
+### NSCC PBS Jobs
 
 ```bash
-qsub job_base.pbs
-qsub job_medium.pbs
-qsub job_large.pbs
-qsub job_parakeet.pbs
-qsub job_qwen3.pbs
-```
-
-Or all at once with the pipeline script (requires all conda envs set up):
-
-```bash
-qsub run_pipeline.pbs
+qsub job_parakeet.pbs   # Parakeet (3h walltime, g1 queue)
+qsub job_qwen3.pbs      # Qwen3 (5h walltime, g1 queue)
 ```
 
 ---
@@ -195,22 +212,19 @@ qsub run_pipeline.pbs
 ```bash
 # Stage 1: Whisper (whisper conda env)
 conda activate whisper
-pip install openai-whisper torch librosa jiwer pandas tqdm numpy num2words datasets
 python task1_whisper_base/wer_whisper_base.py
 python task2_whisper_medium/wer_whisper_medium.py
 python task3_whisper_large/wer_whisper_large.py
 
-# Stage 1: Parakeet (parakeet_env conda env)
+# Stage 1: Parakeet
 conda activate parakeet_env
-bash task4_parakeet/setup.sh
 python task4_parakeet/wer_parakeet.py
 
-# Stage 1: Qwen3-ASR (qwen3_env conda env)
+# Stage 1: Qwen3-ASR
 conda activate qwen3_env
-bash task5_qwen3_asr/setup.sh
 python task5_qwen3_asr/wer_qwen3.py
 
-# Stage 2: Normalization + WER + charts (CPU only, any env with pandas/jiwer)
+# Stage 2: Normalization + WER + charts (CPU only)
 python normalize_and_score.py
 python analysis/compare_all.py
 ```
@@ -225,8 +239,8 @@ results/
     wer_base_raw.csv
     wer_medium_raw.csv
     wer_large_raw.csv
-    wer_parakeet_raw.csv         ← pending
-    wer_qwen3_raw.csv            ← pending
+    wer_parakeet_raw.csv
+    wer_qwen3_raw.csv
   stage2_processed/             ← WER results per mode
     transcript_raw/
     transcript_clean/           ← gold standard
@@ -244,49 +258,38 @@ results/
     wer_by_{region,speech_class,duration}.png
 ```
 
-## CSV Column Schema
-
-| Column | Description |
-|--------|-------------|
-| `model` | ASR model (`base`, `medium`, `large`, `parakeet`, `qwen3`) |
-| `mode` | Evaluation mode |
-| `reference_source` | Dataset column used as reference |
-| `reference_raw` | Reference **before** normalization |
-| `reference` | Reference **after** normalization (used for WER) |
-| `hypothesis_raw` | ASR output **before** normalization |
-| `hypothesis` | ASR output **after** normalization (used for WER) |
-| `wer` | Per-sample WER |
-
 ## Project Structure
 
 ```
 .
 ├── utils/
-│   ├── normalize.py              # 4-mode normalization
+│   ├── normalize.py              # 4-mode normalization pipeline
 │   ├── transcribe.py             # Audio processing + Whisper inference
-│   ├── wer_compute.py            # WER computation
+│   ├── wer_compute.py            # Corpus + sample WER computation
 │   └── io_helpers.py             # Dataset loading, I/O, checkpointing
 ├── task1_whisper_base/
 ├── task2_whisper_medium/
 ├── task3_whisper_large/
 ├── task4_parakeet/               # Parakeet-TDT-0.6B-v2
+│   └── nemo_asr_environment.yaml # Reference conda env spec
 ├── task5_qwen3_asr/              # Qwen3-ASR-1.7B
 ├── archived_tasks/
 │   ├── youtube_captions/         # YouTube caption experiment (archived)
-│   └── audio_analysis/           # Whisper audio sample analysis (archived)
+│   └── audio_analysis/           # Audio sample analysis (archived)
 ├── normalize_and_score.py        # Stage 2: Normalization + WER
 ├── analysis/compare_all.py       # Cross-model charts and breakdowns
-├── job_{base,medium,large,parakeet,qwen3}.pbs   # Individual NSCC jobs
+├── job_{base,medium,large,parakeet,qwen3}.pbs   # Individual NSCC PBS jobs
+├── fix_{parakeet,qwen3}_env.pbs  # NSCC environment setup jobs
 ├── run_pipeline.pbs              # Full pipeline NSCC job
 └── results/
 ```
 
 ## Tech Stack
 
-- Python 3.10+
+- Python 3.10
 - [openai-whisper](https://github.com/openai/whisper)
-- [nemo_toolkit](https://github.com/NVIDIA/NeMo) — for Parakeet-TDT
-- [qwen-asr](https://github.com/QwenLM/Qwen3-ASR-Toolkit) — for Qwen3-ASR
-- [jiwer](https://github.com/jitsi/jiwer)
-- [num2words](https://github.com/savoirfairelinux/num2words)
+- [nemo_toolkit](https://github.com/NVIDIA/NeMo) — Parakeet-TDT
+- [qwen-asr](https://github.com/QwenLM/Qwen3-ASR-Toolkit) — Qwen3-ASR
+- [jiwer](https://github.com/jitsi/jiwer) — WER computation
+- [num2words](https://github.com/savoirfairelinux/num2words) — number normalization
 - HuggingFace Datasets, pandas, matplotlib, librosa, torch
