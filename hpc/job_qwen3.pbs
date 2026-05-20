@@ -1,0 +1,32 @@
+#!/bin/bash
+#PBS -N qwen3_asr
+#PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
+#PBS -l walltime=5:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/qwen3.log
+#PBS -e logs/qwen3.log
+#PBS -j oe
+
+WORKDIR=${WORKDIR:-$(pwd)}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+QWEN3_ENV=${QWEN3_ENV:-qwen3}
+HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
+
+module load "${CUDA_MODULE}" 2>/dev/null || true
+
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+conda activate "${QWEN3_ENV}"
+
+export HF_DATASETS_CACHE="${HF_CACHE}"
+export HF_HOME="${HF_CACHE}"
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
+
+cd "${WORKDIR}"
+
+echo "=== ENV CHECK ==="
+python -c "import torch; print('torch:', torch.__version__, '| cuda:', torch.version.cuda, '| gpu:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU-ONLY')"
+python -c "from qwen_asr import Qwen3ASRModel; print('qwen_asr: OK')"
+echo "=== END ENV CHECK ==="
+
+python task5_qwen3_asr/wer_qwen3.py

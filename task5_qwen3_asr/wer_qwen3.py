@@ -22,7 +22,8 @@ from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
 
-# Disable cuDNN to avoid CUDNN_STATUS_NOT_INITIALIZED on NSCC for specific samples.
+# Disable cuDNN to avoid CUDNN_STATUS_NOT_INITIALIZED on systems where the
+# cuDNN version does not match the CUDA runtime.
 torch.backends.cudnn.enabled = False
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -31,6 +32,7 @@ from utils.io_helpers import (
     load_dataset_test,
     results_dir,
     stage1_raw_dir,
+    build_sample_row,
     save_checkpoint,
     remove_checkpoint,
 )
@@ -77,8 +79,9 @@ def transcribe_sample_qwen3(model, sample: dict) -> str:
         os.unlink(tmp_path)
 
 
-def _make_sigterm_handler(model_name, rows_ref):
-    def handler(signum, frame):
+def _make_sigterm_handler(model_name: str, rows_ref: list[dict]):
+    """Return a SIGTERM handler that saves checkpoint and interrupted CSV before exit."""
+    def handler(signum: int, frame) -> None:
         print(f"\n[SIGTERM] Job killed. Saving {len(rows_ref)} rows...", flush=True)
         if rows_ref:
             save_checkpoint(rows_ref, model_name)
@@ -112,8 +115,8 @@ print("Model loaded.\n")
 
 ds = load_dataset_test()
 
-completed_ids: set = set()
-ckpt_map: dict = {}
+completed_ids: set[str] = set()
+ckpt_map: dict[str, dict] = {}
 
 checkpoint_path = os.path.join(results_dir(), f"wer_{MODEL_NAME}_partial.csv")
 if os.path.exists(checkpoint_path):
@@ -124,7 +127,7 @@ if os.path.exists(checkpoint_path):
         ckpt_map[sid] = r
     print(f"  Resuming from checkpoint: {len(completed_ids)} samples already done\n")
 
-all_rows: list = []
+all_rows: list[dict] = []
 signal.signal(signal.SIGTERM, _make_sigterm_handler(MODEL_NAME, all_rows))
 
 print(f"--- Processing test split ({len(ds)} samples) ---")
@@ -142,22 +145,7 @@ for sample in tqdm(ds, desc="test (transcribing)"):
     else:
         hyp_raw = transcribe_sample_qwen3(model, sample)
 
-    row = {
-        "split": "test",
-        "ID": sample_id,
-        "Speaker_ID": sample.get("Speaker_ID", ""),
-        "Gender": sample.get("Gender", ""),
-        "Speech_Class": sample.get("Speech_Class", ""),
-        "Native_Region": sample.get("Native_Region", ""),
-        "Speech_Duration_seconds": sample.get("Speech_Duration_seconds") or "",
-        "Discipline_Group": sample.get("Discipline_Group", ""),
-        "Topic": sample.get("Topic", ""),
-        "transcript_raw": transcript,
-        "normalised_transcript_raw": str(sample.get("Normalised_Transcript") or "").strip(),
-        "hypothesis_raw": hyp_raw,
-    }
-
-    all_rows.append(row)
+    all_rows.append(build_sample_row(sample, sample_id, transcript, hyp_raw))
 
     if len(all_rows) % CHECKPOINT_EVERY == 0:
         save_checkpoint(all_rows, MODEL_NAME)

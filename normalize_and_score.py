@@ -29,6 +29,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from utils.normalize import MODES, normalize_text, get_reference_source
 from utils.wer_compute import compute_sample_wer, compute_corpus_wer
+from utils.io_helpers import build_md_table
 
 MODELS = ("base", "medium", "large", "parakeet", "qwen3")
 STAGE1_DIR = os.path.join(os.path.dirname(__file__), "results", "stage1_raw_transcripts")
@@ -113,14 +114,6 @@ def save_top20(rows: list[dict], model: str, mode: str) -> None:
     df = pd.DataFrame(rows).sort_values("wer", ascending=False).head(20)
     df.to_csv(os.path.join(STAGE2_DIR, f"top_20_high_wer_{model}_{mode}.csv"), index=False)
 
-
-def build_md_table(df: pd.DataFrame) -> str:
-    cols = df.columns.tolist()
-    header = "| " + " | ".join(cols) + " |"
-    sep = "| " + " | ".join("---" for _ in cols) + " |"
-    rows = ["| " + " | ".join(str(row[c]) if pd.notna(row[c]) else "N/A" for c in cols) + " |"
-            for _, row in df.iterrows()]
-    return "\n".join([header, sep] + rows)
 
 
 # --------------- Main ---------------

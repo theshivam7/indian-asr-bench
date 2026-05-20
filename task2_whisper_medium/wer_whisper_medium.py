@@ -18,11 +18,19 @@ from tqdm import tqdm
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.transcribe import transcribe_sample
-from utils.io_helpers import load_dataset_test, results_dir, stage1_raw_dir, save_checkpoint, remove_checkpoint
+from utils.io_helpers import (
+    load_dataset_test,
+    results_dir,
+    stage1_raw_dir,
+    build_sample_row,
+    save_checkpoint,
+    remove_checkpoint,
+)
 
 warnings.filterwarnings("ignore")
 
 MODEL_NAME = "medium"
+CHECKPOINT_EVERY = 200
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Loading whisper-{MODEL_NAME} on device: {device} ...")
@@ -63,24 +71,9 @@ for sample in tqdm(ds, desc="test (transcribing)"):
     else:
         hyp_raw = transcribe_sample(model, sample, transcribe_kw)
 
-    row = {
-        "split": "test",
-        "ID": sample_id,
-        "Speaker_ID": sample.get("Speaker_ID", ""),
-        "Gender": sample.get("Gender", ""),
-        "Speech_Class": sample.get("Speech_Class", ""),
-        "Native_Region": sample.get("Native_Region", ""),
-        "Speech_Duration_seconds": sample.get("Speech_Duration_seconds") or "",
-        "Discipline_Group": sample.get("Discipline_Group", ""),
-        "Topic": sample.get("Topic", ""),
-        "transcript_raw": transcript,
-        "normalised_transcript_raw": str(sample.get("Normalised_Transcript") or "").strip(),
-        "hypothesis_raw": hyp_raw,
-    }
+    all_rows.append(build_sample_row(sample, str(sample_id), transcript, hyp_raw))
 
-    all_rows.append(row)
-
-    if len(all_rows) % 200 == 0:
+    if len(all_rows) % CHECKPOINT_EVERY == 0:
         save_checkpoint(all_rows, MODEL_NAME)
         print(f"  [checkpoint] {len(all_rows)} samples saved")
 

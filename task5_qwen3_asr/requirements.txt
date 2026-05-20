@@ -1,8 +1,8 @@
 qwen-asr
-torch
-datasets
-pandas
-tqdm
-librosa
-numpy
-num2words
+torch==2.5.1
+datasets==3.6.0
+pandas==2.2.3
+tqdm==4.67.1
+librosa==0.11.0
+numpy==1.26.4
+num2words==0.5.14
