@@ -7,6 +7,7 @@ Run normalize_and_score.py for WER evaluation.
 """
 
 import os
+import signal
 import sys
 import tempfile
 import warnings
@@ -33,6 +34,7 @@ from utils.io_helpers import (
 
 MODEL_NAME = "qwen3"
 MODEL_ID = "Qwen/Qwen3-ASR-1.7B"
+CHECKPOINT_EVERY = 50
 
 
 def transcribe_sample_qwen3(model, sample: dict) -> str:
@@ -66,10 +68,24 @@ def transcribe_sample_qwen3(model, sample: dict) -> str:
         return text.strip()
     except Exception as e:
         sample_id = sample.get("ID", "?")
-        print(f"  [WARN] Failed to transcribe {sample_id}: {e}")
+        print(f"  [WARN] Failed to transcribe {sample_id}: {e}", flush=True)
         return ""
     finally:
         os.unlink(tmp_path)
+
+
+def _make_sigterm_handler(model_name, rows_ref):
+    def handler(signum, frame):
+        print(f"\n[SIGTERM] Job killed. Saving {len(rows_ref)} rows...", flush=True)
+        if rows_ref:
+            save_checkpoint(rows_ref, model_name)
+            pd.DataFrame(rows_ref).to_csv(
+                os.path.join(stage1_raw_dir(), f"wer_{model_name}_interrupted.csv"),
+                index=False,
+            )
+            print("[SIGTERM] Checkpoint + interrupted CSV saved.", flush=True)
+        sys.exit(0)
+    return handler
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -93,10 +109,10 @@ print("Model loaded.\n")
 
 ds = load_dataset_test()
 
-checkpoint_path = os.path.join(results_dir(), f"wer_{MODEL_NAME}_partial.csv")
-completed_ids: set[str] = set()
-ckpt_map: dict[str, dict] = {}
+completed_ids: set = set()
+ckpt_map: dict = {}
 
+checkpoint_path = os.path.join(results_dir(), f"wer_{MODEL_NAME}_partial.csv")
 if os.path.exists(checkpoint_path):
     df_partial = pd.read_csv(checkpoint_path)
     for r in df_partial.to_dict("records"):
@@ -105,7 +121,8 @@ if os.path.exists(checkpoint_path):
         ckpt_map[sid] = r
     print(f"  Resuming from checkpoint: {len(completed_ids)} samples already done\n")
 
-all_rows: list[dict] = []
+all_rows: list = []
+signal.signal(signal.SIGTERM, _make_sigterm_handler(MODEL_NAME, all_rows))
 
 print(f"--- Processing test split ({len(ds)} samples) ---")
 
@@ -139,9 +156,9 @@ for sample in tqdm(ds, desc="test (transcribing)"):
 
     all_rows.append(row)
 
-    if len(all_rows) % 200 == 0:
+    if len(all_rows) % CHECKPOINT_EVERY == 0:
         save_checkpoint(all_rows, MODEL_NAME)
-        print(f"  [checkpoint] {len(all_rows)} samples saved")
+        print(f"  [checkpoint] {len(all_rows)} samples saved", flush=True)
 
 out_path = os.path.join(stage1_raw_dir(), f"wer_{MODEL_NAME}_raw.csv")
 pd.DataFrame(all_rows).to_csv(out_path, index=False)

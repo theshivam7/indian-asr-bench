@@ -108,6 +108,8 @@ def save_csv(rows: list[dict], model: str, mode: str) -> str:
 
 
 def save_top20(rows: list[dict], model: str, mode: str) -> None:
+    if not rows:
+        return
     df = pd.DataFrame(rows).sort_values("wer", ascending=False).head(20)
     df.to_csv(os.path.join(STAGE2_DIR, f"top_20_high_wer_{model}_{mode}.csv"), index=False)
 
@@ -144,7 +146,7 @@ for model in MODELS:
         rows, stats = process(df_raw, model, mode)
         save_csv(rows, model, mode)
         save_top20(rows, model, mode)
-        print(f"corpus_wer={stats['corpus_wer']*100:.2f}%  mean={stats['mean_wer']*100:.2f}%  median={stats['median_wer']*100:.2f}%")
+        print(f"corpus_wer={stats['corpus_wer']*100:.2f}%  mean={stats.get('mean_wer', 0.0)*100:.2f}%  median={stats.get('median_wer', 0.0)*100:.2f}%")
 
         all_summary.append({
             "model": model,
@@ -152,11 +154,11 @@ for model in MODELS:
             "reference_source": get_reference_source(mode),
             "normalized": "yes" if "clean" in mode else "no",
             "corpus_wer_pct": round(stats["corpus_wer"] * 100, 2),
-            "mean_wer_pct": round(stats["mean_wer"] * 100, 2),
-            "median_wer_pct": round(stats["median_wer"] * 100, 2),
-            "std_wer_pct": round(stats["std_wer"] * 100, 2),
-            "p90_wer_pct": round(stats["p90_wer"] * 100, 2),
-            "p95_wer_pct": round(stats["p95_wer"] * 100, 2),
+            "mean_wer_pct": round(stats.get("mean_wer", 0.0) * 100, 2),
+            "median_wer_pct": round(stats.get("median_wer", 0.0) * 100, 2),
+            "std_wer_pct": round(stats.get("std_wer", 0.0) * 100, 2),
+            "p90_wer_pct": round(stats.get("p90_wer", 0.0) * 100, 2),
+            "p95_wer_pct": round(stats.get("p95_wer", 0.0) * 100, 2),
             "num_samples": stats["num_samples"],
             "total_ref_words": stats["total_ref_words"],
             "total_errors": stats["total_errors"],

@@ -359,7 +359,7 @@ for mode_name in MODES:
             df_sorted.insert(1, "rank", range(1, len(df_sorted) + 1))
         top20_mode_all.append(df_sorted)
 
-        print(f"\n  --- Whisper {model_name} | mode: {mode_name} ---")
+        print(f"\n  --- {MODEL_DISPLAY.get(model_name, model_name)} | mode: {mode_name} ---")
         for i, (_, row) in enumerate(df_sorted.iterrows(), 1):
             print(f"  #{i:2d}  ID: {row['ID']}  WER: {row['wer']:.4f} ({row['wer']*100:.1f}%)  "
                   f"Region: {row.get('Native_Region', 'N/A')}  Class: {row.get('Speech_Class', 'N/A')}")
