@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -N TIE_WER_pipeline
-#PBS -q normal
+#PBS -q g2
 #PBS -l select=1:ngpus=1:ncpus=8:mem=64gb
 #PBS -l walltime=10:00:00
 #PBS -P personal-REDACTED_NSCC_USER
@@ -18,13 +18,15 @@ echo "================================================================"
 WORKDIR=/scratch/users/ntu/REDACTED_NSCC_USER/indian-asr-bench
 cd $WORKDIR
 
-module load cuda/12.2.1
+# cu118 works for all envs (whisper, parakeet, qwen3); driver 12.4 is backward compatible
+module load cuda/11.8.0
 export LD_LIBRARY_PATH=/app/libs/cudnn/12-8.9.4.25/lib:$LD_LIBRARY_PATH
 
 source /app/apps/miniforge3/25.3.1/etc/profile.d/conda.sh
 conda activate /scratch/users/ntu/REDACTED_NSCC_USER/envs/whisper
 
 export HF_DATASETS_CACHE=/scratch/users/ntu/REDACTED_NSCC_USER/hf_cache
+export HF_HOME=/scratch/users/ntu/REDACTED_NSCC_USER/hf_cache
 export WHISPER_CACHE=/scratch/users/ntu/REDACTED_NSCC_USER/whisper_cache
 mkdir -p $HF_DATASETS_CACHE $WHISPER_CACHE logs \
     results/stage1_raw_transcripts \
@@ -61,7 +63,6 @@ echo "================================================================"
 echo "STAGE 1: Parakeet-TDT-0.6B-v2 Transcription"
 echo "================================================================"
 conda activate /scratch/users/ntu/REDACTED_NSCC_USER/envs/parakeet_env
-export HF_HOME=$HF_DATASETS_CACHE
 python task4_parakeet/wer_parakeet.py
 
 # --------------- Stage 1: Qwen3-ASR (separate env) ---------------
@@ -70,7 +71,6 @@ echo "================================================================"
 echo "STAGE 1: Qwen3-ASR-1.7B Transcription"
 echo "================================================================"
 conda activate /scratch/users/ntu/REDACTED_NSCC_USER/envs/qwen3_env
-export HF_HOME=$HF_DATASETS_CACHE
 python task5_qwen3_asr/wer_qwen3.py
 
 # --------------- Stage 2 + Analysis (whisper env has all deps) ---------------

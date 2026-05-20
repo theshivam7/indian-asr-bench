@@ -1,13 +1,14 @@
 #!/bin/bash
 #PBS -N parakeet_asr
 #PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
-#PBS -l walltime=6:00:00
+#PBS -l walltime=02:00:00
+#PBS -q g2
 #PBS -P personal-REDACTED_NSCC_USER
 #PBS -o logs/parakeet.log
 #PBS -e logs/parakeet.err
 #PBS -j oe
 
-module load cuda/12.2.1
+module load cuda/11.8.0
 export LD_LIBRARY_PATH=/app/libs/cudnn/12-8.9.4.25/lib:$LD_LIBRARY_PATH
 
 source /app/apps/miniforge3/25.3.1/etc/profile.d/conda.sh
@@ -16,6 +17,10 @@ conda activate /scratch/users/ntu/REDACTED_NSCC_USER/envs/parakeet_env
 export HF_DATASETS_CACHE=/scratch/users/ntu/REDACTED_NSCC_USER/hf_cache
 export HF_HOME=/scratch/users/ntu/REDACTED_NSCC_USER/hf_cache
 mkdir -p $HF_DATASETS_CACHE logs
+
+echo "=== ENV CHECK ==="
+python -c "import torch; print('torch:', torch.__version__, '| cuda build:', torch.version.cuda, '| gpu:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU-ONLY')"
+echo "=== END ENV CHECK ==="
 
 cd /scratch/users/ntu/REDACTED_NSCC_USER/indian-asr-bench
 
