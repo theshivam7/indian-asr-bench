@@ -11,3 +11,11 @@ large,transcript_raw,Transcript,no,25.62,27.28,21.85,24.38,46.55,63.16,986,51755
 large,transcript_clean,Transcript,yes,15.88,16.83,11.36,19.27,35.21,48.94,985,52178,8287
 large,hf_raw,Normalised_Transcript,no,30.95,32.34,27.94,23.58,51.35,67.35,986,52331,16199
 large,hf_clean,Normalised_Transcript,yes,16.91,17.79,12.5,19.37,36.36,51.06,985,52313,8845
+parakeet,transcript_raw,Transcript,no,28.09,29.98,25.68,22.64,48.15,60.0,986,51755,14539
+parakeet,transcript_clean,Transcript,yes,15.54,16.7,11.63,17.5,34.38,44.12,985,52178,8109
+parakeet,hf_raw,Normalised_Transcript,no,33.85,35.54,32.03,21.15,53.19,63.64,986,52331,17715
+parakeet,hf_clean,Normalised_Transcript,yes,16.34,17.4,12.7,17.05,35.29,44.68,985,52313,8549
+qwen3,transcript_raw,Transcript,no,33.16,34.67,31.11,21.47,52.63,63.38,986,51755,17164
+qwen3,transcript_clean,Transcript,yes,15.93,16.64,12.28,15.88,33.85,44.9,985,52178,8311
+qwen3,hf_raw,Normalised_Transcript,no,36.36,37.77,34.73,19.88,55.17,64.52,986,52331,19025
+qwen3,hf_clean,Normalised_Transcript,yes,16.87,17.51,13.04,15.83,34.78,45.16,985,52313,8823

@@ -11,3 +11,11 @@ large,EAST,16.94,352
 large,NORTH,15.08,202
 large,SOUTH,15.58,362
 large,WEST,14.98,69
+parakeet,EAST,15.42,352
+parakeet,NORTH,15.98,202
+parakeet,SOUTH,15.57,362
+parakeet,WEST,14.76,69
+qwen3,EAST,15.42,352
+qwen3,NORTH,15.55,202
+qwen3,SOUTH,16.57,362
+qwen3,WEST,16.01,69
