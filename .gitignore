@@ -1,26 +1,30 @@
 # OS
-.DS_Store
+**/.DS_Store
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
+**/*.ipynb_checkpoints/
 
 # Environments
 *.egg-info/
+.venv/
+venv/
+env/
+.env
 
 # Cache
 hf_cache/
 hf_hub_cache/
 pip_cache/
+whisper_cache/
 
 # Partial/temp files
 *_partial.csv
 *.wav
 *.tmp
 
-# Logs — keep locally, not on GitHub
+# Logs
 logs/
-
-# Local analysis/planning files
-PAPER_REPORT.md

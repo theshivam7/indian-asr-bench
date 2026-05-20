@@ -1,4 +1,26 @@
 #!/bin/bash
-# Setup for Task 4: Parakeet-TDT-0.6B-v2
+set -e
 # Run from repo root: bash task4_parakeet/setup.sh
-pip install --cache-dir pip_cache -r task4_parakeet/requirements.txt
+# Recommended: use environments/parakeet.yaml for a fully reproducible env:
+#   conda env create -f environments/parakeet.yaml
+#   conda activate parakeet
+
+ENV_NAME="${1:-parakeet}"
+
+echo "=== Creating conda environment: $ENV_NAME ==="
+conda create -n "$ENV_NAME" python=3.10 -y
+eval "$(conda shell.bash hook)"
+conda activate "$ENV_NAME"
+
+echo "=== Installing PyTorch cu118 via conda (matches environments/parakeet.yaml) ==="
+conda install -y "pytorch==2.5.1" "torchaudio==2.5.1" "pytorch-cuda=11.8" \
+    -c pytorch -c nvidia
+
+echo "=== Installing remaining dependencies ==="
+pip install -r task4_parakeet/requirements.txt
+
+echo ""
+echo "Environment ready. Activate with:"
+echo "  conda activate $ENV_NAME"
+echo "Run benchmark from repo root:"
+echo "  python task4_parakeet/wer_parakeet.py"

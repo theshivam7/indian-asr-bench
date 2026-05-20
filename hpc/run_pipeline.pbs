@@ -1,0 +1,70 @@
+#!/bin/bash
+#PBS -N indian_asr_bench_pipeline
+#PBS -l select=1:ngpus=1:ncpus=8:mem=64gb
+#PBS -l walltime=10:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/pipeline.log
+#PBS -e logs/pipeline.log
+#PBS -j oe
+
+# ── Configure for your HPC environment ──────────────────────────────────────
+WORKDIR=${WORKDIR:-$(pwd)}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+WHISPER_ENV=${WHISPER_ENV:-whisper}
+PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
+QWEN3_ENV=${QWEN3_ENV:-qwen3}
+HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
+# ────────────────────────────────────────────────────────────────────────────
+
+echo "================================================================"
+echo "Indian-ASR-Bench Pipeline — All 5 Models + WER Analysis"
+echo "Started: $(date)"
+echo "Node: $(hostname)"
+echo "================================================================"
+
+module load "${CUDA_MODULE}" 2>/dev/null || true
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+
+export HF_DATASETS_CACHE="${HF_CACHE}"
+export HF_HOME="${HF_CACHE}"
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" \
+    "${WORKDIR}/results/stage1_raw_transcripts" \
+    "${WORKDIR}/results/stage2_processed" \
+    "${WORKDIR}/results/analysis"
+
+cd "${WORKDIR}"
+
+# Stage 1 — Whisper models
+conda activate "${WHISPER_ENV}"
+echo -e "\n=== STAGE 1: Whisper Base ==="
+python task1_whisper_base/wer_whisper_base.py
+
+echo -e "\n=== STAGE 1: Whisper Medium ==="
+python task2_whisper_medium/wer_whisper_medium.py
+
+echo -e "\n=== STAGE 1: Whisper Large ==="
+python task3_whisper_large/wer_whisper_large.py
+
+# Stage 1 — Parakeet (separate env)
+conda activate "${PARAKEET_ENV}"
+echo -e "\n=== STAGE 1: Parakeet-TDT-0.6B-v2 ==="
+python task4_parakeet/wer_parakeet.py
+
+# Stage 1 — Qwen3-ASR (separate env)
+conda activate "${QWEN3_ENV}"
+echo -e "\n=== STAGE 1: Qwen3-ASR-1.7B ==="
+python task5_qwen3_asr/wer_qwen3.py
+
+# Stage 2 + Analysis (whisper env has pandas, jiwer, matplotlib)
+conda activate "${WHISPER_ENV}"
+echo -e "\n=== STAGE 2: Normalization + WER ==="
+python normalize_and_score.py
+
+echo -e "\n=== STAGE 3: Analysis + Charts ==="
+python analysis/compare_all.py
+
+echo -e "\n================================================================"
+echo "Pipeline complete: $(date)"
+echo "Results: ${WORKDIR}/results/"
+echo "================================================================"

@@ -28,8 +28,9 @@ logging.getLogger("lightning").setLevel(logging.WARNING)
 logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
 warnings.filterwarnings("ignore")
 
-# cuDNN LSTM flatten_parameters fails on NSCC (CUDNN_STATUS_NOT_INITIALIZED).
-# Disabling cuDNN routes LSTM ops through standard CUDA — still GPU-accelerated on A100.
+# Disable cuDNN to avoid CUDNN_STATUS_NOT_INITIALIZED when loading LSTM weights
+# on systems where the cuDNN version does not match the CUDA runtime.
+# LSTM ops fall back to standard CUDA — still GPU-accelerated.
 torch.backends.cudnn.enabled = False
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -38,6 +39,7 @@ from utils.io_helpers import (
     load_dataset_test,
     results_dir,
     stage1_raw_dir,
+    build_sample_row,
     save_checkpoint,
     remove_checkpoint,
 )
@@ -49,6 +51,7 @@ CHECKPOINT_EVERY = 50
 
 
 def _audio_to_wav(sample: dict, path: str) -> None:
+    """Write a dataset audio sample to a 16 kHz mono WAV file."""
     audio_data = sample["audio"]
     audio_array = np.array(audio_data["array"], dtype=np.float32).flatten()
     sr = audio_data["sampling_rate"]
@@ -62,9 +65,9 @@ def _audio_to_wav(sample: dict, path: str) -> None:
         wf.writeframes(audio_int16.tobytes())
 
 
-def transcribe_batch(model, samples: list) -> list:
+def transcribe_batch(model, samples: list[dict]) -> list[str]:
     """Write temp WAVs, call NeMo batch transcribe, clean up. Returns list of hyp strings."""
-    tmp_paths = []
+    tmp_paths: list[str] = []
     try:
         for sample in samples:
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
@@ -83,8 +86,9 @@ def transcribe_batch(model, samples: list) -> list:
                 pass
 
 
-def _make_sigterm_handler(model_name, rows_ref):
-    def handler(signum, frame):
+def _make_sigterm_handler(model_name: str, rows_ref: list[dict]):
+    """Return a SIGTERM handler that saves checkpoint and interrupted CSV before exit."""
+    def handler(signum: int, frame) -> None:
         print(f"\n[SIGTERM] Job killed. Saving {len(rows_ref)} rows...", flush=True)
         if rows_ref:
             save_checkpoint(rows_ref, model_name)
@@ -107,8 +111,8 @@ print("Model loaded.\n")
 
 ds = load_dataset_test()
 
-completed_ids: set = set()
-ckpt_map: dict = {}
+completed_ids: set[str] = set()
+ckpt_map: dict[str, dict] = {}
 
 checkpoint_path = os.path.join(results_dir(), f"wer_{MODEL_NAME}_partial.csv")
 if os.path.exists(checkpoint_path):
@@ -119,38 +123,22 @@ if os.path.exists(checkpoint_path):
         ckpt_map[sid] = r
     print(f"  Resuming from checkpoint: {len(completed_ids)} samples already done\n")
 
-all_rows: list = []
+all_rows: list[dict] = []
 signal.signal(signal.SIGTERM, _make_sigterm_handler(MODEL_NAME, all_rows))
 
 print(f"--- Processing test split ({len(ds)} samples) ---")
 
-pending_samples: list = []
-pending_meta: list = []  # list of (sample_id, transcript, original_sample)
-
-
-def _build_row(sample: dict, sample_id: str, transcript: str, hyp_raw: str) -> dict:
-    return {
-        "split": "test",
-        "ID": sample_id,
-        "Speaker_ID": sample.get("Speaker_ID", ""),
-        "Gender": sample.get("Gender", ""),
-        "Speech_Class": sample.get("Speech_Class", ""),
-        "Native_Region": sample.get("Native_Region", ""),
-        "Speech_Duration_seconds": sample.get("Speech_Duration_seconds") or "",
-        "Discipline_Group": sample.get("Discipline_Group", ""),
-        "Topic": sample.get("Topic", ""),
-        "transcript_raw": transcript,
-        "normalised_transcript_raw": str(sample.get("Normalised_Transcript") or "").strip(),
-        "hypothesis_raw": hyp_raw,
-    }
+pending_samples: list[dict] = []
+pending_meta: list[tuple[str, str]] = []  # (sample_id, transcript)
 
 
 def flush_batch() -> None:
+    """Transcribe the current pending batch and append rows to all_rows."""
     if not pending_samples:
         return
     hyps = transcribe_batch(model, pending_samples)
     for sample, (sample_id, transcript), hyp_raw in zip(pending_samples, pending_meta, hyps):
-        all_rows.append(_build_row(sample, sample_id, transcript, hyp_raw))
+        all_rows.append(build_sample_row(sample, sample_id, transcript, hyp_raw))
         if len(all_rows) % CHECKPOINT_EVERY == 0:
             save_checkpoint(all_rows, MODEL_NAME)
             print(f"  [checkpoint] {len(all_rows)} samples saved", flush=True)
@@ -169,7 +157,7 @@ for sample in tqdm(ds, desc="test (transcribing)"):
         flush_batch()
         ckpt_row = ckpt_map.get(sample_id)
         hyp_raw = str(ckpt_row.get("hypothesis_raw") or "") if ckpt_row else ""
-        all_rows.append(_build_row(sample, sample_id, transcript, hyp_raw))
+        all_rows.append(build_sample_row(sample, sample_id, transcript, hyp_raw))
     else:
         pending_samples.append(sample)
         pending_meta.append((sample_id, transcript))

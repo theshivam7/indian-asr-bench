@@ -7,7 +7,7 @@ from datasets import load_dataset
 
 HF_CACHE = os.environ.get(
     "HF_DATASETS_CACHE",
-    os.path.join(os.path.expanduser("~"), "hf_cache"),
+    os.path.join(os.path.expanduser("~"), ".cache", "huggingface"),
 )
 os.makedirs(HF_CACHE, exist_ok=True)
 os.environ.setdefault("HF_DATASETS_CACHE", HF_CACHE)
@@ -34,20 +34,39 @@ def stage1_raw_dir() -> str:
     return d
 
 
-def save_mode_csv(
-    rows: list[dict],
-    model_name: str,
-    mode: str,
-) -> str:
-    """Save per-sample results CSV for a given model and mode.
+def build_sample_row(
+    sample: dict,
+    sample_id: str,
+    transcript: str,
+    hyp_raw: str,
+) -> dict:
+    """Build the standard output row dict shared by all transcription scripts."""
+    return {
+        "split": "test",
+        "ID": sample_id,
+        "Speaker_ID": sample.get("Speaker_ID", ""),
+        "Gender": sample.get("Gender", ""),
+        "Speech_Class": sample.get("Speech_Class", ""),
+        "Native_Region": sample.get("Native_Region", ""),
+        "Speech_Duration_seconds": sample.get("Speech_Duration_seconds") or "",
+        "Discipline_Group": sample.get("Discipline_Group", ""),
+        "Topic": sample.get("Topic", ""),
+        "transcript_raw": transcript,
+        "normalised_transcript_raw": str(sample.get("Normalised_Transcript") or "").strip(),
+        "hypothesis_raw": hyp_raw,
+    }
 
-    Returns the output file path.
-    """
-    out_dir = os.path.join(results_dir(), mode)
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, f"wer_{model_name}_{mode}.csv")
-    pd.DataFrame(rows).to_csv(out_path, index=False)
-    return out_path
+
+def build_md_table(df: pd.DataFrame) -> str:
+    """Render a pandas DataFrame as a GitHub-Flavored Markdown table."""
+    cols = df.columns.tolist()
+    header = "| " + " | ".join(cols) + " |"
+    sep = "| " + " | ".join("---" for _ in cols) + " |"
+    rows = [
+        "| " + " | ".join(str(row[c]) if pd.notna(row[c]) else "N/A" for c in cols) + " |"
+        for _, row in df.iterrows()
+    ]
+    return "\n".join([header, sep] + rows)
 
 
 def save_checkpoint(rows: list[dict], model_name: str) -> str:
@@ -64,21 +83,3 @@ def remove_checkpoint(model_name: str) -> None:
     out_path = os.path.join(results_dir(), f"wer_{model_name}_partial.csv")
     if os.path.exists(out_path):
         os.unlink(out_path)
-
-
-SUMMARY_COLUMNS = [
-    "model", "mode", "reference_source",
-    "corpus_wer", "mean_wer", "median_wer", "std_wer", "p90_wer", "p95_wer",
-    "num_samples", "num_empty_hyps", "total_ref_words", "total_errors",
-]
-
-
-def save_summary_csv(summary_rows: list[dict], model_name: str) -> str:
-    """Save per-model WER summary stats (one row per mode).
-
-    Each row dict should contain keys from SUMMARY_COLUMNS.
-    """
-    out_path = os.path.join(results_dir(), f"wer_summary_{model_name}.csv")
-    df = pd.DataFrame(summary_rows, columns=SUMMARY_COLUMNS)
-    df.to_csv(out_path, index=False)
-    return out_path

@@ -4,7 +4,7 @@ Cross-model, cross-mode WER comparison and visualization.
 Reads result CSVs from results/stage2_processed/{mode}/
 Produces summary tables, breakdowns, and charts.
 
-Run after normalize_and_score.py has completed for all 3 models.
+Run after normalize_and_score.py has completed for all models.
 """
 
 import os
@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.wer_compute import compute_corpus_wer
 from utils.normalize import MODES
+from utils.io_helpers import build_md_table
 
 MODELS = ("base", "medium", "large", "parakeet", "qwen3")
 PRIMARY_MODE = "transcript_clean"  # gold standard mode for breakdowns and charts
@@ -36,16 +37,6 @@ STAGE2_DIR = os.path.join(RESULTS_DIR, "stage2_processed")
 ANALYSIS_DIR = os.path.join(RESULTS_DIR, "analysis")
 os.makedirs(ANALYSIS_DIR, exist_ok=True)
 
-
-def _build_md_table(df: pd.DataFrame) -> str:
-    cols = df.columns.tolist()
-    header = "| " + " | ".join(cols) + " |"
-    sep = "| " + " | ".join("---" for _ in cols) + " |"
-    rows = []
-    for _, row in df.iterrows():
-        vals = [str(row[c]) if pd.notna(row[c]) else "N/A" for c in cols]
-        rows.append("| " + " | ".join(vals) + " |")
-    return "\n".join([header, sep] + rows)
 
 
 def load_result_csv(model: str, mode: str) -> pd.DataFrame | None:
@@ -287,7 +278,7 @@ report_lines = [
     "",
     "## Corpus-level WER (%) by Model and Evaluation Mode",
     "",
-    _build_md_table(df_summary),
+    build_md_table(df_summary),
     "",
     "## Evaluation Modes",
     "",
