@@ -317,6 +317,61 @@ All Stage 1 transcriptions were run on **NVIDIA A100-SXM4-40GB** (NSCC ASPIRE2A)
 
 ---
 
+## Fine-tuning Whisper Medium
+
+Whisper Medium — the best pretrained model here — is fine-tuned on the dataset's **`train`** split and
+re-evaluated on the **same `test` split** through the identical normalization + WER pipeline, so it slots
+in as a **6th model** across all 4 evaluation modes and every breakdown.
+
+### Method (best-practice full fine-tuning)
+
+| Aspect | Choice |
+|--------|--------|
+| Strategy | **Full fine-tuning** (all 769M params) via HuggingFace `transformers` `Seq2SeqTrainer` |
+| Splits | Train on `train` (3036), select checkpoint on `validation` (986), evaluate on `test` (986) — **no leakage** |
+| Targets | `Transcript` (gold ground truth) |
+| Precision | **bf16** (A100-native) + gradient checkpointing (`use_cache=False`) |
+| Regularization | SpecAugment, `weight_decay=0.01`, LR `1e-5`, warmup 10% |
+| Stopping | Epoch cap 10, **early stopping** (patience 2) on validation WER → guards both under- and over-fitting |
+| Selection | `load_best_model_at_end` by validation WER (computed with the **same** normalization as the final metric) |
+| Long audio | Clips >30s filtered for **training**; **inference** uses chunked long-form (`chunk_length_s=30`) so long clips are windowed like `openai-whisper` |
+
+### Fair baseline (engine-controlled)
+
+Whisper fine-tuning requires `transformers`, whose checkpoints can't be loaded by `openai-whisper`. To avoid
+attributing a decoding/engine difference to fine-tuning, the **pretrained** Whisper Medium is *also*
+transcribed through the same `transformers` chunked pipeline (`medium_hf`). The headline comparison is
+**`medium_ft` vs `medium_hf`** (same engine); the original `openai-whisper` number is kept as a secondary
+reference.
+
+### Run order (NSCC)
+
+```bash
+git pull
+bash task6_whisper_medium_ft/setup.sh                       # conda env 'whisper_medium_ft'
+python task6_whisper_medium_ft/check_speaker_overlap.py      # pre-flight leakage disclosure (CPU)
+
+export WORKDIR=$(pwd) PBS_PROJECT=<id> WHISPER_FT_ENV=whisper_medium_ft HF_CACHE=/scratch/hf_cache
+
+JOBID=$(qsub hpc/job_finetune.pbs)                          # Stage 0: train → models/whisper_medium_ft/
+qsub -W depend=afterok:$JOBID hpc/job_medium_ft.pbs         # Stage 1+2+3: transcribe + WER + analysis
+```
+
+Outputs: `results/stage1_raw_transcripts/wer_medium_{hf,ft}_raw.csv`, all 4 modes under
+`results/stage2_processed/`, updated tables/charts (now with **Medium-HF** and **Medium-FT** columns), and
+the dedicated **`results/analysis/finetune_comparison.{md,png}`**.
+
+After the run, push `results/` to GitHub and upload the model to Hugging Face:
+
+```bash
+huggingface-cli upload <your-hf-username>/whisper-medium-tie-shorts models/whisper_medium_ft .
+```
+
+> Tunable via env vars: `FT_EPOCHS`, `FT_BATCH`, `FT_GRAD_ACCUM`, `FT_LR`, `FT_PATIENCE`.
+> Smoke-test the code path with `MAX_TRAIN_SAMPLES=8 FT_EPOCHS=1 python task6_whisper_medium_ft/finetune.py`.
+
+---
+
 ## Common Error Patterns
 
 1. **Mathematical notation** — equations like `ds/dt = πr²H` have no standard spoken form; ASR models often misrecognize variable names
