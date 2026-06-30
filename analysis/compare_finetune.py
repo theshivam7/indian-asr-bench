@@ -58,10 +58,15 @@ def corpus_wer(df: pd.DataFrame) -> float:
 
 
 def fmt_delta(base: float, ft: float) -> tuple[str, str]:
-    """Absolute (pp) and relative (%) improvement of ft over base."""
+    """Absolute (pp) and relative (%) change of ft vs base.
+
+    WER going down is an improvement, shown with a leading '−'; a regression
+    (WER up) is shown with a leading '+'. So '−2.50 pp' = 2.5pp better,
+    '+1.20 pp' = 1.2pp worse.
+    """
     abs_pp = base - ft
     rel = (abs_pp / base * 100) if base else 0.0
-    sign = "" if abs_pp < 0 else "−"  # WER down = improvement
+    sign = "−" if abs_pp > 0 else "+"  # WER down (abs_pp>0) = improvement
     return f"{sign}{abs(abs_pp):.2f} pp", f"{sign}{abs(rel):.1f}%"
 
 

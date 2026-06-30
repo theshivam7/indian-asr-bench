@@ -112,22 +112,27 @@ train_ds = load_dataset("raianand/TIE_shorts", split="train", cache_dir=HF_CACHE
 eval_ds = load_dataset("raianand/TIE_shorts", split="validation", cache_dir=HF_CACHE)
 
 
-def has_usable_text(sample) -> bool:
-    return bool((sample.get("Transcript") or "").strip())
+def has_usable_text(transcript) -> bool:
+    return bool((transcript or "").strip())
 
 
-def within_duration(sample) -> bool:
-    dur = sample.get("Speech_Duration_seconds")
+def within_duration(dur) -> bool:
     try:
         return dur is None or float(dur) <= MAX_AUDIO_SECONDS
     except (TypeError, ValueError):
         return True
 
 
+# Filter on the metadata columns only (input_columns) so the Audio column is NOT decoded
+# here — decoding happens once, later, in .map(). Without input_columns, .filter() would
+# decode every clip just to read text/duration and then discard it.
 n_before = len(train_ds)
-train_ds = train_ds.filter(lambda s: has_usable_text(s) and within_duration(s))
+train_ds = train_ds.filter(
+    lambda transcript, dur: has_usable_text(transcript) and within_duration(dur),
+    input_columns=["Transcript", "Speech_Duration_seconds"],
+)
 print(f"  train: {n_before} -> {len(train_ds)} after dropping empty / >{MAX_AUDIO_SECONDS}s clips")
-eval_ds = eval_ds.filter(has_usable_text)
+eval_ds = eval_ds.filter(has_usable_text, input_columns=["Transcript"])
 print(f"  validation: {len(eval_ds)} samples")
 
 if MAX_TRAIN_SAMPLES:
