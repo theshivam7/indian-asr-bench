@@ -36,23 +36,6 @@ _IS_NORMALIZED = {
     "hf_clean":         True,
 }
 
-_CONTRACTIONS = {
-    "don't": "do not", "doesn't": "does not", "didn't": "did not",
-    "isn't": "is not", "aren't": "are not", "wasn't": "was not",
-    "weren't": "were not", "won't": "will not", "wouldn't": "would not",
-    "can't": "cannot", "couldn't": "could not", "shouldn't": "should not",
-    "it's": "it is", "that's": "that is", "what's": "what is",
-    "there's": "there is", "here's": "here is", "i'm": "i am",
-    "i've": "i have", "i'll": "i will", "i'd": "i would",
-    "he's": "he is", "she's": "she is", "they're": "they are",
-    "we're": "we are", "you're": "you are", "we've": "we have",
-    "they've": "they have", "you've": "you have",
-    "could've": "could have", "would've": "would have",
-    "should've": "should have", "let's": "let us",
-    "that'll": "that will", "who's": "who is",
-    "how's": "how is", "where's": "where is",
-}
-
 _ORDINAL_PATTERN = re.compile(r'\b(\d+)(st|nd|rd|th)\b', re.IGNORECASE)
 _CARDINAL_PATTERN = re.compile(r'\b\d+(\.\d+)?\b')
 
@@ -61,13 +44,6 @@ def _safe_str(val) -> str:
     if val is None or (isinstance(val, float) and val != val):
         return ""
     return str(val)
-
-
-def _expand_contractions(text: str) -> str:
-    for contraction, expansion in _CONTRACTIONS.items():
-        pattern = re.compile(re.escape(contraction), re.IGNORECASE)
-        text = pattern.sub(expansion, text)
-    return text
 
 
 def _fix_possessives(text: str) -> str:
@@ -119,16 +95,17 @@ def _normalize_whitespace(text: str) -> str:
 
 
 def normalize_text(text: str) -> str:
-    """Apply forward normalization: lowercase, expand contractions,
-    fix possessives, convert numbers to words, remove punctuation.
+    """Apply forward normalization: lowercase, fix possessives, convert numbers
+    to words, remove punctuation.
 
-    Used for all *_clean modes. Applied symmetrically to both ref and hyp.
+    Contractions are intentionally left unexpanded (e.g. "don't" stays "don't"
+    rather than becoming "do not"). Used for all *_clean modes. Applied
+    symmetrically to both ref and hyp.
     """
     if not text or not text.strip():
         return ""
 
     text = unicodedata.normalize("NFC", text)
-    text = _expand_contractions(text)
     text = _fix_possessives(text)
     text = _ordinal_to_words(text)
     text = _cardinal_to_words(text)

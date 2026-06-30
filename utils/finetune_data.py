@@ -14,6 +14,20 @@ from typing import Any
 import torch
 
 
+def strip_wrapping_quotes(text) -> str:
+    """Strip a single leading/trailing pair of double quotes and surrounding whitespace.
+
+    The TIE_shorts `Transcript` field often wraps the sentence in double quotes, e.g.
+        "The second component is less than here ..."
+    -> The second component is less than here ...
+    Only an outer matched pair is removed; quotes inside the sentence are kept as-is.
+    """
+    s = (text or "").strip()
+    if len(s) >= 2 and s[0] == '"' and s[-1] == '"':
+        s = s[1:-1].strip()
+    return s
+
+
 def make_prepare_dataset(processor):
     """Return a `.map()` function that turns one raw sample into model inputs.
 
@@ -29,7 +43,10 @@ def make_prepare_dataset(processor):
             audio["array"], sampling_rate=audio["sampling_rate"]
         ).input_features[0]
 
-        transcript = (batch.get("Transcript") or "").strip()
+        # Targets come ONLY from the gold `Transcript` column (never Normalised_Transcript).
+        # Many rows wrap the whole sentence in double quotes; strip just the leading/trailing
+        # pair so the model doesn't learn to emit them. Interior quotes are left untouched.
+        transcript = strip_wrapping_quotes(batch.get("Transcript"))
         batch["labels"] = tokenizer(transcript).input_ids
         return batch
 
