@@ -240,6 +240,29 @@ if df_base is not None and df_ft is not None:
     plt.close(fig)
     print(f"\n  Saved chart: {chart_path}")
 
+    # --------------- 4b. WER distribution overlay (pretrained vs fine-tuned) ---------------
+    # Same idea as the professor's slide: % of utterances vs per-sample WER in 5% bins.
+    # A leftward shift (more mass near 0%) = fine-tuning helps. WER>100% clipped to last bin.
+    dist_bins = [i * 5 for i in range(21)]  # 0, 5, ..., 100
+    fig, ax = plt.subplots(figsize=(9, 5))
+    for d, lab, col in [(df_base, "Pretrained (HF)", "#888888"), (df_ft, "Fine-tuned", "#2a9d4a")]:
+        w = (d["wer"].dropna().clip(upper=1.0) * 100).values
+        if not len(w):
+            continue
+        ax.hist(w, bins=dist_bins, weights=[100.0 / len(w)] * len(w),
+                alpha=0.6, label=lab, color=col, edgecolor="white")
+        ax.axvline(float(pd.Series(w).median()), color=col, linestyle="--", linewidth=1.2)
+    ax.set_xlabel("WER (%) — bin width 5%")
+    ax.set_ylabel("% of utterances")
+    ax.set_title(f"WER distribution: pretrained vs fine-tuned ({PRIMARY_MODE})")
+    ax.legend()
+    ax.grid(axis="y", alpha=0.3)
+    fig.tight_layout()
+    dist_path = os.path.join(ANALYSIS_DIR, "finetune_wer_distribution.png")
+    fig.savefig(dist_path)
+    plt.close(fig)
+    print(f"  Saved chart: {dist_path}")
+
 # --------------- 5. Caveats ---------------
 lines += [
     "## Caveats",

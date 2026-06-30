@@ -7,6 +7,7 @@ Produces summary tables, breakdowns, and charts.
 Run after normalize_and_score.py has completed for all models.
 """
 
+import math
 import os
 import sys
 
@@ -126,6 +127,34 @@ plt.rcParams.update({"figure.dpi": 150, "font.size": 10})
 # regardless of how many models are present (5 pretrained + medium_hf + medium_ft).
 bar_width = 0.8 / len(MODELS)
 
+# Chart 0 (headline): models ranked by WER on the gold mode — clearest single view.
+gold_rows = []
+for model in MODELS:
+    row = df_summary[df_summary["model"] == model]
+    if row.empty or pd.isna(row[PRIMARY_MODE].values[0]):
+        continue
+    gold_rows.append((MODEL_DISPLAY.get(model, model), float(row[PRIMARY_MODE].values[0])))
+
+if gold_rows:
+    gold_rows.sort(key=lambda t: t[1], reverse=True)  # worst on top, best at bottom
+    names = [n for n, _ in gold_rows]
+    vals = [v for _, v in gold_rows]
+    fig, ax = plt.subplots(figsize=(9, 0.6 * len(names) + 1.5))
+    bars = ax.barh(names, vals, color="#4878a8")
+    bars[-1].set_color("#2ca02c")  # best (lowest WER) highlighted green
+    for bar, v in zip(bars, vals):
+        ax.text(bar.get_width() + max(vals) * 0.01, bar.get_y() + bar.get_height() / 2,
+                f"{v:.2f}%", va="center", fontsize=9)
+    ax.set_xlabel("Corpus WER (%)")
+    ax.set_title(f"Model ranking by WER  ({PRIMARY_MODE}, lower is better)")
+    ax.margins(x=0.12)
+    ax.grid(axis="x", alpha=0.3)
+    fig.tight_layout()
+    rank_path = os.path.join(ANALYSIS_DIR, "wer_by_model.png")
+    fig.savefig(rank_path)
+    plt.close(fig)
+    print(f"  Saved: {rank_path}")
+
 # Chart 1: WER by model and mode (grouped bar)
 fig, ax = plt.subplots(figsize=(10, 6))
 x_labels = list(MODES)
@@ -157,24 +186,39 @@ fig.savefig(chart_path)
 plt.close(fig)
 print(f"  Saved: {chart_path}")
 
-# Chart 2: WER distribution histogram (standard_num mode)
-fig, ax = plt.subplots(figsize=(10, 6))
-for model_name in MODELS:
-    key = (model_name, PRIMARY_MODE)
-    if key not in all_data:
-        continue
-    wer_vals = all_data[key]["wer"].dropna().values
-    ax.hist(wer_vals, bins=50, alpha=0.5, label=MODEL_DISPLAY.get(model_name, model_name), range=(0, 2.0))
-ax.set_xlabel("WER")
-ax.set_ylabel("Number of Samples")
-ax.set_title(f"WER Distribution (mode: {PRIMARY_MODE})")
-ax.legend()
-ax.grid(axis="y", alpha=0.3)
-fig.tight_layout()
-hist_path = os.path.join(ANALYSIS_DIR, "wer_distribution.png")
-fig.savefig(hist_path)
-plt.close(fig)
-print(f"  Saved: {hist_path}")
+# Chart 2: per-utterance WER distribution, one panel per model (small multiples).
+# Y = % of that model's utterances, X = per-sample WER in 5% bins (0-100%).
+# WER > 100% (insertion-heavy) is clipped into the final bin for display.
+models_with_data = [m for m in MODELS if (m, PRIMARY_MODE) in all_data]
+if models_with_data:
+    ncols = 2
+    nrows = math.ceil(len(models_with_data) / ncols)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(11, 2.4 * nrows + 1),
+                             sharex=True, sharey=True)
+    axes = axes.flatten()
+    dist_bins = [i * 5 for i in range(21)]  # 0, 5, ..., 100
+    for ax_i, model_name in enumerate(models_with_data):
+        ax = axes[ax_i]
+        wer_pct = (all_data[(model_name, PRIMARY_MODE)]["wer"].dropna().clip(upper=1.0) * 100).values
+        if len(wer_pct):
+            weights = [100.0 / len(wer_pct)] * len(wer_pct)
+            ax.hist(wer_pct, bins=dist_bins, weights=weights, color="#4878a8", edgecolor="white")
+            median = float(pd.Series(wer_pct).median())
+            ax.axvline(median, color="#d62728", linestyle="--", linewidth=1)
+            ax.text(median + 2, ax.get_ylim()[1] * 0.85, f"median {median:.0f}%",
+                    fontsize=8, color="#d62728")
+        ax.set_title(MODEL_DISPLAY.get(model_name, model_name), fontsize=10)
+        ax.grid(axis="y", alpha=0.3)
+    for j in range(len(models_with_data), len(axes)):
+        axes[j].axis("off")
+    fig.supxlabel("WER (%) — bin width 5%")
+    fig.supylabel("% of utterances")
+    fig.suptitle(f"Per-utterance WER distribution ({PRIMARY_MODE})", fontsize=12)
+    fig.tight_layout()
+    dist_path = os.path.join(ANALYSIS_DIR, "wer_distribution.png")
+    fig.savefig(dist_path)
+    plt.close(fig)
+    print(f"  Saved: {dist_path}")
 
 # Chart 3: WER by duration bucket (standard_num mode)
 duration_data = {}
@@ -231,8 +275,8 @@ if duration_data:
         pd.DataFrame(dur_rows).to_csv(dur_csv, index=False)
         print(f"  Saved: {dur_csv}")
 
-# Chart 4: WER by region and speech class (standard_num mode)
-for col, chart_name in [("Native_Region", "wer_by_region.png"), ("Speech_Class", "wer_by_speech_class.png")]:
+# Chart 4: WER by region (standard_num mode)
+for col, chart_name in [("Native_Region", "wer_by_region.png")]:
     region_data = {}
     for model in MODELS:
         key = (model, PRIMARY_MODE)
