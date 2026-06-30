@@ -1,14 +1,15 @@
 """Research-grade forward normalization for ASR WER evaluation.
 
-4 evaluation modes — 2 reference sources × 2 normalization states:
+4 evaluation modes — 2 reference sources × 2 cleanup levels:
 
-    transcript_raw   — Transcript as-is vs Whisper as-is
-    transcript_clean — Transcript normalized vs Whisper normalized
-    hf_raw           — Normalised_Transcript as-is vs Whisper as-is
-    hf_clean         — Normalised_Transcript normalized vs Whisper normalized
+    transcript_raw   — Transcript,            minimal cleanup vs Whisper minimal cleanup
+    transcript_clean — Transcript,            full normalization vs Whisper full normalization
+    hf_raw           — Normalised_Transcript, minimal cleanup vs Whisper minimal cleanup
+    hf_clean         — Normalised_Transcript, full normalization vs Whisper full normalization
 
-All modes are symmetric: same normalization applied to both ref and hyp.
-Normalization direction: forward (words/lowercase) — standard for WER.
+Minimal cleanup (minimal_clean_text): strip wrapping quotes + lowercase + remove punctuation.
+Full normalization (normalize_text): minimal + possessive fix + number-to-words.
+All modes are symmetric: the same cleanup is applied to both ref and hyp.
 """
 
 import re
@@ -44,6 +45,19 @@ def _safe_str(val) -> str:
     if val is None or (isinstance(val, float) and val != val):
         return ""
     return str(val)
+
+
+def strip_wrapping_quotes(text) -> str:
+    """Strip a single leading/trailing pair of double quotes and surrounding whitespace.
+
+    The TIE_shorts `Transcript` field often wraps the whole sentence in double quotes,
+    e.g. "The second component ..." -> The second component ...
+    Only an outer matched pair is removed; quotes inside the sentence are untouched here.
+    """
+    s = (text or "").strip()
+    if len(s) >= 2 and s[0] == '"' and s[-1] == '"':
+        s = s[1:-1].strip()
+    return s
 
 
 def _fix_possessives(text: str) -> str:
@@ -109,6 +123,26 @@ def normalize_text(text: str) -> str:
     text = _fix_possessives(text)
     text = _ordinal_to_words(text)
     text = _cardinal_to_words(text)
+    text = text.lower()
+    text = _remove_punctuation(text)
+    text = _normalize_whitespace(text)
+    return text
+
+
+def minimal_clean_text(text: str) -> str:
+    """Light cleanup for the *_raw modes: strip wrapping quotes, lowercase,
+    remove punctuation, normalize whitespace.
+
+    Deliberately does NOT do number-to-words, possessive splitting, or any other
+    full-normalization step. Applied symmetrically to both ref and hyp.
+        "The second component is less than here ..."
+    -> the second component is less than here ...
+    """
+    if not text or not text.strip():
+        return ""
+
+    text = unicodedata.normalize("NFC", text)
+    text = strip_wrapping_quotes(text)
     text = text.lower()
     text = _remove_punctuation(text)
     text = _normalize_whitespace(text)

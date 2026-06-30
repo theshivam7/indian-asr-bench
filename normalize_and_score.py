@@ -27,7 +27,7 @@ import pandas as pd
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from utils.normalize import MODES, normalize_text, get_reference_source
+from utils.normalize import MODES, normalize_text, minimal_clean_text, get_reference_source
 from utils.wer_compute import compute_sample_wer, compute_corpus_wer
 from utils.io_helpers import build_md_table
 
@@ -64,9 +64,15 @@ def process(df: pd.DataFrame, model: str, mode: str) -> tuple[list[dict], dict]:
         if not ref_raw:
             continue
 
-        # Apply normalization for *_clean modes
-        ref = normalize_text(ref_raw) if is_clean else ref_raw
-        hyp = normalize_text(hyp_raw) if is_clean else hyp_raw
+        # *_clean modes: full forward normalization.
+        # *_raw modes: minimal cleanup only — strip wrapping quotes, lowercase,
+        #              remove punctuation (no num2words / possessive / contraction handling).
+        if is_clean:
+            ref = normalize_text(ref_raw)
+            hyp = normalize_text(hyp_raw)
+        else:
+            ref = minimal_clean_text(ref_raw)
+            hyp = minimal_clean_text(hyp_raw)
 
         if not ref:
             continue
@@ -177,12 +183,12 @@ with open(summary_md, "w") as f:
     f.write("## Corpus WER (%) Matrix\n\n")
     f.write(build_md_table(pivot.reset_index()) + "\n\n")
     f.write("## Mode Descriptions\n\n")
-    f.write("| Mode | Reference | Before norm | After norm | Symmetric? | Purpose |\n")
-    f.write("|------|-----------|-------------|------------|------------|---------|\n")
-    f.write("| `transcript_raw` | Transcript | as-is | as-is | Yes | Upper bound baseline |\n")
-    f.write("| `transcript_clean` | Transcript | Transcript | normalized | Yes | Gold standard (paper primary) |\n")
-    f.write("| `hf_raw` | Normalised_Transcript | as-is | as-is | Yes | HuggingFace normalization as-is |\n")
-    f.write("| `hf_clean` | Normalised_Transcript | Normalised_Transcript | normalized | Yes | HF + our normalizer |\n\n")
+    f.write("| Mode | Reference | Cleanup | Symmetric? | Purpose |\n")
+    f.write("|------|-----------|---------|------------|---------|\n")
+    f.write("| `transcript_raw` | Transcript | minimal (lowercase, strip punctuation + wrapping quotes) | Yes | Light-cleanup baseline |\n")
+    f.write("| `transcript_clean` | Transcript | full normalization | Yes | Gold standard (paper primary) |\n")
+    f.write("| `hf_raw` | Normalised_Transcript | minimal (lowercase, strip punctuation + wrapping quotes) | Yes | HF source, light cleanup |\n")
+    f.write("| `hf_clean` | Normalised_Transcript | full normalization | Yes | HF + our normalizer |\n\n")
     f.write("## CSV Columns\n\n")
     f.write("Each result CSV contains:\n\n")
     f.write("| Column | Description |\n")
@@ -192,7 +198,8 @@ with open(summary_md, "w") as f:
     f.write("| `hypothesis_raw` | Raw Whisper output **before** normalization |\n")
     f.write("| `hypothesis` | Whisper output **after** normalization (used for WER) |\n")
     f.write("| `wer` | Per-sample WER |\n\n")
-    f.write("In `*_raw` modes: `reference_raw == reference` and `hypothesis_raw == hypothesis`.\n")
+    f.write("In `*_raw` modes, `reference`/`hypothesis` carry minimal cleanup "
+            "(lowercase + punctuation/wrapping-quote removal); `*_clean` modes apply full normalization.\n")
 
 print(f"\nSummary saved: {summary_csv}")
 print(f"Markdown saved: {summary_md}")
