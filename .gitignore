@@ -28,3 +28,6 @@ whisper_cache/
 
 # Logs
 logs/
+
+# Fine-tuned model checkpoints (too large for git; uploaded to Hugging Face instead)
+models/

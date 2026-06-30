@@ -1,0 +1,53 @@
+#!/bin/bash
+#PBS -N wer_medium_ft
+#PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
+#PBS -l walltime=3:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/medium_ft.log
+#PBS -e logs/medium_ft.log
+#PBS -j oe
+
+# Stage 1+2+3 — transcribe the test split with the same-engine pretrained baseline
+# (medium_hf) and the fine-tuned model (medium_ft), then score all 4 modes and build
+# the analysis incl. the dedicated pretrained-vs-finetuned comparison.
+#
+# Submit after training, auto-chained:
+#   JOBID=$(qsub hpc/job_finetune.pbs)
+#   qsub -W depend=afterok:$JOBID hpc/job_medium_ft.pbs
+
+WORKDIR=${WORKDIR:-$(pwd)}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+WHISPER_FT_ENV=${WHISPER_FT_ENV:-whisper_medium_ft}
+HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
+
+module load "${CUDA_MODULE}" 2>/dev/null || true
+
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+conda activate "${WHISPER_FT_ENV}"
+
+export HF_DATASETS_CACHE="${HF_CACHE}"
+export HF_HOME="${HF_CACHE}"
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" \
+    "${WORKDIR}/results/stage1_raw_transcripts" \
+    "${WORKDIR}/results/stage2_processed" \
+    "${WORKDIR}/results/analysis"
+
+cd "${WORKDIR}"
+
+echo "=== STAGE 1: pretrained Whisper Medium via HF (apples-to-apples baseline) ==="
+MODEL_NAME=medium_hf python task6_whisper_medium_ft/wer_whisper_medium_ft.py
+
+echo "=== STAGE 1: fine-tuned Whisper Medium ==="
+MODEL_NAME=medium_ft python task6_whisper_medium_ft/wer_whisper_medium_ft.py
+
+echo "=== STAGE 2: Normalization + WER (all models, all 4 modes) ==="
+python normalize_and_score.py
+
+echo "=== STAGE 3: Analysis + charts ==="
+python analysis/compare_all.py
+
+echo "=== STAGE 3b: Pretrained vs Fine-tuned comparison ==="
+python analysis/compare_finetune.py
+
+echo "Done. See results/analysis/finetune_comparison.md"

@@ -21,7 +21,7 @@ from utils.wer_compute import compute_corpus_wer
 from utils.normalize import MODES
 from utils.io_helpers import build_md_table
 
-MODELS = ("base", "medium", "large", "parakeet", "qwen3")
+MODELS = ("base", "medium", "large", "parakeet", "qwen3", "medium_hf", "medium_ft")
 PRIMARY_MODE = "transcript_clean"  # gold standard mode for breakdowns and charts
 
 MODEL_DISPLAY = {
@@ -30,6 +30,8 @@ MODEL_DISPLAY = {
     "large": "Whisper Large",
     "parakeet": "Parakeet-TDT-0.6B",
     "qwen3": "Qwen3-ASR-1.7B",
+    "medium_hf": "Whisper Medium (HF)",
+    "medium_ft": "Whisper Medium (FT)",
 }
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
@@ -120,7 +122,9 @@ print("GENERATING CHARTS")
 print("=" * 70)
 
 plt.rcParams.update({"figure.dpi": 150, "font.size": 10})
-bar_width = 0.15
+# Keep each model-group within ~0.8 of a unit so adjacent groups don't overlap,
+# regardless of how many models are present (5 pretrained + medium_hf + medium_ft).
+bar_width = 0.8 / len(MODELS)
 
 # Chart 1: WER by model and mode (grouped bar)
 fig, ax = plt.subplots(figsize=(10, 6))

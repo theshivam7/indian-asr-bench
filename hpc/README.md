@@ -37,6 +37,23 @@ Runs all 5 models sequentially in one PBS job (~10h):
 qsub hpc/run_pipeline.pbs
 ```
 
+## Fine-tuning Whisper Medium
+
+Two jobs, chained so evaluation auto-starts when training succeeds:
+
+```bash
+export WHISPER_FT_ENV=whisper_medium_ft      # conda env from task6_whisper_medium_ft/setup.sh
+
+JOBID=$(qsub hpc/job_finetune.pbs)           # Stage 0: train (~8h on A100) → models/whisper_medium_ft/
+qsub -W depend=afterok:$JOBID hpc/job_medium_ft.pbs   # Stage 1+2+3: transcribe test, WER, analysis (~2-3h)
+```
+
+- `job_finetune.pbs` — full fine-tune of Whisper Medium on the `train` split. Resumable (auto-detects the
+  latest checkpoint). Overridable via `FT_EPOCHS`, `FT_BATCH`, `FT_GRAD_ACCUM`, `FT_LR`, `FT_PATIENCE`.
+- `job_medium_ft.pbs` — transcribes the `test` split with both the same-engine pretrained baseline
+  (`MODEL_NAME=medium_hf`) and the fine-tuned model (`MODEL_NAME=medium_ft`), then runs
+  `normalize_and_score.py`, `analysis/compare_all.py`, and `analysis/compare_finetune.py`.
+
 ## Adapting to SLURM
 
 Replace PBS directives (`#PBS`) with SLURM equivalents (`#SBATCH`):

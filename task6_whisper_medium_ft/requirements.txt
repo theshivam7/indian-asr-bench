@@ -1,0 +1,16 @@
+# Whisper Medium fine-tuning (HF transformers) — Stage 0 training + Stage 1 HF inference.
+# GPU required for training/inference. Install into the 'whisper_medium_ft' conda env:
+#   bash task6_whisper_medium_ft/setup.sh
+
+torch==2.5.1
+transformers==4.46.3
+accelerate==1.1.1
+datasets==3.6.0
+jiwer==3.1.0
+librosa==0.11.0
+soundfile==0.12.1
+pandas==2.2.3
+tqdm==4.67.1
+numpy==1.26.4
+num2words==0.5.14
+tensorboard==2.18.0
