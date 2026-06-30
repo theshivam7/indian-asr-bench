@@ -13,19 +13,7 @@ from typing import Any
 
 import torch
 
-
-def strip_wrapping_quotes(text) -> str:
-    """Strip a single leading/trailing pair of double quotes and surrounding whitespace.
-
-    The TIE_shorts `Transcript` field often wraps the sentence in double quotes, e.g.
-        "The second component is less than here ..."
-    -> The second component is less than here ...
-    Only an outer matched pair is removed; quotes inside the sentence are kept as-is.
-    """
-    s = (text or "").strip()
-    if len(s) >= 2 and s[0] == '"' and s[-1] == '"':
-        s = s[1:-1].strip()
-    return s
+from utils.normalize import strip_wrapping_quotes
 
 
 def make_prepare_dataset(processor):
