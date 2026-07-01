@@ -31,12 +31,13 @@
 
 ASR benchmarks are dominated by American and British English. Indian English — spoken by over a billion people, with distinct phonology, regional accents, and code-switching — is under-evaluated, and academic lectures (rapid speech, technical vocabulary, heavy male-speaker skew) are an especially hard and practically important slice.
 
-This project does two things:
+This project does three things:
 
 1. **Benchmarks five pretrained ASR systems** on the [TIE_shorts](https://huggingface.co/datasets/raianand/TIE_shorts) `test` split (986 NPTEL-style lecture clips), across four normalization modes and every demographic/acoustic breakdown.
 2. **Fine-tunes Whisper Medium** on the in-domain `train` split and evaluates it under an engine-controlled comparison — reporting a **null result** transparently (see [Fine-tuning](#fine-tuning-whisper-medium)).
+3. **Analyzes the failure modes** in depth, finding that ~70% of the worst-WER clips are dataset clip/reference-misalignment artifacts rather than ASR errors (see [Error Analysis](#error-analysis)).
 
-A recurring theme: **how you normalize text moves WER as much as which model you pick.**
+Two recurring themes: **how you normalize text moves WER as much as which model you pick**, and **the median clip is 3–4 pp better than the corpus WER** because a misaligned tail inflates the average.
 
 ---
 
