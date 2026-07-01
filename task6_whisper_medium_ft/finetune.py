@@ -31,7 +31,7 @@ import sys
 import warnings
 
 import torch
-from datasets import Audio, load_dataset
+from datasets import load_dataset
 from transformers import (
     EarlyStoppingCallback,
     Seq2SeqTrainer,
@@ -44,7 +44,7 @@ import jiwer
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from utils.io_helpers import HF_CACHE
+from utils.io_helpers import HF_CACHE, raw_audio_column
 from utils.normalize import normalize_text
 from utils.finetune_data import (
     DataCollatorSpeechSeq2SeqWithPadding,
@@ -139,15 +139,26 @@ if MAX_TRAIN_SAMPLES:
     train_ds = train_ds.select(range(min(int(MAX_TRAIN_SAMPLES), len(train_ds))))
     eval_ds = eval_ds.select(range(min(8, len(eval_ds))))
 
-# Resample audio to 16 kHz on access (no manual librosa).
-train_ds = train_ds.cast_column("audio", Audio(sampling_rate=16000))
-eval_ds = eval_ds.cast_column("audio", Audio(sampling_rate=16000))
+# filter()/select() may apply a lazy indices overlay instead of physically reordering the
+# underlying arrow table. flatten_indices() materializes a fresh, physically-ordered table
+# so the raw arrow "audio" access below (by row index) is guaranteed to line up correctly.
+train_ds = train_ds.flatten_indices()
+eval_ds = eval_ds.flatten_indices()
 
-prepare = make_prepare_dataset(processor)
+# Read audio straight from arrow storage (bypassing datasets.Audio's decode entirely, which
+# datasets>=4.0 mandates torchcodec for — a fragile torch/ffmpeg ABI dependency on HPC).
 keep_remove = train_ds.column_names
 print("Extracting features (this caches to disk) ...")
-train_ds = train_ds.map(prepare, remove_columns=keep_remove, num_proc=1, desc="train features")
-eval_ds = eval_ds.map(prepare, remove_columns=eval_ds.column_names, num_proc=1, desc="eval features")
+prepare_train = make_prepare_dataset(processor, raw_audio_column(train_ds))
+prepare_eval = make_prepare_dataset(processor, raw_audio_column(eval_ds))
+train_ds = train_ds.map(
+    prepare_train, input_columns=["Transcript"], with_indices=True,
+    remove_columns=keep_remove, num_proc=1, desc="train features",
+)
+eval_ds = eval_ds.map(
+    prepare_eval, input_columns=["Transcript"], with_indices=True,
+    remove_columns=eval_ds.column_names, num_proc=1, desc="eval features",
+)
 
 data_collator = DataCollatorSpeechSeq2SeqWithPadding(
     processor=processor,

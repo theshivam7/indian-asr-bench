@@ -1,13 +1,20 @@
 """Dataset loading and CSV I/O utilities."""
 
+import io
 import os
 
+import numpy as np
 import pandas as pd
 from datasets import load_dataset
 
-HF_CACHE = os.environ.get(
-    "HF_DATASETS_CACHE",
-    os.path.join(os.path.expanduser("~"), ".cache", "huggingface"),
+# Resolve the HF cache from any of the common env vars so manual runs and PBS jobs
+# agree. Defaulting to $HOME/.cache fills the (small) HOME quota on HPC clusters, so
+# honour HF_DATASETS_CACHE / HF_CACHE / HF_HOME first — point any of them at scratch.
+HF_CACHE = (
+    os.environ.get("HF_DATASETS_CACHE")
+    or os.environ.get("HF_CACHE")
+    or (os.path.join(os.environ["HF_HOME"], "datasets") if os.environ.get("HF_HOME") else None)
+    or os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
 )
 os.makedirs(HF_CACHE, exist_ok=True)
 os.environ.setdefault("HF_DATASETS_CACHE", HF_CACHE)
@@ -20,6 +27,53 @@ def load_dataset_test():
     ds = load_dataset("raianand/TIE_shorts", split="test", cache_dir=HF_CACHE)
     print(f"  Loaded {len(ds)} samples\n")
     return ds
+
+
+def raw_audio_column(ds):
+    """Return the "audio" column's underlying pyarrow ChunkedArray for a dataset.
+
+    Indexing this (``raw_audio_column(ds)[i].as_py()``) returns a plain Python dict read
+    straight from arrow storage, with NO involvement of datasets' Audio feature/decode
+    machinery — so it works regardless of the exact nested array shape the dataset happens
+    to store, and never touches torchcodec. Pair with input_columns=[...] (excluding
+    "audio") on .map()/.filter() and row index access so audio is never auto-decoded during
+    normal iteration either.
+    """
+    return ds.data.column("audio")
+
+
+def decode_audio_value(audio_value: dict, target_sr: int | None = None) -> tuple[np.ndarray, int]:
+    """Return (mono float32 samples, sample_rate) from a raw (undecoded) audio struct.
+
+    raianand/TIE_shorts stores audio pre-decoded as {"array": [...], "sampling_rate": N,
+    "path": ...}, so we read that array directly — bypassing datasets>=4.0's Audio feature,
+    which mandates torchcodec (a fragile torch/ffmpeg ABI triple) for any decode/encode/cast.
+    The {bytes}/{path} branch is a soundfile fallback for datasets stored as encoded files.
+    `.reshape(-1)` flattens whatever nesting the stored array actually has (e.g. a (1, N)
+    single-channel wrapper), so this doesn't depend on knowing the exact shape in advance.
+    Pass target_sr to resample (e.g. 16000 for Whisper); omit it to keep the native rate.
+    """
+    array = audio_value.get("array")
+    if array is not None:
+        samples = np.asarray(array, dtype=np.float32).reshape(-1)
+        sr = int(audio_value.get("sampling_rate") or target_sr or 16000)
+    else:
+        # Fallback for encoded-file datasets: decode bytes/path with soundfile (libsndfile,
+        # no PyTorch coupling). Imported lazily so lightweight importers of io_helpers don't
+        # pull in the audio stack.
+        import soundfile as sf
+
+        source = io.BytesIO(audio_value["bytes"]) if audio_value.get("bytes") else audio_value["path"]
+        samples, sr = sf.read(source, dtype="float32")
+        samples = np.asarray(samples, dtype=np.float32)
+        if samples.ndim > 1:
+            samples = samples.mean(axis=1)
+    if target_sr is not None and sr != target_sr:
+        import librosa  # lazy: only needed when the stored rate differs from target
+
+        samples = librosa.resample(samples, orig_sr=sr, target_sr=target_sr)
+        sr = target_sr
+    return samples, sr
 
 
 def results_dir() -> str:

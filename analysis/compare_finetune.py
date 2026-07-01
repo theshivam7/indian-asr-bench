@@ -77,7 +77,7 @@ print("=" * 70)
 lines = [
     "# Whisper Medium — Pretrained vs Fine-tuned",
     "",
-    "Fine-tuned on the `raianand/TIE_shorts` **train** split (3036 clips, clips >30s filtered),",
+    "Fine-tuned on the `raianand/TIE_shorts` **train** split (7884 clips, clips >30s filtered),",
     "best checkpoint selected on the **validation** split, evaluated on the **test** split (986 clips) —",
     "the same test set used for every pretrained model in this benchmark.",
     "",

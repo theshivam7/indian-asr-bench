@@ -328,7 +328,7 @@ in as a **6th model** across all 4 evaluation modes and every breakdown.
 | Aspect | Choice |
 |--------|--------|
 | Strategy | **Full fine-tuning** (all 769M params) via HuggingFace `transformers` `Seq2SeqTrainer` |
-| Splits | Train on `train` (3036), select checkpoint on `validation` (986), evaluate on `test` (986) — **no leakage** |
+| Splits | Train on `train` (7884), select checkpoint on `validation` (986), evaluate on `test` (986) — **no leakage** |
 | Targets | `Transcript` (gold ground truth) |
 | Precision | **bf16** (A100-native) + gradient checkpointing (`use_cache=False`) |
 | Regularization | SpecAugment, `weight_decay=0.01`, LR `1e-5`, warmup 10% |

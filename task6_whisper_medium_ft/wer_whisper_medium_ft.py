@@ -37,6 +37,7 @@ from utils.io_helpers import (
     build_sample_row,
     save_checkpoint,
     remove_checkpoint,
+    raw_audio_column,
 )
 
 warnings.filterwarnings("ignore")
@@ -61,6 +62,12 @@ print(f"=== Stage 1 transcription: {MODEL_NAME}  (weights: {model_path}) ===\n")
 pipe = build_asr_pipeline(model_path)
 
 ds = load_dataset_test()
+# Read audio straight from arrow storage by row index, bypassing datasets.Audio's decode
+# entirely (datasets>=4.0 mandates torchcodec for that — a fragile torch/ffmpeg ABI
+# dependency on HPC). ds_meta drops "audio" so plain iteration below never formats/decodes
+# it; raw_audio is indexed separately per row via decode_audio_value in transcribe_sample_hf.
+raw_audio = raw_audio_column(ds)
+ds_meta = ds.remove_columns(["audio"])
 
 checkpoint_path = os.path.join(results_dir(), f"wer_{MODEL_NAME}_partial.csv")
 completed_ids: set[str] = set()
@@ -76,9 +83,9 @@ if os.path.exists(checkpoint_path):
 
 all_rows: list[dict] = []
 
-print(f"--- Processing test split ({len(ds)} samples) ---")
+print(f"--- Processing test split ({len(ds_meta)} samples) ---")
 
-for sample in tqdm(ds, desc=f"test ({MODEL_NAME})"):
+for idx, sample in enumerate(tqdm(ds_meta, desc=f"test ({MODEL_NAME})")):
     transcript = (sample.get("Transcript") or "").strip()
     if not transcript:
         continue
@@ -88,7 +95,7 @@ for sample in tqdm(ds, desc=f"test ({MODEL_NAME})"):
     if str(sample_id) in completed_ids:
         hyp_raw = str(ckpt_map.get(str(sample_id), {}).get("hypothesis_raw") or "")
     else:
-        hyp_raw = transcribe_sample_hf(pipe, sample)
+        hyp_raw = transcribe_sample_hf(pipe, sample, raw_audio[idx].as_py())
 
     all_rows.append(build_sample_row(sample, str(sample_id), transcript, hyp_raw))
 
