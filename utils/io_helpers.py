@@ -5,7 +5,11 @@ import os
 
 import numpy as np
 import pandas as pd
-from datasets import load_dataset
+
+# `datasets` is only needed for Stage 1 transcription (loading the audio). It is imported
+# lazily inside load_dataset_test() so the CPU-only Stage 2/3 pipeline (normalize_and_score.py,
+# analysis/) — which only uses the CSV/markdown helpers below — does not require the heavy
+# (GPU-side) `datasets`/`torch` stack just to recompute WER or draw charts.
 
 # Resolve the HF cache from any of the common env vars so manual runs and PBS jobs
 # agree. Defaulting to $HOME/.cache fills the (small) HOME quota on HPC clusters, so
@@ -22,6 +26,8 @@ os.environ.setdefault("HF_DATASETS_CACHE", HF_CACHE)
 
 def load_dataset_test():
     """Load raianand/TIE_shorts test split."""
+    from datasets import load_dataset
+
     print("Loading dataset raianand/TIE_shorts (test split) ...")
     print(f"  Cache directory: {HF_CACHE}")
     ds = load_dataset("raianand/TIE_shorts", split="test", cache_dir=HF_CACHE)

@@ -1,28 +1,8 @@
-from .io_helpers import (
-    load_dataset_test,
-    results_dir,
-    stage1_raw_dir,
-    build_sample_row,
-    build_md_table,
-    save_checkpoint,
-    remove_checkpoint,
-)
-from .normalize import normalize_text, MODES, get_reference_source
-from .wer_compute import compute_sample_wer, compute_corpus_wer
-from .transcribe import transcribe_sample
+"""Shared utilities.
 
-__all__ = [
-    "load_dataset_test",
-    "results_dir",
-    "stage1_raw_dir",
-    "build_sample_row",
-    "build_md_table",
-    "save_checkpoint",
-    "remove_checkpoint",
-    "normalize_text",
-    "MODES",
-    "get_reference_source",
-    "compute_sample_wer",
-    "compute_corpus_wer",
-    "transcribe_sample",
-]
+Scripts import the submodules they need directly (e.g. `from utils.normalize import ...`,
+`from utils.transcribe import transcribe_sample`), so this package intentionally does NOT
+eagerly re-export everything. Doing so would force the CPU-only Stage 2/3 pipeline
+(normalize_and_score.py, analysis/) to import the audio/transcription stack (librosa,
+torch, datasets) just to recompute WER or draw charts. Import submodules directly instead.
+"""
