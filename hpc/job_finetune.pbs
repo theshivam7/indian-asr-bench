@@ -6,6 +6,12 @@
 #PBS -o logs/finetune.log
 #PBS -e logs/finetune.log
 #PBS -j oe
+#PBS -V
+# -V forwards the submitting shell's environment (HF_CACHE, WHISPER_FT_ENV, WORKDIR, ...)
+# to the compute node. Without it, HF_CACHE falls back to $HOME and the dataset download
+# hits the HOME disk quota. Export HF_CACHE to a scratch path before qsub, and pass the
+# project on the command line since #PBS directives are not shell-expanded:
+#   qsub -P <project_id> hpc/job_finetune.pbs
 
 # Stage 0 — fine-tune Whisper Medium on the TIE_shorts train split.
 WORKDIR=${WORKDIR:-$(pwd)}
@@ -19,8 +25,14 @@ module load "${CUDA_MODULE}" 2>/dev/null || true
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
 conda activate "${WHISPER_FT_ENV}"
 
-export HF_DATASETS_CACHE="${HF_CACHE}"
-export HF_HOME="${HF_CACHE}"
+# Conda's activation hooks (which normally put conda-forge ffmpeg's libavutil/etc on the
+# loader path) don't always fire in a non-interactive PBS batch shell. Without this,
+# torchcodec's "cannot open shared object file" for libavutil.so.5x is a path problem,
+# not a missing/incompatible ffmpeg — it's installed, just not found at runtime.
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+
+export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$HF_CACHE}"
+export HF_HOME="${HF_HOME:-$HF_CACHE}"
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" "${WORKDIR}/models"
 
 cd "${WORKDIR}"

@@ -9,10 +9,12 @@ conda create -n "$ENV_NAME" python=3.10 -y
 eval "$(conda shell.bash hook)"
 conda activate "$ENV_NAME"
 
-echo "=== Installing ffmpeg ==="
-conda install -c conda-forge ffmpeg -y
-
 echo "=== Installing Python dependencies ==="
+# No conda-forge ffmpeg/torchcodec here on purpose: audio is decoded via soundfile
+# (utils.io_helpers.decode_audio_value), which handles this dataset's WAV/FLAC clips
+# natively. Letting conda touch this env after pip has already installed a CUDA torch
+# build risks conda silently resolving in a conflicting CPU-only `pytorch` package that
+# shadows it in site-packages (torch.cuda.is_available() would go False with no error).
 pip install -r task6_whisper_medium_ft/requirements.txt
 
 echo ""

@@ -13,30 +13,35 @@ from typing import Any
 
 import torch
 
+from utils.io_helpers import decode_audio_value
 from utils.normalize import strip_wrapping_quotes
 
 
-def make_prepare_dataset(processor):
-    """Return a `.map()` function that turns one raw sample into model inputs.
+def make_prepare_dataset(processor, raw_audio_column):
+    """Return a `.map(..., input_columns=["Transcript"], with_indices=True)` function.
 
-    Expects the audio column already cast to 16 kHz (datasets.Audio(sampling_rate=16000)),
-    so no manual resampling is needed here.
+    raw_audio_column is the dataset's raw arrow "audio" ChunkedArray (utils.io_helpers.
+    raw_audio_column). We pull each row's audio by index directly from arrow storage —
+    bypassing datasets' Audio feature/decode entirely (datasets>=4.0 mandates torchcodec
+    for that, a fragile torch/ffmpeg ABI dependency) — then resample to 16 kHz.
+    input_columns=["Transcript"] keeps .map() from formatting the "audio" column at all
+    while building each row, same trick already used for the .filter() calls above.
     """
     feature_extractor = processor.feature_extractor
     tokenizer = processor.tokenizer
 
-    def prepare(batch: dict) -> dict:
-        audio = batch["audio"]
-        batch["input_features"] = feature_extractor(
-            audio["array"], sampling_rate=audio["sampling_rate"]
+    def prepare(transcript: str, idx: int) -> dict:
+        audio_value = raw_audio_column[idx].as_py()
+        audio_array, sr = decode_audio_value(audio_value, target_sr=16000)
+        input_features = feature_extractor(
+            audio_array, sampling_rate=sr
         ).input_features[0]
 
         # Targets come ONLY from the gold `Transcript` column (never Normalised_Transcript).
         # Many rows wrap the whole sentence in double quotes; strip just the leading/trailing
         # pair so the model doesn't learn to emit them. Interior quotes are left untouched.
-        transcript = strip_wrapping_quotes(batch.get("Transcript"))
-        batch["labels"] = tokenizer(transcript).input_ids
-        return batch
+        labels = tokenizer(strip_wrapping_quotes(transcript)).input_ids
+        return {"input_features": input_features, "labels": labels}
 
     return prepare
 

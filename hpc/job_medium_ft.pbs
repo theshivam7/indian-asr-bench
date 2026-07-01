@@ -6,6 +6,11 @@
 #PBS -o logs/medium_ft.log
 #PBS -e logs/medium_ft.log
 #PBS -j oe
+#PBS -V
+# -V forwards the submitting shell's environment (HF_CACHE, WHISPER_FT_ENV, WORKDIR, ...)
+# to the compute node so HF caches resolve to scratch, not the quota-limited HOME.
+# Pass the project on the command line (#PBS directives are not shell-expanded):
+#   qsub -P <project_id> -W depend=afterok:<train_jobid> hpc/job_medium_ft.pbs
 
 # Stage 1+2+3 — transcribe the test split with the same-engine pretrained baseline
 # (medium_hf) and the fine-tuned model (medium_ft), then score all 4 modes and build
@@ -26,8 +31,14 @@ module load "${CUDA_MODULE}" 2>/dev/null || true
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
 conda activate "${WHISPER_FT_ENV}"
 
-export HF_DATASETS_CACHE="${HF_CACHE}"
-export HF_HOME="${HF_CACHE}"
+# Conda's activation hooks (which normally put conda-forge ffmpeg's libavutil/etc on the
+# loader path) don't always fire in a non-interactive PBS batch shell. Without this,
+# torchcodec's "cannot open shared object file" for libavutil.so.5x is a path problem,
+# not a missing/incompatible ffmpeg — it's installed, just not found at runtime.
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+
+export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$HF_CACHE}"
+export HF_HOME="${HF_HOME:-$HF_CACHE}"
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" \
     "${WORKDIR}/results/stage1_raw_transcripts" \
     "${WORKDIR}/results/stage2_processed" \

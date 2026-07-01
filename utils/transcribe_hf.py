@@ -9,13 +9,14 @@ model.transcribe() handles long audio. Without this, generate() would silently t
 anything past 30s.
 """
 
-import numpy as np
 import torch
 from transformers import (
     WhisperForConditionalGeneration,
     WhisperProcessor,
     pipeline,
 )
+
+from utils.io_helpers import decode_audio_value
 
 CHUNK_LENGTH_S = 30
 # Leave stride at the pipeline default (chunk_length_s / 6 on each side) — symmetric
@@ -60,15 +61,18 @@ def build_asr_pipeline(model_path: str, device: str = None):
     return pipe
 
 
-def transcribe_sample_hf(pipe, sample: dict) -> str:
+def transcribe_sample_hf(pipe, sample: dict, audio_value: dict) -> str:
     """Transcribe one HF dataset sample with the chunked pipeline.
+
+    audio_value is the raw arrow "audio" struct for this row (utils.io_helpers.
+    raw_audio_column(ds)[idx].as_py()), passed explicitly rather than read from
+    sample["audio"] — the caller strips "audio" from sample so plain dataset iteration
+    never triggers datasets.Audio's decode (which needs torchcodec).
 
     Returns the raw (unnormalized) transcription string. Mirrors the error-handling
     behaviour of utils.transcribe.transcribe_sample.
     """
-    audio_data = sample["audio"]
-    audio_array = np.array(audio_data["array"], dtype=np.float32).flatten()
-    sr = audio_data["sampling_rate"]
+    audio_array, sr = decode_audio_value(audio_value)
 
     try:
         result = pipe(
