@@ -295,13 +295,28 @@ Conda specs are in [`environments/`](environments/); PBS/SLURM job scripts and c
 
 ---
 
-## Common Error Patterns
+## Error Analysis
 
-- **Mathematical notation** (`ds/dt = πr²H`) has no canonical spoken form — variable names are frequently misrecognized.
-- **Long-pause hallucination** — Whisper generates filler during silences; Parakeet and Qwen3 are more robust.
-- **Technical vocabulary** (`gel permeation chromatography`) is missed across all models.
-- **Very short clips (0–5s)** — one wrong word can push WER past 100%.
-- **Code-switching** — Hindi/regional words in English lectures cause confusion.
+A deep look at the **top-20 highest-WER clips per model** reveals that the worst scores are mostly *not*
+model failures. Full analysis with evidence: [`results/analysis/error_analysis.md`](results/analysis/error_analysis.md).
+
+**~70% of the worst-WER samples are dataset artifacts, not ASR errors.** The 100 worst rows (5 models × 20)
+come from just **42 distinct clips**, and classifying them by reference-word recall shows:
+
+- **45% clip over-run** — the model transcribes the reference *correctly* **plus** real speech the clip cut off. Proof: on these clips a CTC model (Parakeet, which structurally cannot hallucinate), an LLM (Qwen3), and Whisper all emit the *same* extra words — so it is real audio the reference omitted, not a hallucination. Example `-2aOCNaOiLs`: REF "considered in problem forty five" → every model outputs "…forty five **let us do that**" (80% WER, model perfect).
+- **25% content mismatch** — all five models agree on content completely different from the reference (e.g. a Poisson-arrivals example vs. a central-limit-theorem reference). Identical *wrong* output from disjoint architectures = the audio is mislabeled.
+- **30% genuine ASR errors** — dominated by spoken **math/technical notation** (subscripts `k1`,`k2x`; "three" heard as "c"; formula variables) in the 70%-Engineering material.
+
+The artifact is **identical across all four modes** (142% WER regardless of normalization), confirming it is an audio↔reference-window mismatch, not a normalization effect.
+
+**Other patterns (evidence in the doc):**
+
+- **SLOW speech dominates the tail** (38% of data → 69% of high-WER, 1.8×) — but via truncated reference windows on slow, self-correcting delivery, *not* acoustics.
+- **Errors are U-shaped by duration** — over-represented at 0–5s (12×) and 60s+ (4×), under-represented in the safe 15–30s bulk.
+- **Hallucination is the top genuine failure**; Whisper Large has the most WER>100% clips (9 of its 20) — matching its highest Std Dev.
+- **No female speaker** appears in any model's top-20 (weak N, but consistent).
+
+**Implication:** median WER (11.1% for Medium) is a more honest estimate of typical quality than corpus WER (14.8%) — the ~3.5 pp gap is this contaminated tail. Model *rankings* are unaffected (all models hit the same artifacts equally); only the absolute numbers are inflated.
 
 ---
 
