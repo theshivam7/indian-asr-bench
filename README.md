@@ -11,6 +11,9 @@
   <a href="https://github.com/theshivam7/indian-asr-bench">
     <img src="https://img.shields.io/badge/GitHub-indian--asr--bench-black?logo=github" />
   </a>
+  <a href="https://huggingface.co/theshivam7/whisper-medium-indian-english">
+    <img src="https://img.shields.io/badge/Model-whisper--medium--indian--english-yellow?logo=huggingface" />
+  </a>
 </p>
 
 <p align="center">
@@ -352,7 +355,29 @@ reference.
 | `transcript_raw` | 14.75% | 14.71% | −0.04 pp |
 
 **Fine-tuning did not meaningfully improve WER** on this dataset — the pretrained model was already
-strong on this domain. We report this as-is rather than hiding a null result.
+strong on this domain. We report this as-is rather than hiding a null result. The +0.20 pp difference is
+within single-run noise, so the honest claim is **"no significant gain," not "fine-tuning hurts."**
+
+#### Why the pretrained model is already hard to beat
+
+- **Little headroom.** Pretrained Whisper Medium (680k hours) already scores 14.42% here; the residual
+  errors are dominated by technical vocabulary, math notation, and code-switching that a small in-domain
+  set cannot teach.
+- **Scale mismatch → overfitting.** Full fine-tuning of 769M parameters on ~7.9k clips (tens of hours) is
+  data-starved. The best validation checkpoint arrived at **epoch 1** and early-stopping fired by epoch 3
+  — the model began specializing (and degrading) almost immediately.
+- **Tail regressions from a skewed train set.** The training data is ~94% male, ~70% engineering, and
+  concentrated in 15–30s clips. Fine-tuning fit that majority and **regressed on under-represented
+  groups**: Female +5.23 pp, WEST region +3.69 pp, 0–5s clips +10 pp. It traded broad robustness for a
+  tiny majority-group fit, netting a slight overall loss (250 clips improved vs 307 regressed).
+- **Target-style mismatch.** Fine-tuning teaches the model the gold `Transcript`'s surface conventions
+  (punctuation, disfluencies), which the shared WER normalization then has to undo — effort that doesn't
+  lower the normalized metric.
+
+> **Note (long-clip decoding).** On 60s+ clips the HF chunked pipeline scores ~119% WER for *both* the
+> pretrained (`medium_hf`) and fine-tuned models, vs 37% for the same weights under `openai-whisper`
+> (`medium`). That gap is a **decoding-pipeline artifact** (long-form chunk stitching), not a fine-tuning
+> effect — it applies equally to both models, so the head-to-head comparison stays fair.
 
 > ⚠️ **Speaker-level overlap (disclosed).** The dataset's official splits share speakers across
 > train/validation/test: **100% of test speakers — and 100% of test clips — come from speakers also

@@ -4,7 +4,8 @@ Stage 0: Fine-tune Whisper Medium on raianand/TIE_shorts (train split).
 Full fine-tuning (all 769M params) following the standard HuggingFace Whisper recipe,
 with the correctness + best-practice details that prevent the common pitfalls:
 
-  - Train on `train`, select checkpoint on `validation`, NEVER touch `test`  (no leakage)
+  - Train on `train`, select checkpoint on `validation`, NEVER touch `test`  (no clip-level
+    leakage; note the dataset's official splits share speakers — see check_speaker_overlap.py)
   - Targets = `Transcript` (gold ground truth, matches the benchmark)
   - Filter clips > 30s (feature extractor truncates audio to 30s; longer clips would
     pair truncated audio with full transcripts)
