@@ -72,9 +72,11 @@ def transcribe_sample_hf(pipe, sample: dict, audio_value: dict) -> str:
     Returns the raw (unnormalized) transcription string. Mirrors the error-handling
     behaviour of utils.transcribe.transcribe_sample.
     """
-    audio_array, sr = decode_audio_value(audio_value)
-
     try:
+        # Inside the try: some rows have no embedded array, only a stale local path from
+        # the original dataset upload (e.g. "E:\\TIE_shorts\\...") that isn't reachable
+        # here, so decode_audio_value's soundfile fallback can raise for those rows too.
+        audio_array, sr = decode_audio_value(audio_value)
         result = pipe(
             {"raw": audio_array, "sampling_rate": sr},
             generate_kwargs={"language": "english", "task": "transcribe"},

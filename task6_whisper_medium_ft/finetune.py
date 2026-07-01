@@ -145,6 +145,32 @@ if MAX_TRAIN_SAMPLES:
 train_ds = train_ds.flatten_indices()
 eval_ds = eval_ds.flatten_indices()
 
+
+def has_audio_array(raw_col):
+    def _check(_transcript, idx):
+        return raw_col[idx].as_py().get("array") is not None
+
+    return _check
+
+
+# Some TIE_shorts rows have no embedded audio array — only a stale local path from the
+# original dataset upload (e.g. "E:\TIE_shorts\...") that isn't reachable here. Drop those
+# rather than crashing the whole run; there is no way to recover that audio on this machine.
+n_before = len(train_ds)
+train_ds = train_ds.filter(
+    has_audio_array(raw_audio_column(train_ds)), input_columns=["Transcript"], with_indices=True,
+)
+print(f"  train: {n_before} -> {len(train_ds)} after dropping clips with no embedded audio")
+n_before = len(eval_ds)
+eval_ds = eval_ds.filter(
+    has_audio_array(raw_audio_column(eval_ds)), input_columns=["Transcript"], with_indices=True,
+)
+print(f"  validation: {n_before} -> {len(eval_ds)} after dropping clips with no embedded audio")
+
+# filter() above changes indices again — re-materialize before capturing raw audio columns.
+train_ds = train_ds.flatten_indices()
+eval_ds = eval_ds.flatten_indices()
+
 # Read audio straight from arrow storage (bypassing datasets.Audio's decode entirely, which
 # datasets>=4.0 mandates torchcodec for — a fragile torch/ffmpeg ABI dependency on HPC).
 keep_remove = train_ds.column_names
