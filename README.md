@@ -48,6 +48,11 @@ This benchmark evaluates **5 state-of-the-art ASR systems** on the [TIE_shorts](
 | **Whisper Large** | ~1.5B | Encoder-Decoder | [openai/whisper-large](https://huggingface.co/openai/whisper-large) |
 | **Parakeet-TDT-0.6B-v2** | 600M | CTC + TDT | [nvidia/parakeet-tdt-0.6b-v2](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) |
 | **Qwen3-ASR-1.7B** | 1.7B | LLM-based | [Qwen/Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) |
+| **Whisper Medium (fine-tuned)** | 769M | Encoder-Decoder | [theshivam7/whisper-medium-indian-english](https://huggingface.co/theshivam7/whisper-medium-indian-english) — *this project* |
+
+The first five are evaluated as pretrained systems (the headline benchmark). The sixth is our in-domain
+fine-tune of Whisper Medium — analyzed separately in [Fine-tuning Whisper Medium](#fine-tuning-whisper-medium),
+since it uses a different decoder (see the note under [Results](#results)).
 
 ---
 
@@ -78,6 +83,13 @@ Forward normalization applied symmetrically to both reference and hypothesis, us
 | Whisper Large | 15.88% | 16.83% | 11.36% | 19.27% | 35.21% | 48.94% |
 | Qwen3-ASR-1.7B | 15.93% | 16.64% | **12.28%** | **15.88%** | **33.85%** | 44.90% |
 | Whisper Base | 17.44% | 18.29% | 13.33% | 16.99% | 38.16% | 50.00% |
+
+> **Why the fine-tuned model isn't in this table.** The five systems above are decoded with the
+> `openai-whisper` engine. The fine-tuned checkpoint can only run through HuggingFace `transformers`,
+> a different decoder — so putting it in this ranking would confound *fine-tuning* with a *decoding-engine*
+> change. Its fair, engine-controlled comparison (against pretrained Whisper Medium run through the **same**
+> HF decoder) — with the full Mean / Median / Std / P90 / P95 stats — is in
+> [Fine-tuning Whisper Medium](#fine-tuning-whisper-medium).
 
 ### Key Findings
 
@@ -349,14 +361,28 @@ reference.
 
 ### Result — and an honest caveat
 
+Engine-controlled comparison on `test` (`transcript_clean`, gold), both models decoded through the **same**
+HF chunked pipeline:
+
+| Model | Corpus WER | Mean WER | Median WER | Std Dev | P90 | P95 |
+|-------|:----------:|:--------:|:----------:|:-------:|:---:|:---:|
+| Whisper Medium — pretrained (`medium_hf`) | **14.42%** | **14.64%** | **9.84%** | 22.19% | 30.18% | 39.83% |
+| Whisper Medium — fine-tuned (`medium_ft`) | 14.61% | 14.80% | 10.14% | 27.70% | **27.79%** | **36.62%** |
+
+Corpus WER by mode (all four evaluation modes):
+
 | Mode | Pretrained (`medium_hf`) | Fine-tuned (`medium_ft`) | Δ |
 |------|:------------------------:|:------------------------:|:---:|
 | `transcript_clean` (gold) | 14.42% | 14.61% | +0.20 pp |
 | `transcript_raw` | 14.75% | 14.71% | −0.04 pp |
+| `hf_clean` | 15.51% | 15.70% | +0.19 pp |
+| `hf_raw` | 17.72% | 17.70% | −0.02 pp |
 
 **Fine-tuning did not meaningfully improve WER** on this dataset — the pretrained model was already
-strong on this domain. We report this as-is rather than hiding a null result. The +0.20 pp difference is
-within single-run noise, so the honest claim is **"no significant gain," not "fine-tuning hurts."**
+strong on this domain. We report this as-is rather than hiding a null result. The +0.20 pp corpus
+difference is within single-run noise, so the honest claim is **"no significant gain," not "fine-tuning
+hurts."** (The large Std Dev for both rows is driven by a handful of 60s+ clips where the HF long-form
+decoder hallucinates — see the long-clip note below; on the *median* clip both are strong.)
 
 #### Why the pretrained model is already hard to beat
 
