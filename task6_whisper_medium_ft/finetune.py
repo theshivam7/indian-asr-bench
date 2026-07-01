@@ -147,8 +147,12 @@ eval_ds = eval_ds.flatten_indices()
 
 
 def has_audio_array(raw_col):
+    # Check validity at the pyarrow level (raw_col[idx]["array"].is_valid) rather than
+    # raw_col[idx].as_py() — .as_py() would fully materialize every row's audio samples
+    # into Python objects just to immediately discard them, roughly doubling this pass's
+    # cost on top of the identical work .map() does right after for the surviving rows.
     def _check(_transcript, idx):
-        return raw_col[idx].as_py().get("array") is not None
+        return raw_col[idx]["array"].is_valid
 
     return _check
 
