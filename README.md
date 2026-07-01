@@ -76,13 +76,17 @@ All numbers are corpus/per-sample WER on the `test` split under **`transcript_cl
 
 | Model | Corpus WER | Mean WER | Median WER | Std Dev | P90 | P95 |
 |-------|:----------:|:--------:|:----------:|:-------:|:---:|:---:|
-| **Whisper Medium** | **14.76%** | **15.45%** | **11.11%** | **15.90%** | **31.58%** | **39.39%** |
-| Parakeet-TDT-0.6B | 15.60% | 16.75% | 11.86% | 17.47% | 34.24% | 44.12% |
-| Whisper Large | 15.93% | 16.88% | 11.43% | 19.20% | 35.04% | 48.81% |
-| Qwen3-ASR-1.7B | 16.66% | 17.34% | 12.90% | 15.93% | 34.95% | 45.04% |
-| Whisper Base | 17.53% | 18.38% | 13.51% | 16.95% | 38.16% | 49.79% |
+| **Whisper Medium** | **14.76%** | **15.45%** | **11.11%** | **15.90%** | **31.58%** | **39.62%** |
+| Parakeet-TDT-0.6B | 15.60% | 16.75% | 11.86% | 17.47% | 34.38% | 44.12% |
+| Whisper Large | 15.93% | 16.88% | 11.43% | 19.20% | 35.21% | 48.94% |
+| Qwen3-ASR-1.7B | 16.66% | 17.34% | 12.90% | 15.93% | 35.00% | 45.07% |
+| Whisper Base | 17.53% | 18.38% | 13.51% | 16.95% | 38.16% | 50.00% |
 
 > The **fine-tuned** Whisper Medium is not in this ranking because it runs through a different decoder (HuggingFace `transformers`, not `openai-whisper`) — mixing it here would confound fine-tuning with a decoding-engine change. Its fair, engine-controlled comparison is in [Fine-tuning](#fine-tuning-whisper-medium).
+
+<p align="center">
+  <img src="results/analysis/wer_by_model.png" width="680" alt="Model ranking by corpus WER (transcript_clean)">
+</p>
 
 ### Key findings
 
@@ -164,8 +168,8 @@ Engine-controlled, `transcript_clean`, both decoded through the same HF chunked 
 
 | Model | Corpus WER | Mean WER | Median WER | Std Dev | P90 | P95 |
 |-------|:----------:|:--------:|:----------:|:-------:|:---:|:---:|
-| Whisper Medium — pretrained (`medium_hf`) | **14.42%** | **14.64%** | **9.84%** | 22.19% | 30.18% | 39.83% |
-| Whisper Medium — fine-tuned (`medium_ft`) | 14.61% | 14.80% | 10.14% | 27.70% | **27.79%** | **36.62%** |
+| Whisper Medium — pretrained (`medium_hf`) | **14.42%** | **14.64%** | **9.84%** | 22.19% | 30.30% | 40.00% |
+| Whisper Medium — fine-tuned (`medium_ft`) | 14.61% | 14.80% | 10.14% | 27.70% | **27.87%** | **36.62%** |
 
 Corpus WER across all four modes:
 
@@ -177,6 +181,10 @@ Corpus WER across all four modes:
 | `hf_raw` | 17.72% | 17.70% | −0.02 pp |
 
 The +0.20 pp gap is within single-run noise, so the honest claim is **"no significant gain," not "fine-tuning hurts."**
+
+<p align="center">
+  <img src="results/analysis/finetune_comparison.png" width="640" alt="Whisper Medium pretrained vs fine-tuned across all four modes">
+</p>
 
 ### Fine-tuned breakdowns (same analysis as the pretrained models)
 
@@ -246,7 +254,9 @@ Four modes cover **2 reference sources × 2 normalization states**, always appli
 | `hf_raw` | `Normalised_Transcript` | Minimal | Quantifies dataset normalization errors |
 | `hf_clean` | `Normalised_Transcript` | Forward (full) | Dataset norm + our fix |
 
-**Forward normalization** (the `*_clean` modes): Unicode NFC → expand contractions → fix possessives (`"Bernoulli's"` → `"bernoulli s"`) → ordinals/cardinals to words (`"1st"` → `"first"`, `"100"` → `"one hundred"`) → lowercase → strip punctuation → collapse whitespace.
+**Forward normalization** (the `*_clean` modes): Unicode NFC → fix possessives (`"Bernoulli's"` → `"bernoulli s"`) → ordinals/cardinals to words (`"1st"` → `"first"`, `"100"` → `"one hundred"`) → lowercase → strip punctuation → collapse whitespace. Contractions are intentionally **left unexpanded** (`"don't"` → `"dont"`, applied to both sides) so the metric doesn't reward a rewrite neither transcript uses.
+
+The `*_raw` modes apply **minimal cleanup** only — strip wrapping quotes, lowercase, remove punctuation — with no number/possessive handling.
 
 **Why the dataset's `Normalised_Transcript` is unreliable:** it maps `"the 1st component"` → `"the one s t component"` (ordinal split into characters), affecting 50+ clips and inflating `hf_raw` WER by 2–3 pp. Use `transcript_clean`.
 

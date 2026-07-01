@@ -23,6 +23,12 @@ from utils.normalize import MODES
 from utils.io_helpers import build_md_table
 
 MODELS = ("base", "medium", "large", "parakeet", "qwen3", "medium_hf", "medium_ft")
+# Cross-model charts use only the 5 pretrained systems, all decoded with the openai-whisper
+# engine, so the comparison is apples-to-apples. The HF-decoded variants (medium_hf, medium_ft)
+# are kept in every DATA table above/below, but excluded from the ranking/grouped charts — mixing
+# decoding engines in one ranking would misleadingly show medium_hf as the "best model". The
+# fine-tuned model has its own engine-controlled charts in analysis/compare_finetune.py.
+CHART_MODELS = ("base", "medium", "large", "parakeet", "qwen3")
 PRIMARY_MODE = "transcript_clean"  # gold standard mode for breakdowns and charts
 
 MODEL_DISPLAY = {
@@ -125,11 +131,11 @@ print("=" * 70)
 plt.rcParams.update({"figure.dpi": 150, "font.size": 10})
 # Keep each model-group within ~0.8 of a unit so adjacent groups don't overlap,
 # regardless of how many models are present (5 pretrained + medium_hf + medium_ft).
-bar_width = 0.8 / len(MODELS)
+bar_width = 0.8 / len(CHART_MODELS)
 
 # Chart 0 (headline): models ranked by WER on the gold mode — clearest single view.
 gold_rows = []
-for model in MODELS:
+for model in CHART_MODELS:
     row = df_summary[df_summary["model"] == model]
     if row.empty or pd.isna(row[PRIMARY_MODE].values[0]):
         continue
@@ -160,13 +166,13 @@ fig, ax = plt.subplots(figsize=(10, 6))
 x_labels = list(MODES)
 x = range(len(x_labels))
 
-for i, model in enumerate(MODELS):
+for i, model in enumerate(CHART_MODELS):
     values = []
     for mode in MODES:
         row = df_summary[df_summary["model"] == model]
         val = row[mode].values[0] if not row.empty and pd.notna(row[mode].values[0]) else 0
         values.append(val)
-    offset = (i - (len(MODELS) - 1) / 2) * bar_width
+    offset = (i - (len(CHART_MODELS) - 1) / 2) * bar_width
     bars = ax.bar([xi + offset for xi in x], values, bar_width, label=MODEL_DISPLAY.get(model, model))
     for bar, val in zip(bars, values):
         if val > 0:
@@ -189,7 +195,7 @@ print(f"  Saved: {chart_path}")
 # Chart 2: per-utterance WER distribution, one panel per model (small multiples).
 # Y = % of that model's utterances, X = per-sample WER in 5% bins (0-100%).
 # WER > 100% (insertion-heavy) is clipped into the final bin for display.
-models_with_data = [m for m in MODELS if (m, PRIMARY_MODE) in all_data]
+models_with_data = [m for m in CHART_MODELS if (m, PRIMARY_MODE) in all_data]
 if models_with_data:
     ncols = 2
     nrows = math.ceil(len(models_with_data) / ncols)
@@ -244,9 +250,9 @@ if duration_data:
     buckets = ["0-5s", "5-15s", "15-30s", "30-60s", "60s+"]
     buckets = [b for b in buckets if b in duration_data]
     x = range(len(buckets))
-    for i, model_name in enumerate(MODELS):
+    for i, model_name in enumerate(CHART_MODELS):
         values = [duration_data.get(b, {}).get(model_name, 0) for b in buckets]
-        offset = (i - (len(MODELS) - 1) / 2) * bar_width
+        offset = (i - (len(CHART_MODELS) - 1) / 2) * bar_width
         ax.bar([xi + offset for xi in x], values, bar_width, label=MODEL_DISPLAY.get(model_name, model_name))
     ax.set_xlabel("Duration Bucket")
     ax.set_ylabel("WER (%)")
@@ -298,9 +304,9 @@ for col, chart_name in [("Native_Region", "wer_by_region.png")]:
     groups = sorted(region_data.keys())
     x = range(len(groups))
 
-    for i, model in enumerate(MODELS):
+    for i, model in enumerate(CHART_MODELS):
         values = [region_data.get(g, {}).get(model, 0) for g in groups]
-        offset = (i - (len(MODELS) - 1) / 2) * bar_width
+        offset = (i - (len(CHART_MODELS) - 1) / 2) * bar_width
         ax.bar([xi + offset for xi in x], values, bar_width, label=MODEL_DISPLAY.get(model, model))
 
     ax.set_xlabel(col)
@@ -342,7 +348,7 @@ report_lines = [
     "- `transcript_clean` is the gold standard: uses original ground truth with correct forward normalization.",
     "- `hf_raw` and `hf_clean` show the impact of the dataset's broken `Normalised_Transcript` (e.g. '1st' → 'one s t').",
     "- All modes are **symmetric**: same normalization applied to both reference and hypothesis.",
-    "- Normalization: lowercase + expand contractions + fix possessives + digits/ordinals → words (num2words).",
+    "- Full normalization (`*_clean`): fix possessives + digits/ordinals → words (num2words) + lowercase + strip punctuation. Contractions left unexpanded. `*_raw` modes: minimal cleanup only (lowercase + strip punctuation/wrapping quotes).",
     "",
     "## Column Schema",
     "",

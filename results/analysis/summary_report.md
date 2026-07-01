@@ -26,7 +26,7 @@
 - `transcript_clean` is the gold standard: uses original ground truth with correct forward normalization.
 - `hf_raw` and `hf_clean` show the impact of the dataset's broken `Normalised_Transcript` (e.g. '1st' → 'one s t').
 - All modes are **symmetric**: same normalization applied to both reference and hypothesis.
-- Normalization: lowercase + expand contractions + fix possessives + digits/ordinals → words (num2words).
+- Full normalization (`*_clean`): fix possessives + digits/ordinals → words (num2words) + lowercase + strip punctuation. Contractions left unexpanded. `*_raw` modes: minimal cleanup only (lowercase + strip punctuation/wrapping quotes).
 
 ## Column Schema
 
