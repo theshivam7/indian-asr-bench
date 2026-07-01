@@ -4,11 +4,13 @@
 
 | model | transcript_raw | transcript_clean | hf_raw | hf_clean |
 | --- | --- | --- | --- | --- |
-| base | 27.95 | 17.44 | 31.76 | 18.0 |
-| medium | 24.14 | 14.72 | 29.83 | 15.73 |
-| large | 25.62 | 15.88 | 30.95 | 16.91 |
-| parakeet | 28.09 | 15.54 | 33.85 | 16.34 |
-| qwen3 | 33.16 | 15.93 | 36.36 | 16.87 |
+| base | 17.91 | 17.53 | 20.24 | 18.07 |
+| medium | 15.11 | 14.76 | 18.01 | 15.76 |
+| large | 16.31 | 15.93 | 19.14 | 16.94 |
+| parakeet | 15.97 | 15.6 | 18.54 | 16.4 |
+| qwen3 | 18.15 | 16.66 | 17.99 | 17.61 |
+| medium_hf | 14.75 | 14.42 | 17.72 | 15.51 |
+| medium_ft | 14.71 | 14.61 | 17.7 | 15.7 |
 
 ## Evaluation Modes
 
@@ -40,7 +42,7 @@ Each result CSV contains:
 
 ## Best Model per Mode
 
-- **transcript_raw**: Whisper Medium (24.14%)
-- **transcript_clean**: Whisper Medium (14.72%)
-- **hf_raw**: Whisper Medium (29.83%)
-- **hf_clean**: Whisper Medium (15.73%)
+- **transcript_raw**: Whisper Medium (FT) (14.71%)
+- **transcript_clean**: Whisper Medium (HF) (14.42%)
+- **hf_raw**: Whisper Medium (FT) (17.70%)
+- **hf_clean**: Whisper Medium (HF) (15.51%)

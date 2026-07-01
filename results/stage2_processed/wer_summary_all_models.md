@@ -4,20 +4,22 @@
 
 | model | transcript_raw | transcript_clean | hf_raw | hf_clean |
 | --- | --- | --- | --- | --- |
-| base | 27.95 | 17.44 | 31.76 | 18.0 |
-| large | 25.62 | 15.88 | 30.95 | 16.91 |
-| medium | 24.14 | 14.72 | 29.83 | 15.73 |
-| parakeet | 28.09 | 15.54 | 33.85 | 16.34 |
-| qwen3 | 33.16 | 15.93 | 36.36 | 16.87 |
+| base | 17.91 | 17.53 | 20.24 | 18.07 |
+| large | 16.31 | 15.93 | 19.14 | 16.94 |
+| medium | 15.11 | 14.76 | 18.01 | 15.76 |
+| medium_ft | 14.71 | 14.61 | 17.7 | 15.7 |
+| medium_hf | 14.75 | 14.42 | 17.72 | 15.51 |
+| parakeet | 15.97 | 15.6 | 18.54 | 16.4 |
+| qwen3 | 18.15 | 16.66 | 17.99 | 17.61 |
 
 ## Mode Descriptions
 
-| Mode | Reference | Before norm | After norm | Symmetric? | Purpose |
-|------|-----------|-------------|------------|------------|---------|
-| `transcript_raw` | Transcript | as-is | as-is | Yes | Upper bound baseline |
-| `transcript_clean` | Transcript | Transcript | normalized | Yes | Gold standard (paper primary) |
-| `hf_raw` | Normalised_Transcript | as-is | as-is | Yes | HuggingFace normalization as-is |
-| `hf_clean` | Normalised_Transcript | Normalised_Transcript | normalized | Yes | HF + our normalizer |
+| Mode | Reference | Cleanup | Symmetric? | Purpose |
+|------|-----------|---------|------------|---------|
+| `transcript_raw` | Transcript | minimal (lowercase, strip punctuation + wrapping quotes) | Yes | Light-cleanup baseline |
+| `transcript_clean` | Transcript | full normalization | Yes | Gold standard (paper primary) |
+| `hf_raw` | Normalised_Transcript | minimal (lowercase, strip punctuation + wrapping quotes) | Yes | HF source, light cleanup |
+| `hf_clean` | Normalised_Transcript | full normalization | Yes | HF + our normalizer |
 
 ## CSV Columns
 
@@ -31,4 +33,4 @@ Each result CSV contains:
 | `hypothesis` | Whisper output **after** normalization (used for WER) |
 | `wer` | Per-sample WER |
 
-In `*_raw` modes: `reference_raw == reference` and `hypothesis_raw == hypothesis`.
+In `*_raw` modes, `reference`/`hypothesis` carry minimal cleanup (lowercase + punctuation/wrapping-quote removal); `*_clean` modes apply full normalization.
