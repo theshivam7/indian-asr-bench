@@ -6,6 +6,7 @@
 #PBS -o logs/finetune.log
 #PBS -e logs/finetune.log
 #PBS -j oe
+#PBS -k oed
 #PBS -V
 # -V forwards the submitting shell's environment (HF_CACHE, WHISPER_FT_ENV, WORKDIR, ...)
 # to the compute node. Without it, HF_CACHE falls back to $HOME and the dataset download

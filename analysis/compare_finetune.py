@@ -92,9 +92,9 @@ lines = [
 
 # --------------- 1. Corpus WER across all 4 modes ---------------
 print("\n--- Corpus WER by mode ---")
-have = {m: {} for m in (SECONDARY, BASELINE, FINETUNED)}
+have = {m: {} for m in (SECONDARY, BASELINE, FINETUNED, DISJOINT)}
 for mode in MODES:
-    for model in (SECONDARY, BASELINE, FINETUNED):
+    for model in (SECONDARY, BASELINE, FINETUNED, DISJOINT):
         df = load(model, mode)
         if df is not None:
             have[model][mode] = corpus_wer(df)
@@ -131,6 +131,41 @@ if PRIMARY_MODE in have[BASELINE] and PRIMARY_MODE in have[FINETUNED]:
         f"{b:.2f}% → {f:.2f}%  ({d_abs}, {d_rel} relative).",
         "",
     ]
+
+# --------------- 1b. Speaker-disjoint re-split fine-tune (hardens the null) ---------------
+if have[DISJOINT]:
+    lines += [
+        "## Speaker-disjoint re-split fine-tune",
+        "",
+        "Same recipe as the headline fine-tune, but every train clip whose speaker also "
+        "appears in `test` is removed first (see `speaker_overlap.md`). Evaluated on the "
+        f"SAME test set as `{BASELINE}`, so any gain here cannot come from speaker adaptation.",
+        "",
+        "| Mode | Pretrained (HF) | Fine-tuned (disjoint) | Δ abs | Δ rel |",
+        "|------|:---------------:|:----------------------:|:-----:|:-----:|",
+    ]
+    for mode in MODES:
+        base = have[BASELINE].get(mode)
+        dft = have[DISJOINT].get(mode)
+        if base is None or dft is None:
+            continue
+        d_abs, d_rel = fmt_delta(base, dft)
+        star = " **(gold)**" if mode == PRIMARY_MODE else ""
+        lines.append(f"| `{mode}`{star} | {base:.2f}% | {dft:.2f}% | {d_abs} | {d_rel} |")
+        print(f"  [disjoint] {mode:18s} base(HF)={base:.2f}%  ft_disjoint={dft:.2f}%  delta={d_abs}")
+    lines.append("")
+    if PRIMARY_MODE in have[BASELINE] and PRIMARY_MODE in have[DISJOINT]:
+        b = have[BASELINE][PRIMARY_MODE]
+        f = have[DISJOINT][PRIMARY_MODE]
+        d_abs, d_rel = fmt_delta(b, f)
+        verdict = "improves" if f < b else "does NOT improve"
+        lines += [
+            f"> **Headline, speaker-disjoint ({PRIMARY_MODE})**: with zero train/test speaker "
+            f"overlap, fine-tuning {verdict} WER {b:.2f}% → {f:.2f}%  ({d_abs}, {d_rel} relative).",
+            "",
+        ]
+else:
+    print("  [SKIP] no medium_ft_disjoint results yet (run job_finetune_disjoint.pbs first)")
 
 # --------------- 2. Breakdowns (primary mode) ---------------
 df_base = load(BASELINE, PRIMARY_MODE)

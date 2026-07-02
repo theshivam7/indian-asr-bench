@@ -6,6 +6,7 @@
 #PBS -o logs/ft_disjoint.log
 #PBS -e logs/ft_disjoint.log
 #PBS -j oe
+#PBS -k oed
 #PBS -V
 
 # Speaker-disjoint fine-tune of Whisper Medium: train with every test speaker
@@ -29,12 +30,16 @@ cd "${WORKDIR}"
 conda activate "${WHISPER_FT_ENV}"
 export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 
+# Keep the (~3GB) fine-tuned weights off the quota-limited $HOME — default onto scratch.
+FT_DISJOINT_OUTPUT="${FT_DISJOINT_OUTPUT:-models/whisper_medium_ft_disjoint}"
+mkdir -p "$(dirname "${FT_DISJOINT_OUTPUT}")"
+
 echo "=== Stage 0: speaker-disjoint fine-tune $(date) ==="
-FT_SPEAKER_DISJOINT=1 FT_OUTPUT_DIR="models/whisper_medium_ft_disjoint" \
+FT_SPEAKER_DISJOINT=1 FT_OUTPUT_DIR="${FT_DISJOINT_OUTPUT}" \
     python task6_whisper_medium_ft/finetune.py
 
 echo "=== Stage 1: transcribe fine-tuned (disjoint) model on test ==="
-MODEL_NAME=medium_ft_disjoint MODEL_SOURCE="models/whisper_medium_ft_disjoint" \
+MODEL_NAME=medium_ft_disjoint MODEL_SOURCE="${FT_DISJOINT_OUTPUT}" \
     python task6_whisper_medium_ft/wer_whisper_medium_ft.py
 
 echo "=== Stage 2 + 3: rescore + FT comparison ==="

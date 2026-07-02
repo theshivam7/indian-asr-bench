@@ -6,6 +6,7 @@
 #PBS -o logs/medium_ft.log
 #PBS -e logs/medium_ft.log
 #PBS -j oe
+#PBS -k oed
 #PBS -V
 # -V forwards the submitting shell's environment (HF_CACHE, WHISPER_FT_ENV, WORKDIR, ...)
 # to the compute node so HF caches resolve to scratch, not the quota-limited HOME.
@@ -42,10 +43,9 @@ export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$HF_CACHE}"
 export HF_HOME="${HF_HOME:-$HF_CACHE}"
-mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" \
-    "${WORKDIR}/results/stage1_raw_transcripts" \
-    "${WORKDIR}/results/stage2_processed" \
-    "${WORKDIR}/results/analysis"
+# Result subdirs are created automatically by utils/io_helpers (namespaced under
+# results/tie/), so only the cache + logs need pre-creating here.
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 
 cd "${WORKDIR}"
 
@@ -64,4 +64,4 @@ python analysis/compare_all.py
 echo "=== STAGE 3b: Pretrained vs Fine-tuned comparison ==="
 python analysis/compare_finetune.py
 
-echo "Done. See results/analysis/finetune_comparison.md"
+echo "Done. See results/tie/analysis/finetune_comparison.md"

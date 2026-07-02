@@ -13,9 +13,9 @@ whisper_normalizer==0.1.0   # Whisper EnglishTextNormalizer for the whisper_norm
 # Optional: spaCy adds named-entity tokens to the Svarah NEER metric
 #   pip install spacy && python -m spacy download en_core_web_sm
 
-# For Stage 1 (ASR transcription), see per-task requirements:
-#   task1_whisper_base/requirements.txt   — Whisper Base
-#   task2_whisper_medium/requirements.txt — Whisper Medium
-#   task3_whisper_large/requirements.txt  — Whisper Large
-#   task4_parakeet/requirements.txt       — Parakeet-TDT-0.6B-v2
-#   task5_qwen3_asr/requirements.txt      — Qwen3-ASR-1.7B
+# For Stage 1 (ASR transcription), see per-engine requirements / conda specs:
+#   task_whisper/requirements.txt            — Whisper base / medium / large / large-v3-turbo
+#   task4_parakeet/requirements.txt          — Parakeet-TDT-0.6B-v2 + Parakeet-CTC-1.1B
+#   task5_qwen3_asr/requirements.txt         — Qwen3-ASR-1.7B
+#   task6_whisper_medium_ft/requirements.txt — Whisper Medium fine-tuning (HF transformers)
+#   environments/{whisper,parakeet,qwen3}.yaml — reproducible conda envs

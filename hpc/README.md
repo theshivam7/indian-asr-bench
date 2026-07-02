@@ -1,62 +1,95 @@
 # HPC Job Scripts
 
-PBS Pro job scripts for running Indian-ASR-Bench on HPC clusters.
+PBS Pro job scripts for running Indian-ASR-Bench on HPC clusters (developed on
+**NSCC ASPIRE2A**, NVIDIA A100-40GB, CUDA 11.8).
 
 ## Configuration
 
-All scripts use environment variables with sensible defaults. Set them before submitting:
+Every script reads environment variables with sensible defaults. The NSCC project
+id must be passed to `qsub` on the command line (`-P`), because `#PBS` directive
+lines are not shell-expanded.
 
 ```bash
 export WORKDIR=/path/to/indian-asr-bench
-export PBS_PROJECT=your_project_id
-export CONDA_BASE=/path/to/conda
-export WHISPER_ENV=whisper          # conda env name for Whisper tasks
-export PARAKEET_ENV=parakeet        # conda env name for Parakeet
-export QWEN3_ENV=qwen3              # conda env name for Qwen3
-export HF_CACHE=/path/to/hf/cache
-export CUDA_MODULE=cuda/11.8.0      # adjust to your cluster's module name
+export HF_CACHE=/scratch/$USER/hf_cache   # keep off the quota-limited $HOME
+export CONDA_BASE=$(conda info --base)
+export CUDA_MODULE=cuda/11.8.0            # `module avail cuda` to check the name
+# conda env names (defaults shown):
+export WHISPER_ENV=whisper PARAKEET_ENV=parakeet QWEN3_ENV=qwen3 WHISPER_FT_ENV=whisper_medium_ft
 ```
 
-## Submitting Individual Jobs
+## One-shot submitter (recommended)
+
+`submit_all.sh` creates the environments (optional) and submits every remaining
+experiment with the right parallelism + dependency chaining, printing the job ids.
 
 ```bash
-cd /path/to/indian-asr-bench
-
-qsub hpc/job_base.pbs       # Whisper Base     (~3h on A100)
-qsub hpc/job_medium.pbs     # Whisper Medium   (~4h on A100)
-qsub hpc/job_large.pbs      # Whisper Large    (~6h on A100)
-qsub hpc/job_parakeet.pbs   # Parakeet-TDT     (~3h on A100)
-qsub hpc/job_qwen3.pbs      # Qwen3-ASR        (~5h on A100)
+# from the repo root, on a login node:
+huggingface-cli login                       # once — Svarah is a gated HF dataset
+PROJECT=<nscc_project_id> bash hpc/submit_all.sh            # submit everything
+PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup    # also create missing conda envs first
 ```
 
-## Full Pipeline (Single Job)
+Dependency graph (`-->` = PBS `afterok`):
 
-Runs all 5 models sequentially in one PBS job (~10h):
+```
+job_new_models_tie ──┐              (GPU ~5h)   writes results/tie
+                     ├─> job_figures (CPU)      writes paper/figures
+job_svarah ──────────┘   ^          (GPU ~10h)  writes results/svarah
+     │                   │
+job_finetune_disjoint ───┘          (GPU ~10h)  writes results/tie (rescore)
+     (afterok job_new_models_tie)
+```
+
+TIE-new-models and Svarah run **in parallel** (disjoint result dirs); the disjoint
+fine-tune is serialized after the TIE job (both rescore `results/tie`); a final CPU
+figures job rebuilds the cross-dataset plots once everything is done. Skip parts
+with `RUN_TIE=0 / RUN_SVARAH=0 / RUN_DISJOINT=0`.
+
+## Environments
+
+| conda env | created from | used by |
+|-----------|--------------|---------|
+| `whisper` | `environments/whisper.yaml` | Whisper inference **+ all CPU scoring/analysis/figures** (has `whisper_normalizer`) |
+| `parakeet` | `environments/parakeet.yaml` | Parakeet-TDT / Parakeet-CTC (NeMo) |
+| `qwen3` | `environments/qwen3.yaml` | Qwen3-ASR |
+| `whisper_medium_ft` | `bash task6_whisper_medium_ft/setup.sh` | fine-tuning (HF `transformers`, `datasets==4.8.5`) |
+
+## Individual jobs
 
 ```bash
-qsub hpc/run_pipeline.pbs
+qsub -P <id> -v MODEL=large_v3_turbo,DATASET=tie hpc/job_whisper.pbs   # one Whisper model on one dataset
+qsub -P <id> -v DATASET=svarah                    hpc/job_parakeet.pbs # (parakeet/qwen3 read DATASET too)
+qsub -P <id> -v DATASET=svarah                    hpc/job_qwen3.pbs
+qsub -P <id> -v DATASET=tie                        hpc/job_score.pbs   # CPU-only rescore + analysis (no GPU)
+qsub -P <id> -v DATASETS=tie,svarah                hpc/job_figures.pbs # CPU-only combined figures
+qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full from-scratch 7-model run
 ```
 
-## Fine-tuning Whisper Medium
+Bundled multi-step jobs: `job_new_models_tie.pbs` (turbo + parakeet_ctc on TIE,
+then rescore + analyse), `job_svarah.pbs` (all 7 models on Svarah → Stage 2/3 +
+NEER), `job_finetune_disjoint.pbs` (speaker-disjoint fine-tune → transcribe →
+rescore → FT report).
 
-Two jobs, chained so evaluation auto-starts when training succeeds:
+## Fine-tuning (standalone)
 
 ```bash
-export WHISPER_FT_ENV=whisper_medium_ft      # conda env from task6_whisper_medium_ft/setup.sh
-
-JOBID=$(qsub hpc/job_finetune.pbs)           # Stage 0: train (~8h on A100) → models/whisper_medium_ft/
-qsub -W depend=afterok:$JOBID hpc/job_medium_ft.pbs   # Stage 1+2+3: transcribe test, WER, analysis (~2-3h)
+JOBID=$(qsub -P <id> hpc/job_finetune.pbs)                  # Stage 0: train → models/whisper_medium_ft/
+qsub -P <id> -W depend=afterok:$JOBID hpc/job_medium_ft.pbs # Stage 1+2+3: transcribe test, WER, analysis
 ```
 
-- `job_finetune.pbs` — full fine-tune of Whisper Medium on the `train` split. Resumable (auto-detects the
-  latest checkpoint). Overridable via `FT_EPOCHS`, `FT_BATCH`, `FT_GRAD_ACCUM`, `FT_LR`, `FT_PATIENCE`.
-- `job_medium_ft.pbs` — transcribes the `test` split with both the same-engine pretrained baseline
-  (`MODEL_NAME=medium_hf`) and the fine-tuned model (`MODEL_NAME=medium_ft`), then runs
-  `normalize_and_score.py`, `analysis/compare_all.py`, and `analysis/compare_finetune.py`.
+Overridable training knobs: `FT_EPOCHS`, `FT_BATCH`, `FT_GRAD_ACCUM`, `FT_LR`,
+`FT_PATIENCE`; `FT_SPEAKER_DISJOINT=1` + `FT_OUTPUT_DIR=...` for the disjoint variant.
+
+## Notes
+
+- **Reuse over recompute:** the 7 original TIE raw transcripts are committed, so you
+  normally only need `job_new_models_tie` (2 new models) + `job_svarah` + the disjoint
+  FT — not a full re-run. After a pure normalization/metric change, `job_score.pbs`
+  (CPU) recomputes everything from the committed transcripts with no GPU.
+- Scripts are resumable — re-submitting picks up from the last checkpoint.
 
 ## Adapting to SLURM
-
-Replace PBS directives (`#PBS`) with SLURM equivalents (`#SBATCH`):
 
 | PBS | SLURM |
 |-----|-------|
@@ -65,9 +98,4 @@ Replace PBS directives (`#PBS`) with SLURM equivalents (`#SBATCH`):
 | `#PBS -l walltime=3:00:00` | `#SBATCH --time=03:00:00` |
 | `#PBS -P project_id` | `#SBATCH --account=project_id` |
 | `#PBS -o logfile` | `#SBATCH --output=logfile` |
-
-## Notes
-
-- Scripts are resumable: if interrupted, re-submitting picks up from last checkpoint.
-- CUDA module name (`CUDA_MODULE`) varies by cluster. Run `module avail cuda` to see options.
-- These scripts were developed on NSCC ASPIRE2A (NVIDIA A100) with CUDA 11.8.
+| `qsub -W depend=afterok:$JID` | `sbatch --dependency=afterok:$JID` |
