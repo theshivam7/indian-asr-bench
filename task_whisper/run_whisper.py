@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import torch
 import whisper
 
-from utils.registry import MODEL_BY_KEY, MODEL_SPECS
+from utils.registry import MODEL_BY_KEY, MODEL_SPECS, get_dataset
 from utils.transcribe import transcribe_sample
 from utils.inference_loop import run_transcription
 
@@ -48,9 +48,10 @@ def main() -> None:
     if device == "cpu":
         transcribe_kw["fp16"] = False
 
+    audio_col = get_dataset(args.dataset).audio_col
     run_transcription(
         args.model, args.dataset,
-        transcribe_one=lambda sample: transcribe_sample(model, sample, transcribe_kw),
+        transcribe_one=lambda sample: transcribe_sample(model, sample, transcribe_kw, audio_col),
     )
     print("\nDone.")
 
