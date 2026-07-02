@@ -80,7 +80,8 @@ def paired_speaker_bootstrap(df_base: pd.DataFrame, df_ft: pd.DataFrame,
     eb, _ = zip(*(_clip_errors(r, h) for r, h in zip(a["reference_b"], a["hypothesis_b"])))
     ea, eb, wa = np.array(ea, float), np.array(eb, float), np.array(wa, float)
 
-    spk = a["Speaker_ID"].astype(str).str.strip()
+    # NaN-safe (astype(str) would merge missing speakers into one "nan" cluster)
+    spk = a["Speaker_ID"].map(lambda v: "" if pd.isna(v) else str(v).strip())
     labels = np.where(spk != "", spk, "clip:" + a["ID"].astype(str))
     uniq = sorted(set(labels))
     gpos = {g: i for i, g in enumerate(uniq)}

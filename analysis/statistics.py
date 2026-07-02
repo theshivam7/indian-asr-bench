@@ -39,7 +39,7 @@ import jiwer
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from utils.registry import PRIMARY_MODE, MODEL_DISPLAY, models_for_dataset, get_dataset
+from utils.registry import PRIMARY_MODE, MODEL_BY_KEY, MODEL_DISPLAY, models_for_dataset, get_dataset
 from utils.io_helpers import stage2_dir, analysis_dir, build_md_table
 
 B_DEFAULT = 2000
@@ -72,10 +72,12 @@ def _load_clip_table(dataset: str, model: str, mode: str) -> pd.DataFrame | None
             f"per-clip joins would silently misalign. Fix the dataset id column / Stage 1 output."
         )
     errs, words = zip(*(_clip_errors(r, h) for r, h in zip(df["reference"], df["hypothesis"])))
-    speaker = (df["Speaker_ID"].astype(str).str.strip()
+    # NaN-safe: astype(str) would turn missing speakers into the literal string
+    # "nan", silently merging unrelated clips into one giant pseudo-speaker cluster.
+    speaker = (df["Speaker_ID"].map(lambda v: "" if pd.isna(v) else str(v).strip())
                if "Speaker_ID" in df.columns else pd.Series([""] * len(df)))
     out = pd.DataFrame({"ID": ids, "errors": errs, "ref_words": words,
-                        "speaker": speaker.fillna("").values})
+                        "speaker": speaker.values})
     return out.set_index("ID")
 
 
@@ -102,7 +104,14 @@ def _holm(pvals: list[float]) -> list[float]:
 def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
     spec = get_dataset(dataset)
     tables = {}
+    # One hypothesis family per analysis: only the headline (chart) models enter
+    # this pairwise table + Holm correction. The FT-study variants are a separate
+    # controlled comparison with its own paired test (analysis/compare_finetune.py);
+    # mixing the families would penalize the headline comparisons for tests that
+    # belong to a different question.
     for m in models_for_dataset(dataset):
+        if not MODEL_BY_KEY[m].chart:
+            continue
         t = _load_clip_table(dataset, m, mode)
         if t is not None:
             tables[m] = t
@@ -213,7 +222,9 @@ def main(dataset: str, mode: str, B: int) -> None:
     with open(os.path.join(out, f"statistics_{mode}.md"), "w") as f:
         f.write(f"# Statistical significance — {spec.display} — mode `{mode}`\n\n")
         f.write(f"Corpus WER with 95% bootstrap CI: {B} resamples, seed {SEED}, N={N} clips, "
-                f"resampled by **{unit}** ({G} clusters). ")
+                f"resampled by **{unit}** ({G} clusters). Headline (chart) models only — "
+                f"the fine-tuning study is a separate hypothesis family with its own paired "
+                f"test in `finetune_comparison.md`. ")
         if unit == "speaker":
             f.write("Speaker-level resampling accounts for within-speaker correlation "
                     "(clips from one speaker share accent/channel); clip-level CIs are in the "

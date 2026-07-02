@@ -1,6 +1,4 @@
 model,display,n_clips,n_clusters,cluster_unit,corpus_wer_pct,ci_lo_pct,ci_hi_pct,ci_halfwidth_pp,ci_lo_clip_pct,ci_hi_clip_pct
-medium_hf,Whisper Medium (HF),985,280,speaker,14.42,12.85,16.19,1.67,12.94,16.1
-medium_ft,Whisper Medium (FT),985,280,speaker,14.61,12.69,16.98,2.14,12.71,17.12
 medium,Whisper Medium,985,280,speaker,14.76,13.69,15.87,1.09,13.93,15.6
 parakeet,Parakeet-TDT-0.6B,985,280,speaker,15.6,14.49,16.71,1.11,14.75,16.5
 large,Whisper Large,985,280,speaker,15.93,14.72,17.16,1.22,14.93,17.04
