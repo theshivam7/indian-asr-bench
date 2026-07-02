@@ -126,10 +126,14 @@ case "$PHASE" in
   seeds)
      # Seed replicates (43, 44) of the speaker-disjoint FT — the multi-seed null-result
      # study. Independent of the seed-42 job (separate model dirs); safe in parallel.
+     # Seed jobs write ONLY their raw CSVs; one score job (afterok both) rescores
+     # results/tie once, avoiding concurrent writes to the shared Stage-2/3 files.
      JA=$(submit_seed 43 "$AFTER")
      JB=$(submit_seed 44 "$AFTER")
+     JS=$(qsub -P "$PROJECT" -v "${VARS},DATASET=tie" -W depend=afterok:"${JA}:${JB}" hpc/job_score.pbs)
      echo "  [seeds ] disjoint FT s43 : $JA${AFTER:+ (afterok $AFTER)}"
-     echo "  [seeds ] disjoint FT s44 : $JB${AFTER:+ (afterok $AFTER)}" ;;
+     echo "  [seeds ] disjoint FT s44 : $JB${AFTER:+ (afterok $AFTER)}"
+     echo "  [seeds ] rescore tie     : $JS (afterok $JA,$JB)" ;;
   1) J=$(submit_phase1 "$AFTER");    echo "  [phase 1] TIE new models : $J${AFTER:+ (afterok $AFTER)}" ;;
   2) J=$(submit_phase2 "$AFTER");    echo "  [phase 2] Svarah         : $J${AFTER:+ (afterok $AFTER)}" ;;
   3) J=$(submit_phase3 "$AFTER")
