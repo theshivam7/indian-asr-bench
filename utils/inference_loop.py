@@ -21,6 +21,7 @@ from utils.io_helpers import (
     stage1_raw_dir,
     results_dir,
     build_sample_row,
+    sample_id,
     save_checkpoint,
     remove_checkpoint,
 )
@@ -62,7 +63,7 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *, check
         transcript = str(sample.get(spec.gold_ref_col) or "").strip()
         if not transcript:
             continue
-        sid = str(sample.get(spec.id_col, ""))
+        sid = sample_id(sample, spec)
         if sid in completed:
             hyp_raw = str(ckpt_map.get(sid, {}).get("hypothesis_raw") or "")
         else:

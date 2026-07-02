@@ -114,6 +114,21 @@ def analysis_dir(dataset: str = "tie") -> str:
     return d
 
 
+def sample_id(sample: dict, spec) -> str:
+    """Extract a clean string ID for a sample.
+
+    Usually spec.id_col is a plain string column. Some datasets (Svarah) have no
+    separate id/filename field, so id_col points at the same HF column as
+    audio_col; since that column is an Audio() feature, accessing it returns the
+    decoded {"path", "array", "sampling_rate"} dict, not a string. Pull "path"
+    back out in that case rather than stringifying the whole decoded waveform.
+    """
+    val = sample.get(spec.id_col, "")
+    if isinstance(val, dict):
+        val = val.get("path", "")
+    return str(val)
+
+
 def build_sample_row(
     sample: dict,
     sample_id: str,

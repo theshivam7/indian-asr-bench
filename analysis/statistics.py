@@ -63,6 +63,8 @@ def _load_clip_table(dataset: str, model: str, mode: str) -> pd.DataFrame | None
 def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
     models = [m for m in models_for_dataset(dataset)
               if _load_clip_table(dataset, m, mode) is not None]
+    if not models:
+        return [], [], 0
     tables = {m: _load_clip_table(dataset, m, mode) for m in models}
 
     # Common clips (intersection) so all models are compared on identical resamples.
@@ -117,6 +119,10 @@ def main(dataset: str, mode: str, B: int) -> None:
     spec = get_dataset(dataset)
     per_model, pairwise, N = analyze(dataset, mode, B)
     out = analysis_dir(dataset)
+
+    if not per_model:
+        print(f"[statistics] {spec.display} / {mode}: no scored clip tables found — nothing to analyze.")
+        return
 
     df_pm = pd.DataFrame(per_model)
     df_pw = pd.DataFrame(pairwise)

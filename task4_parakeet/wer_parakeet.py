@@ -82,7 +82,7 @@ def main():
     from utils.registry import MODEL_BY_KEY
     from utils.datasets import load_eval
     from utils.io_helpers import (results_dir, stage1_raw_dir, build_sample_row,
-                                  save_checkpoint, remove_checkpoint)
+                                  sample_id, save_checkpoint, remove_checkpoint)
 
     model_key = args.model
     dataset = args.dataset
@@ -133,7 +133,7 @@ def main():
         transcript = str(sample.get(spec.gold_ref_col) or "").strip()
         if not transcript:
             continue
-        sid = str(sample.get(spec.id_col, ""))
+        sid = sample_id(sample, spec)
         if sid in completed:
             flush()
             hyp = str((ckpt_map.get(sid) or {}).get("hypothesis_raw") or "")
