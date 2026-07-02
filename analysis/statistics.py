@@ -1,16 +1,24 @@
 """
 Stage 3 (statistics): bootstrap confidence intervals + paired significance tests.
 
-Fixes the paper's biggest rigour gap: headline WER deltas ("0.33pp", "no
-significant gain") were reported without uncertainty. This computes, per dataset
-and evaluation mode:
+Computes, per dataset and evaluation mode:
 
-  * a 95% bootstrap CI on each model's CORPUS WER (resampling clips with
-    replacement and recomputing Sum(errors)/Sum(ref_words) — NOT the mean of
-    per-clip WER, which is a different, tail-inflated quantity), and
-  * paired bootstrap significance for every model pair (same resampled clip
-    indices for both models, so the comparison is properly paired), reporting the
-    WER difference, its 95% CI, and a two-sided p-value.
+  * a 95% bootstrap CI on each model's CORPUS WER (resampling with replacement
+    and recomputing Sum(errors)/Sum(ref_words) — NOT the mean of per-clip WER,
+    which is a different, tail-inflated quantity);
+  * paired bootstrap significance for every model pair (identical resample
+    indices for both models), with Holm–Bonferroni-adjusted p-values.
+
+Resampling unit: **speakers**, when the dataset exposes a speaker id. Clips from
+one speaker share accent/microphone/room, so their errors are correlated;
+resampling clips i.i.d. understates variance and overstates significance
+(TIE: 986 clips from 280 speakers, median 3 clips/speaker). Clip-level CIs are
+reported alongside for transparency; datasets without a speaker id (Svarah's HF
+config) fall back to clip-level with an explicit note.
+
+Consistency guards: duplicate clip IDs raise; a model whose scored table covers
+fewer clips than the common intersection triggers a loud warning (prevents two
+different "corpus WER" numbers for the same model reaching the paper).
 
 Reads   results/<dataset>/stage2_processed/<mode>/wer_<model>_<mode>.csv
 Writes  results/<dataset>/analysis/statistics_<mode>.{csv,md}
@@ -56,16 +64,51 @@ def _load_clip_table(dataset: str, model: str, mode: str) -> pd.DataFrame | None
     if not os.path.exists(path):
         return None
     df = pd.read_csv(path)
+    ids = df["ID"].astype(str)
+    if ids.duplicated().any():
+        dupes = ids[ids.duplicated()].unique()[:5].tolist()
+        raise ValueError(
+            f"[statistics] {path}: {ids.duplicated().sum()} duplicate clip IDs (e.g. {dupes}) — "
+            f"per-clip joins would silently misalign. Fix the dataset id column / Stage 1 output."
+        )
     errs, words = zip(*(_clip_errors(r, h) for r, h in zip(df["reference"], df["hypothesis"])))
-    return pd.DataFrame({"ID": df["ID"].astype(str), "errors": errs, "ref_words": words}).set_index("ID")
+    speaker = (df["Speaker_ID"].astype(str).str.strip()
+               if "Speaker_ID" in df.columns else pd.Series([""] * len(df)))
+    out = pd.DataFrame({"ID": ids, "errors": errs, "ref_words": words,
+                        "speaker": speaker.fillna("").values})
+    return out.set_index("ID")
+
+
+def _bootstrap_paired(E: dict, W: np.ndarray, B: int, rng) -> tuple[dict, np.ndarray]:
+    """Shared-index bootstrap over rows of E[m] / W. Returns per-model (B,) corpus WERs."""
+    n = len(W)
+    idx = rng.integers(0, n, size=(B, n))
+    sw = W[idx].sum(axis=1)
+    return {m: e[idx].sum(axis=1) / sw for m, e in E.items()}, sw
+
+
+def _holm(pvals: list[float]) -> list[float]:
+    """Holm–Bonferroni step-down adjusted p-values (monotone, capped at 1)."""
+    m = len(pvals)
+    order = np.argsort(pvals)
+    adj = np.empty(m)
+    running = 0.0
+    for rank, i in enumerate(order):
+        running = max(running, (m - rank) * pvals[i])
+        adj[i] = min(running, 1.0)
+    return adj.tolist()
 
 
 def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
-    models = [m for m in models_for_dataset(dataset)
-              if _load_clip_table(dataset, m, mode) is not None]
+    spec = get_dataset(dataset)
+    tables = {}
+    for m in models_for_dataset(dataset):
+        t = _load_clip_table(dataset, m, mode)
+        if t is not None:
+            tables[m] = t
+    models = list(tables)
     if not models:
-        return [], [], 0
-    tables = {m: _load_clip_table(dataset, m, mode) for m in models}
+        return None
 
     # Common clips (intersection) so all models are compared on identical resamples.
     common = None
@@ -73,56 +116,92 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
         common = set(t.index) if common is None else (common & set(t.index))
     common = sorted(common)
     N = len(common)
+    for m, t in tables.items():
+        if len(t) != N:
+            print(f"  [WARNING] {m}: scored table has {len(t)} clips but the cross-model "
+                  f"intersection is {N}. Its standalone Stage-2 corpus WER covers a DIFFERENT "
+                  f"clip set than the numbers below — do not mix them in the paper.")
 
     ref_words = tables[models[0]].loc[common, "ref_words"].to_numpy()
-    E = {m: tables[m].loc[common, "errors"].to_numpy() for m in models}
+    E_clip = {m: tables[m].loc[common, "errors"].to_numpy() for m in models}
+    point = {m: E_clip[m].sum() / ref_words.sum() for m in models}
+
+    # --- Cluster structure: speakers if available, else clips ---
+    speakers = tables[models[0]].loc[common, "speaker"].to_numpy()
+    have_speakers = pd.Series(speakers).replace("", np.nan).notna().sum() > 0 and \
+        len(set(s for s in speakers if s)) > 1
+    if have_speakers:
+        # clips with a missing speaker id become their own singleton cluster
+        labels = np.array([s if s else f"clip:{cid}" for s, cid in zip(speakers, common)])
+        cluster_unit = "speaker"
+    else:
+        labels = np.array([f"clip:{cid}" for cid in common])
+        cluster_unit = "clip"
+        print(f"  [note] '{dataset}' exposes no speaker id — falling back to clip-level "
+              f"resampling; CIs may understate within-speaker correlation.")
+
+    uniq = sorted(set(labels))
+    G = len(uniq)
+    gpos = {g: i for i, g in enumerate(uniq)}
+    gidx = np.array([gpos[l] for l in labels])
+    W_grp = np.bincount(gidx, weights=ref_words, minlength=G)
+    E_grp = {m: np.bincount(gidx, weights=E_clip[m], minlength=G) for m in models}
 
     rng = np.random.default_rng(SEED)
-    idx = rng.integers(0, N, size=(B, N))            # shared resample indices (paired)
-    sw = ref_words[idx].sum(axis=1)                   # (B,) total ref words per resample
-    boot = {m: E[m][idx].sum(axis=1) / sw for m in models}   # (B,) corpus WER per resample
-    point = {m: E[m].sum() / ref_words.sum() for m in models}
+    boot_cl, _ = _bootstrap_paired(E_grp, W_grp, B, rng)       # cluster-level (primary)
+    rng2 = np.random.default_rng(SEED)
+    boot_clip, _ = _bootstrap_paired(E_clip, ref_words, B, rng2)  # clip-level (secondary)
 
-    # Per-model corpus WER + 95% CI
     per_model = []
     for m in models:
-        lo, hi = np.percentile(boot[m], [2.5, 97.5])
+        lo, hi = np.percentile(boot_cl[m], [2.5, 97.5])
+        lo_c, hi_c = np.percentile(boot_clip[m], [2.5, 97.5])
         per_model.append({
-            "model": m, "display": MODEL_DISPLAY.get(m, m), "n_clips": N,
+            "model": m, "display": MODEL_DISPLAY.get(m, m),
+            "n_clips": N, "n_clusters": G, "cluster_unit": cluster_unit,
             "corpus_wer_pct": round(point[m] * 100, 2),
             "ci_lo_pct": round(lo * 100, 2), "ci_hi_pct": round(hi * 100, 2),
             "ci_halfwidth_pp": round((hi - lo) / 2 * 100, 2),
+            "ci_lo_clip_pct": round(lo_c * 100, 2), "ci_hi_clip_pct": round(hi_c * 100, 2),
         })
     per_model.sort(key=lambda r: r["corpus_wer_pct"])
 
-    # Pairwise paired significance
+    # Pairwise paired significance on the CLUSTER bootstrap (the defensible unit).
     pairwise = []
     for i in range(len(models)):
         for j in range(i + 1, len(models)):
             a, b = models[i], models[j]
-            d = boot[a] - boot[b]
+            d = boot_cl[a] - boot_cl[b]
             obs = point[a] - point[b]
             lo, hi = np.percentile(d, [2.5, 97.5])
-            p = 2.0 * min((d <= 0).mean(), (d >= 0).mean())
-            p = min(p, 1.0)
+            # add-one smoothing avoids p=0 artifacts at finite B
+            p = 2.0 * min(((d <= 0).sum() + 1) / (B + 1), ((d >= 0).sum() + 1) / (B + 1))
             pairwise.append({
                 "model_a": a, "model_b": b,
                 "diff_pp": round(obs * 100, 2),
                 "ci_lo_pp": round(lo * 100, 2), "ci_hi_pp": round(hi * 100, 2),
-                "p_value": round(p, 4),
-                "significant_0.05": "yes" if (lo > 0 or hi < 0) else "no",
+                "p_value": min(round(p, 4), 1.0),
             })
-    return per_model, pairwise, N
+    adj = _holm([r["p_value"] for r in pairwise])
+    for r, pa in zip(pairwise, adj):
+        r["p_holm"] = round(pa, 4)
+        r["significant_holm_0.05"] = "yes" if pa < 0.05 else "no"
+
+    return {"models": models, "per_model": per_model, "pairwise": pairwise,
+            "N": N, "G": G, "cluster_unit": cluster_unit}
 
 
 def main(dataset: str, mode: str, B: int) -> None:
     spec = get_dataset(dataset)
-    per_model, pairwise, N = analyze(dataset, mode, B)
+    res = analyze(dataset, mode, B)
     out = analysis_dir(dataset)
 
-    if not per_model:
+    if res is None:
         print(f"[statistics] {spec.display} / {mode}: no scored clip tables found — nothing to analyze.")
         return
+
+    per_model, pairwise = res["per_model"], res["pairwise"]
+    N, G, unit = res["N"], res["G"], res["cluster_unit"]
 
     df_pm = pd.DataFrame(per_model)
     df_pw = pd.DataFrame(pairwise)
@@ -133,14 +212,25 @@ def main(dataset: str, mode: str, B: int) -> None:
     md_pm.columns = ["Model", "Corpus WER %", "CI low", "CI high", "±pp"]
     with open(os.path.join(out, f"statistics_{mode}.md"), "w") as f:
         f.write(f"# Statistical significance — {spec.display} — mode `{mode}`\n\n")
-        f.write(f"Corpus WER with 95% bootstrap CI ({B} resamples, seed {SEED}, N={N} clips).\n\n")
+        f.write(f"Corpus WER with 95% bootstrap CI: {B} resamples, seed {SEED}, N={N} clips, "
+                f"resampled by **{unit}** ({G} clusters). ")
+        if unit == "speaker":
+            f.write("Speaker-level resampling accounts for within-speaker correlation "
+                    "(clips from one speaker share accent/channel); clip-level CIs are in the "
+                    "CSV for comparison and are narrower, i.e. anti-conservative.\n\n")
+        else:
+            f.write("No speaker id is exposed for this dataset, so resampling is clip-level; "
+                    "CIs may understate within-speaker correlation (limitation).\n\n")
         f.write(build_md_table(md_pm) + "\n\n")
         f.write("## Pairwise paired significance\n\n")
-        f.write("Difference = WER(A) − WER(B) in pp; CI and two-sided bootstrap p-value; "
-                "paired on identical resampled clips.\n\n")
+        f.write("Difference = WER(A) − WER(B) in pp; paired bootstrap on identical "
+                f"{unit}-level resamples; two-sided p-values with Holm–Bonferroni correction "
+                f"across all {len(pairwise)} pairs.\n\n")
         f.write(build_md_table(df_pw) + "\n")
-    print(f"[statistics] {spec.display} / {mode}: wrote statistics_{mode}.{{csv,md}} + pairwise ({N} clips, B={B})")
-    print(df_pm[["display", "corpus_wer_pct", "ci_lo_pct", "ci_hi_pct"]].to_string(index=False))
+    print(f"[statistics] {spec.display} / {mode}: wrote statistics_{mode}.{{csv,md}} + pairwise "
+          f"({N} clips, {G} {unit}s, B={B})")
+    print(df_pm[["display", "corpus_wer_pct", "ci_lo_pct", "ci_hi_pct",
+                 "ci_lo_clip_pct", "ci_hi_clip_pct"]].to_string(index=False))
 
 
 if __name__ == "__main__":
