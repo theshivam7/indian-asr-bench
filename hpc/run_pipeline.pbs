@@ -1,13 +1,18 @@
 #!/bin/bash
 #PBS -N indian_asr_bench_pipeline
 #PBS -l select=1:ngpus=1:ncpus=8:mem=64gb
-#PBS -l walltime=10:00:00
+#PBS -l walltime=12:00:00
 #PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/pipeline.log
 #PBS -e logs/pipeline.log
 #PBS -j oe
 
-# ── Configure for your HPC environment ──────────────────────────────────────
+# Full from-scratch benchmark for one dataset: all inference models -> Stage 2 ->
+# Stage 3 (compare + statistics + error analysis + figures). Set DATASET (default tie).
+#   qsub -v DATASET=svarah hpc/run_pipeline.pbs
+# For an already-benchmarked dataset you usually DON'T need this — reuse the committed
+# raw transcripts and just run hpc/job_score.pbs (CPU).
+
 WORKDIR=${WORKDIR:-$(pwd)}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
 WHISPER_ENV=${WHISPER_ENV:-whisper}
@@ -15,56 +20,47 @@ PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
 QWEN3_ENV=${QWEN3_ENV:-qwen3}
 HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
-# ────────────────────────────────────────────────────────────────────────────
-
-echo "================================================================"
-echo "Indian-ASR-Bench Pipeline — All 5 Models + WER Analysis"
-echo "Started: $(date)"
-echo "Node: $(hostname)"
-echo "================================================================"
+DATASET=${DATASET:-tie}
 
 module load "${CUDA_MODULE}" 2>/dev/null || true
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
-
-export HF_DATASETS_CACHE="${HF_CACHE}"
-export HF_HOME="${HF_CACHE}"
-mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" \
-    "${WORKDIR}/results/stage1_raw_transcripts" \
-    "${WORKDIR}/results/stage2_processed" \
-    "${WORKDIR}/results/analysis"
-
+export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}"
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 cd "${WORKDIR}"
 
-# Stage 1 — Whisper models
+echo "================================================================"
+echo "Indian-ASR-Bench full pipeline — dataset=${DATASET} — $(date) on $(hostname)"
+echo "================================================================"
+
+# Stage 1 — Whisper family
 conda activate "${WHISPER_ENV}"
-echo -e "\n=== STAGE 1: Whisper Base ==="
-python task1_whisper_base/wer_whisper_base.py
+for M in base medium large large_v3_turbo; do
+  echo -e "\n=== Stage 1: whisper ${M} ==="
+  python task_whisper/run_whisper.py --model "${M}" --dataset "${DATASET}"
+done
 
-echo -e "\n=== STAGE 1: Whisper Medium ==="
-python task2_whisper_medium/wer_whisper_medium.py
-
-echo -e "\n=== STAGE 1: Whisper Large ==="
-python task3_whisper_large/wer_whisper_large.py
-
-# Stage 1 — Parakeet (separate env)
+# Stage 1 — Parakeet TDT + CTC
 conda activate "${PARAKEET_ENV}"
-echo -e "\n=== STAGE 1: Parakeet-TDT-0.6B-v2 ==="
-python task4_parakeet/wer_parakeet.py
+for M in parakeet parakeet_ctc; do
+  echo -e "\n=== Stage 1: ${M} ==="
+  python task4_parakeet/wer_parakeet.py --model "${M}" --dataset "${DATASET}"
+done
 
-# Stage 1 — Qwen3-ASR (separate env)
+# Stage 1 — Qwen3-ASR
 conda activate "${QWEN3_ENV}"
-echo -e "\n=== STAGE 1: Qwen3-ASR-1.7B ==="
-python task5_qwen3_asr/wer_qwen3.py
+echo -e "\n=== Stage 1: qwen3 ==="
+python task5_qwen3_asr/wer_qwen3.py --dataset "${DATASET}"
 
-# Stage 2 + Analysis (whisper env has pandas, jiwer, matplotlib)
+# Stage 2 + 3 (CPU)
 conda activate "${WHISPER_ENV}"
-echo -e "\n=== STAGE 2: Normalization + WER ==="
-python normalize_and_score.py
+echo -e "\n=== Stage 2 + 3 ==="
+python normalize_and_score.py --dataset "${DATASET}"
+python analysis/compare_all.py --dataset "${DATASET}"
+python analysis/statistics.py --dataset "${DATASET}"
+python analysis/error_analysis.py --dataset "${DATASET}"
+[ "${DATASET}" = "svarah" ] && python analysis/entity_analysis.py --dataset svarah
+python paper/figures/make_paper_figures.py --dataset "${DATASET}"
 
-echo -e "\n=== STAGE 3: Analysis + Charts ==="
-python analysis/compare_all.py
-
-echo -e "\n================================================================"
-echo "Pipeline complete: $(date)"
-echo "Results: ${WORKDIR}/results/"
+echo "================================================================"
+echo "Pipeline complete: $(date) — results in ${WORKDIR}/results/${DATASET}/"
 echo "================================================================"

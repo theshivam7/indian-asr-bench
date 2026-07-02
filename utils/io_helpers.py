@@ -25,7 +25,10 @@ os.environ.setdefault("HF_DATASETS_CACHE", HF_CACHE)
 
 
 def load_dataset_test():
-    """Load raianand/TIE_shorts test split."""
+    """Load raianand/TIE_shorts test split (kept for backward compatibility).
+
+    New code should use utils.datasets.load_eval(dataset_key) which is dataset-aware.
+    """
     from datasets import load_dataset
 
     print("Loading dataset raianand/TIE_shorts (test split) ...")
@@ -82,14 +85,31 @@ def decode_audio_value(audio_value: dict, target_sr: int | None = None) -> tuple
     return samples, sr
 
 
-def results_dir() -> str:
-    """Return the project-level results directory."""
-    return os.path.join(os.path.dirname(__file__), "..", "results")
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
-def stage1_raw_dir() -> str:
-    """Return the Stage 1 raw transcripts directory (read-only after first run)."""
-    d = os.path.join(results_dir(), "stage1_raw_transcripts")
+def results_dir(dataset: str = "tie") -> str:
+    """Return the per-dataset results directory: results/<dataset>."""
+    return os.path.join(_PROJECT_ROOT, "results", dataset)
+
+
+def stage1_raw_dir(dataset: str = "tie") -> str:
+    """Stage 1 raw transcripts dir (immutable source of truth, always committed)."""
+    d = os.path.join(results_dir(dataset), "stage1_raw_transcripts")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def stage2_dir(dataset: str = "tie") -> str:
+    """Stage 2 scored-output dir: results/<dataset>/stage2_processed."""
+    d = os.path.join(results_dir(dataset), "stage2_processed")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def analysis_dir(dataset: str = "tie") -> str:
+    """Stage 3 analysis dir: results/<dataset>/analysis."""
+    d = os.path.join(results_dir(dataset), "analysis")
     os.makedirs(d, exist_ok=True)
     return d
 
@@ -99,22 +119,40 @@ def build_sample_row(
     sample_id: str,
     transcript: str,
     hyp_raw: str,
+    spec=None,
+    split: str | None = None,
+    alt_ref: str | None = None,
 ) -> dict:
-    """Build the standard output row dict shared by all transcription scripts."""
-    return {
-        "split": "test",
+    """Build the canonical raw-CSV row for any dataset, driven by its DatasetSpec.
+
+    Metadata columns come from ``spec.metadata_cols`` (canonical_name -> HF source
+    column); speaker and duration from ``spec.speaker_col`` / ``spec.duration_col``.
+    Called with the old 4-arg signature it defaults to the TIE spec and reproduces
+    the original TIE schema byte-for-byte (so the untouched task4/5/6 scripts keep
+    working). ``alt_ref`` is the alternate reference (TIE Normalised_Transcript);
+    if None it is pulled from ``spec.alt_ref_col`` when present.
+    """
+    from utils.registry import TIE
+
+    if spec is None:
+        spec = TIE
+    if split is None:
+        split = spec.splits.get("eval", "test")
+    if alt_ref is None:
+        alt_ref = sample.get(spec.alt_ref_col) if spec.alt_ref_col else ""
+
+    row = {
+        "split": split,
         "ID": sample_id,
-        "Speaker_ID": sample.get("Speaker_ID", ""),
-        "Gender": sample.get("Gender", ""),
-        "Speech_Class": sample.get("Speech_Class", ""),
-        "Native_Region": sample.get("Native_Region", ""),
-        "Speech_Duration_seconds": sample.get("Speech_Duration_seconds") or "",
-        "Discipline_Group": sample.get("Discipline_Group", ""),
-        "Topic": sample.get("Topic", ""),
-        "transcript_raw": transcript,
-        "normalised_transcript_raw": str(sample.get("Normalised_Transcript") or "").strip(),
-        "hypothesis_raw": hyp_raw,
+        "Speaker_ID": sample.get(spec.speaker_col, "") if spec.speaker_col else "",
+        "Speech_Duration_seconds": (sample.get(spec.duration_col) or "") if spec.duration_col else "",
     }
+    for out_name, src_col in spec.metadata_cols.items():
+        row[out_name] = sample.get(src_col, "")
+    row["transcript_raw"] = transcript
+    row["normalised_transcript_raw"] = str(alt_ref or "").strip()
+    row["hypothesis_raw"] = hyp_raw
+    return row
 
 
 def build_md_table(df: pd.DataFrame) -> str:
@@ -129,17 +167,17 @@ def build_md_table(df: pd.DataFrame) -> str:
     return "\n".join([header, sep] + rows)
 
 
-def save_checkpoint(rows: list[dict], model_name: str) -> str:
-    """Save a partial checkpoint CSV for crash recovery."""
-    out_dir = results_dir()
+def save_checkpoint(rows: list[dict], model_name: str, dataset: str = "tie") -> str:
+    """Save a partial checkpoint CSV for crash recovery (transient, gitignored)."""
+    out_dir = results_dir(dataset)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"wer_{model_name}_partial.csv")
     pd.DataFrame(rows).to_csv(out_path, index=False)
     return out_path
 
 
-def remove_checkpoint(model_name: str) -> None:
+def remove_checkpoint(model_name: str, dataset: str = "tie") -> None:
     """Remove partial checkpoint CSV after successful completion."""
-    out_path = os.path.join(results_dir(), f"wer_{model_name}_partial.csv")
+    out_path = os.path.join(results_dir(dataset), f"wer_{model_name}_partial.csv")
     if os.path.exists(out_path):
         os.unlink(out_path)

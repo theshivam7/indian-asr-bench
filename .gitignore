@@ -23,6 +23,7 @@ whisper_cache/
 
 # Partial/temp files
 *_partial.csv
+*_interrupted.csv
 *.wav
 *.tmp
 

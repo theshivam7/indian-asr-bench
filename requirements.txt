@@ -9,6 +9,9 @@ matplotlib==3.10.3
 tqdm==4.67.1
 numpy==1.26.4
 num2words==0.5.14
+whisper_normalizer==0.1.0   # Whisper EnglishTextNormalizer for the whisper_norm mode (no torch)
+# Optional: spaCy adds named-entity tokens to the Svarah NEER metric
+#   pip install spacy && python -m spacy download en_core_web_sm
 
 # For Stage 1 (ASR transcription), see per-task requirements:
 #   task1_whisper_base/requirements.txt   — Whisper Base

@@ -1,0 +1,45 @@
+#!/bin/bash
+#PBS -N asr_bench_tie_newmodels
+#PBS -l select=1:ngpus=1:ncpus=8:mem=48gb
+#PBS -l walltime=5:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/tie_newmodels.log
+#PBS -e logs/tie_newmodels.log
+#PBS -j oe
+
+# Adds the two NEW models to the existing TIE benchmark (the other 7 raw CSVs are
+# already committed and are NOT re-run). Then rescores TIE from ALL raw transcripts
+# and rebuilds analysis.
+
+WORKDIR=${WORKDIR:-$(pwd)}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+WHISPER_ENV=${WHISPER_ENV:-whisper}
+PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
+HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
+
+module load "${CUDA_MODULE}" 2>/dev/null || true
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}"
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
+cd "${WORKDIR}"
+
+echo "=== TIE new-models started $(date) ==="
+
+conda activate "${WHISPER_ENV}"
+echo -e "\n=== TIE Stage 1: whisper large-v3-turbo ==="
+python task_whisper/run_whisper.py --model large_v3_turbo --dataset tie
+
+conda activate "${PARAKEET_ENV}"
+echo -e "\n=== TIE Stage 1: parakeet_ctc ==="
+python task4_parakeet/wer_parakeet.py --model parakeet_ctc --dataset tie
+
+# Rescore + analyse TIE from all committed + new raw transcripts (CPU)
+conda activate "${WHISPER_ENV}"
+python normalize_and_score.py --dataset tie
+python analysis/compare_all.py --dataset tie
+python analysis/statistics.py --dataset tie
+python analysis/error_analysis.py --dataset tie
+python paper/figures/make_paper_figures.py --dataset tie
+
+echo "=== TIE new-models complete $(date) ==="
