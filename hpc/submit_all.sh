@@ -35,6 +35,9 @@ set -euo pipefail
 SCRATCH="${SCRATCH:-/scratch/users/ntu/$USER}"
 WORKDIR="${WORKDIR:-$(pwd)}"
 HF_CACHE="${HF_CACHE:-$SCRATCH/hf_cache}"
+# conda's own package/repodata cache defaults to $HOME/.conda/pkgs — redirect it too,
+# or `conda install`/`conda env create` fail with the same HOME disk-quota error.
+export CONDA_PKGS_DIRS="${CONDA_PKGS_DIRS:-$SCRATCH/conda_pkgs}"
 CONDA_BASE="${CONDA_BASE:-$(conda info --base 2>/dev/null || echo /app/apps/miniforge3/25.3.1)}"
 CUDA_MODULE="${CUDA_MODULE:-cuda/11.8.0}"
 

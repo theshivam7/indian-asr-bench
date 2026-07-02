@@ -73,6 +73,14 @@ Prefer to fire everything at once (queue permitting)? `bash hpc/submit_all.sh --
 submits all three with correct `afterok` chaining (Svarah parallel to phase 1;
 disjoint FT after phase 1; figures last).
 
+Submitted phases 1 and 2 separately and want phase 3 queued now instead of
+waiting for phase 1 to finish? Chain it explicitly with `--after <phase1_job_id>`
+(PBS holds it until phase 1 exits successfully, then releases it automatically):
+
+```bash
+bash hpc/submit_all.sh --phase 3 --after 14763802   # job id from phase 1's output
+```
+
 The script auto-forwards the scratch paths (`HF_CACHE`, `FT_OUTPUT_DIR`,
 `FT_DISJOINT_OUTPUT`) and your env locations to every job, and prints the job IDs.
 
@@ -92,9 +100,28 @@ Then commit the updated `results/**` and `paper/figures/**` and push.
 
 ## Troubleshooting
 
-- **`Disk quota exceeded`** — you wrote to `$HOME`. Make sure `SCRATCH`, `HF_CACHE`,
-  and the repo itself are under `/scratch`. Fine-tune weights default to
-  `$SCRATCH/models/...` via the submitter.
+- **`Disk quota exceeded`** — you wrote to `$HOME`. This bites in three DIFFERENT
+  places, each needing its own redirect (all handled automatically by
+  `hpc/job_*.pbs` and `submit_all.sh`, but relevant if you run things by hand):
+  `HF_HOME`/`HF_DATASETS_CACHE` (HF datasets/models), `XDG_CACHE_HOME`
+  (openai-whisper's own model cache — does NOT follow `HF_HOME`), and
+  `CONDA_PKGS_DIRS` (conda's own package/repodata cache — bites `conda install`).
+  Make sure `SCRATCH`, `HF_CACHE`, and the repo itself are under `/scratch`.
+  Fine-tune weights default to `$SCRATCH/models/...` via the submitter.
+- **`torch.cuda.is_available()` is `False`** — first check WHERE you're testing it:
+  the login node has no GPU at all (`nvidia-smi` fails there), so this is *expected*
+  and uninformative interactively. The real test is inside a submitted job — every
+  GPU job here prints `torch sees CUDA: True/False` near the top of its log and now
+  **hard-exits** if it's `False`, so check `logs/<job>.log`. If it genuinely fails
+  inside a job: a pip-installed `torch` (bare or `+cu118`) does not reliably see the
+  GPU on this cluster — the env must use conda's `pytorch-cuda=11.8` build, and the
+  exact build string must be pinned (`pytorch::pytorch=2.5.1=py3.10_cuda11.8_cudnn9.1.0_0`)
+  or the solver can silently substitute conda-forge's CPU-only build instead.
+- **`ffmpeg: No such file or directory` during Whisper transcription** — openai-whisper
+  shells out to `ffmpeg` per clip; if missing, every failing clip silently gets an
+  EMPTY hypothesis (~100% WER for that clip) instead of crashing the job. Verify with
+  `conda run -p $SCRATCH/envs/whisper which ffmpeg`; if empty,
+  `conda install -p $SCRATCH/envs/whisper -c conda-forge ffmpeg`.
 - **Svarah download 401/403** — the HF token isn't visible to the job. Re-run
   `HF_HOME=$HF_CACHE huggingface-cli login`, or `export HF_TOKEN=...` before submitting.
 - **`whisper_normalizer` ImportError during scoring** — run the `pip install` line

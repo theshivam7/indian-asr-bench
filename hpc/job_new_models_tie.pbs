@@ -30,17 +30,27 @@ echo "=== TIE new-models started $(date) ==="
 echo "--- GPU / CUDA diagnostics ---"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
 conda activate "${WHISPER_ENV}"
-python -c "import torch; print('torch sees CUDA:', torch.cuda.is_available(), '| device count:', torch.cuda.device_count())"
+# Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
+# non-interactive PBS batch shell (same quirk documented in job_finetune.pbs) —
+# without this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok, '| device count:', torch.cuda.device_count()); sys.exit(0 if ok else 1)" \
+    || { echo "[FATAL] CUDA not available in ${WHISPER_ENV} - aborting before a CPU-bound run"; exit 1; }
 
 echo -e "\n=== TIE Stage 1: whisper large-v3-turbo ==="
 python task_whisper/run_whisper.py --model large_v3_turbo --dataset tie
 
 conda activate "${PARAKEET_ENV}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 echo -e "\n=== TIE Stage 1: parakeet_ctc ==="
 python task4_parakeet/wer_parakeet.py --model parakeet_ctc --dataset tie
 
 # Rescore + analyse TIE from all committed + new raw transcripts (CPU)
 conda activate "${WHISPER_ENV}"
+# Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
+# non-interactive PBS batch shell (same quirk documented in job_finetune.pbs) —
+# without this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 python normalize_and_score.py --dataset tie
 python analysis/compare_all.py --dataset tie
 python analysis/statistics.py --dataset tie
