@@ -178,10 +178,15 @@ TIE = DatasetSpec(
     neer_register_col=None,     # academic prose: no entity-dense register -> NEER not applicable
 )
 
-# NOTE: Svarah column names below are PROVISIONAL (verified=False). Svarah is a
-# gated HF dataset; the exact feature names must be confirmed the first time it is
-# loaded (utils.datasets prints ds.features and warns on any missing column).
-# Adjust these to match the real schema, then flip verified=True.
+# Confirmed against the real ai4bharat/Svarah [test] HF features on first load
+# (2026-07-03): ['age-group', 'audio_filepath', 'duration', 'gender',
+# 'highest_qualification', 'job_category', 'native_place_district',
+# 'native_place_state', 'occupation_domain', 'primary_language', 'text'].
+# No speaker-id column and no read/extempore/use-case register column are exposed
+# in this Hub config, despite the dataset card describing that split conceptually
+# -> speaker_col is None and NEER (register-gated) is disabled until a real
+# register field is found (e.g. derivable from audio_filepath naming, or from the
+# original AI4Bharat release rather than this HF mirror).
 SVARAH = DatasetSpec(
     key="svarah",
     hf_id="ai4bharat/Svarah",
@@ -190,27 +195,25 @@ SVARAH = DatasetSpec(
     gold_ref_col="text",
     alt_ref_col=None,                         # no pre-normalized reference field
     id_col="audio_filepath",
-    speaker_col="speaker_id",
-    audio_col="audio",
+    speaker_col=None,                         # no speaker-id column in this HF config
+    audio_col="audio_filepath",
     duration_col="duration",
     metadata_cols={
         "Gender": "gender",
-        "Age": "age_group",
+        "Age": "age-group",
         "Native_Language": "primary_language",
-        "Register": "category",               # read / extempore / use-case
     },
     subgroup_dims=(
         ("Native_Language", "Native language"),
-        ("Register", "Register"),
         ("Gender", "Gender"),
         ("Age", "Age group"),
     ),
     applicable_modes=("transcript_raw", "transcript_clean", "whisper_norm"),
     license="CC BY 4.0",
     citation="Javed et al., INTERSPEECH 2023",
-    neer_register_col="Register",
-    neer_register_value="use_case",           # confirm the exact value on first load
-    verified=False,
+    neer_register_col=None,                   # no register field in this HF config; see note above
+    neer_register_value=None,
+    verified=True,
 )
 
 DATASET_SPECS = (TIE, SVARAH)
