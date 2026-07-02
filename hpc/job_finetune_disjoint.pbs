@@ -30,6 +30,11 @@ cd "${WORKDIR}"
 conda activate "${WHISPER_FT_ENV}"
 export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 
+echo "--- GPU / CUDA diagnostics ---"
+nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
+python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok); sys.exit(0 if ok else 1)" \
+    || { echo "[FATAL] CUDA not available in ${WHISPER_FT_ENV} - aborting before a 10h CPU-bound training run"; exit 1; }
+
 # Keep the (~3GB) fine-tuned weights off the quota-limited $HOME — default onto scratch.
 FT_DISJOINT_OUTPUT="${FT_DISJOINT_OUTPUT:-models/whisper_medium_ft_disjoint}"
 mkdir -p "$(dirname "${FT_DISJOINT_OUTPUT}")"

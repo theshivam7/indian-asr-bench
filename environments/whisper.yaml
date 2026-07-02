@@ -8,13 +8,17 @@ dependencies:
   - python=3.10
   - pip
   - conda-forge::ffmpeg
+  # torch installed via conda (matching parakeet.yaml/qwen3.yaml's proven-working
+  # pytorch-cuda=11.8 build) — a pip-installed torch wheel (bare or +cu118) does NOT
+  # reliably see the GPU on this cluster; torch.cuda.is_available() silently returns
+  # False either way. Build string pinned exactly (not just the version) because an
+  # unpinned `conda install -c pytorch -c conda-forge pytorch=2.5.1` let the solver
+  # silently pick conda-forge's CPU-only build instead of the pytorch channel's CUDA one.
+  - pytorch::pytorch=2.5.1=py3.10_cuda11.8_cudnn9.1.0_0
+  - pytorch::pytorch-cuda=11.8
+  - pytorch::torchaudio=2.5.1=py310_cu118
   - pip:
-      # torch pinned to the cu118 wheel to match this cluster's driver/CUDA-11.8 module
-      # (parakeet.yaml/qwen3.yaml pin the same via conda pytorch-cuda=11.8) — a bare
-      # `torch==2.5.1` resolves to a default wheel that silently falls back to CPU here.
-      - --extra-index-url https://download.pytorch.org/whl/cu118
       - openai-whisper==20250625
-      - torch==2.5.1+cu118
       - datasets==3.6.0
       - jiwer==3.1.0
       - pandas==2.2.3
