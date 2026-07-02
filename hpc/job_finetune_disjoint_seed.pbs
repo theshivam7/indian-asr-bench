@@ -43,8 +43,11 @@ nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "
 python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok); sys.exit(0 if ok else 1)" \
     || { echo "[FATAL] CUDA not available in ${WHISPER_FT_ENV} - aborting before a 10h CPU-bound training run"; exit 1; }
 
-FT_OUT="models/whisper_medium_ft_disjoint_s${SEED}"
+# Keep the (~3GB) fine-tuned weights off the quota-limited $HOME: derive from
+# FT_DISJOINT_OUTPUT when submit_all.sh provides it (scratch), else repo-local.
+FT_OUT="${FT_DISJOINT_OUTPUT:-models/whisper_medium_ft_disjoint}_s${SEED}"
 MODEL_KEY="medium_ft_disjoint_s${SEED}"
+mkdir -p "$(dirname "${FT_OUT}")"
 
 echo "=== Stage 0: speaker-disjoint fine-tune, seed ${SEED} $(date) ==="
 FT_SPEAKER_DISJOINT=1 FT_SEED="${SEED}" FT_OUTPUT_DIR="${FT_OUT}" \
