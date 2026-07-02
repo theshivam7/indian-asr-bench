@@ -25,10 +25,14 @@ experiment with the right parallelism + dependency chaining, printing the job id
 
 ```bash
 # from the repo root, on a login node:
-huggingface-cli login                       # once — Svarah is a gated HF dataset
-PROJECT=<nscc_project_id> bash hpc/submit_all.sh            # submit everything
-PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup    # also create missing conda envs first
+huggingface-cli login                             # once — Svarah is a gated HF dataset
+PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase all   # submit everything, correctly chained
+PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup       # also create missing conda envs first
 ```
+
+Without `--phase`, the submitter only submits **phase 1** (see `hpc/NSCC_RUNBOOK.md` for the
+phased 1/2/3 submission flow, and the `--after <job_id>` flag for chaining phases you submit
+separately).
 
 Dependency graph (`-->` = PBS `afterok`):
 
@@ -43,8 +47,8 @@ job_finetune_disjoint ───┘          (GPU ~10h)  writes results/tie (resc
 
 TIE-new-models and Svarah run **in parallel** (disjoint result dirs); the disjoint
 fine-tune is serialized after the TIE job (both rescore `results/tie`); a final CPU
-figures job rebuilds the cross-dataset plots once everything is done. Skip parts
-with `RUN_TIE=0 / RUN_SVARAH=0 / RUN_DISJOINT=0`.
+figures job rebuilds the cross-dataset plots once everything is done. To submit a
+single phase on its own (e.g. only Svarah), use `--phase 1|2|3` instead of `all`.
 
 ## Environments
 
