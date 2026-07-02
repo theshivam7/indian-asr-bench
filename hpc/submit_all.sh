@@ -119,9 +119,17 @@ qsub_job() { qsub -P "$PROJECT" -v "$VARS" "$@"; }
 submit_phase1() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_new_models_tie.pbs; }
 submit_phase2() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_svarah.pbs; }
 submit_phase3() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_finetune_disjoint.pbs; }
+submit_seed()   { local s="$1" d="${2:-}"; qsub -P "$PROJECT" -v "${VARS},SEED=${s}" ${d:+-W depend=afterok:$d} hpc/job_finetune_disjoint_seed.pbs; }
 submit_figs()   { qsub_job -W depend=afterok"$1" hpc/job_figures.pbs; }
 
 case "$PHASE" in
+  seeds)
+     # Seed replicates (43, 44) of the speaker-disjoint FT — the multi-seed null-result
+     # study. Independent of the seed-42 job (separate model dirs); safe in parallel.
+     JA=$(submit_seed 43 "$AFTER")
+     JB=$(submit_seed 44 "$AFTER")
+     echo "  [seeds ] disjoint FT s43 : $JA${AFTER:+ (afterok $AFTER)}"
+     echo "  [seeds ] disjoint FT s44 : $JB${AFTER:+ (afterok $AFTER)}" ;;
   1) J=$(submit_phase1 "$AFTER");    echo "  [phase 1] TIE new models : $J${AFTER:+ (afterok $AFTER)}" ;;
   2) J=$(submit_phase2 "$AFTER");    echo "  [phase 2] Svarah         : $J${AFTER:+ (afterok $AFTER)}" ;;
   3) J=$(submit_phase3 "$AFTER")
@@ -137,7 +145,7 @@ case "$PHASE" in
      echo "  [phase 2] Svarah         : $J2 (parallel)"
      echo "  [phase 3] disjoint FT    : $J3 (afterok $J1)"
      echo "  [final ] combined figs   : $F  (afterok $J2,$J3)" ;;
-  *) echo "ERROR: --phase must be 1, 2, 3, or all" >&2; exit 1 ;;
+  *) echo "ERROR: --phase must be 1, 2, 3, seeds, or all" >&2; exit 1 ;;
 esac
 
 echo "------------------------------------------------------------------"
