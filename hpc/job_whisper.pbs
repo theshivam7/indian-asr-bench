@@ -6,6 +6,7 @@
 #PBS -o logs/whisper.log
 #PBS -e logs/whisper.log
 #PBS -j oe
+#PBS -k oed
 
 # One openai-whisper model on one dataset (replaces the old job_base/medium/large).
 #   qsub -v MODEL=large,DATASET=tie      hpc/job_whisper.pbs

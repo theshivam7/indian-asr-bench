@@ -312,7 +312,14 @@ python task4_parakeet/wer_parakeet.py --model parakeet_ctc --dataset tie
 python task5_qwen3_asr/wer_qwen3.py --dataset svarah
 ```
 
-**A whole dataset at once** (cluster): `qsub -v DATASET=svarah hpc/run_pipeline.pbs`, or CPU-only re-scoring with `qsub -v DATASET=tie hpc/job_score.pbs`.
+**On a cluster (NSCC / PBS Pro)** — one command submits every remaining experiment with the right parallelism and dependency chaining, printing the job IDs:
+
+```bash
+huggingface-cli login                                  # once — Svarah is gated
+PROJECT=<nscc_project_id> bash hpc/submit_all.sh        # add --setup to also create the conda envs
+```
+
+Or drive pieces individually: `qsub -P <id> -v DATASET=svarah hpc/run_pipeline.pbs` (full run), `qsub -P <id> -v DATASET=tie hpc/job_score.pbs` (CPU-only re-scoring), `qsub -P <id> -v DATASETS=tie,svarah hpc/job_figures.pbs` (combined figures). See [`hpc/README.md`](hpc/README.md).
 
 **Fine-tuning (GPU)** — standard + speaker-disjoint (hardens the null result):
 
@@ -325,8 +332,9 @@ MODEL_NAME=medium_hf python task6_whisper_medium_ft/wer_whisper_medium_ft.py
 MODEL_NAME=medium_ft python task6_whisper_medium_ft/wer_whisper_medium_ft.py
 ```
 
-Conda specs in [`environments/`](environments/); PBS jobs in [`hpc/`](hpc/) (`job_whisper`, `job_parakeet`, `job_qwen3`,
-`job_svarah`, `job_new_models_tie`, `job_finetune_disjoint`, `job_score`). All runs on a single **NVIDIA A100-40GB** (NSCC ASPIRE2A).
+Conda specs in [`environments/`](environments/); PBS jobs + the `submit_all.sh` one-shot submitter in [`hpc/`](hpc/)
+(`job_whisper`, `job_parakeet`, `job_qwen3`, `job_svarah`, `job_new_models_tie`, `job_finetune_disjoint`, `job_score`,
+`job_figures`). All runs on a single **NVIDIA A100-40GB** (NSCC ASPIRE2A).
 
 ---
 

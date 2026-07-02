@@ -6,6 +6,7 @@
 #PBS -o logs/svarah.log
 #PBS -e logs/svarah.log
 #PBS -j oe
+#PBS -k oed
 
 # Full Svarah benchmark: 7 models -> Stage 2 -> Stage 3 (compare + statistics +
 # error analysis + NEER). Svarah is gated on HF: run `huggingface-cli login` (or set

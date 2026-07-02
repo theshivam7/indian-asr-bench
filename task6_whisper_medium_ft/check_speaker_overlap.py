@@ -6,7 +6,7 @@ SPEAKERS appear in both train and test (the model can memorize a speaker's voice
 control the official splits, so the right thing to do is measure and DISCLOSE the overlap.
 
 Reads only the Speaker_ID column (audio is never decoded), so this is fast and CPU-only.
-Writes results/analysis/speaker_overlap.md.
+Writes results/tie/analysis/speaker_overlap.md.
 
 Usage:
     python task6_whisper_medium_ft/check_speaker_overlap.py

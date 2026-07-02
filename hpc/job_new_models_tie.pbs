@@ -6,6 +6,7 @@
 #PBS -o logs/tie_newmodels.log
 #PBS -e logs/tie_newmodels.log
 #PBS -j oe
+#PBS -k oed
 
 # Adds the two NEW models to the existing TIE benchmark (the other 7 raw CSVs are
 # already committed and are NOT re-run). Then rescores TIE from ALL raw transcripts

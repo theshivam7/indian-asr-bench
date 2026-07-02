@@ -6,6 +6,7 @@
 #PBS -o logs/pipeline.log
 #PBS -e logs/pipeline.log
 #PBS -j oe
+#PBS -k oed
 
 # Full from-scratch benchmark for one dataset: all inference models -> Stage 2 ->
 # Stage 3 (compare + statistics + error analysis + figures). Set DATASET (default tie).

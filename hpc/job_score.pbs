@@ -6,6 +6,7 @@
 #PBS -o logs/score.log
 #PBS -e logs/score.log
 #PBS -j oe
+#PBS -k oed
 
 # CPU-only: recompute Stage 2 (scoring) + Stage 3 (analysis/figures) from the
 # committed raw transcripts. No GPU, no inference. Use this after a normalization or

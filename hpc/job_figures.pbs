@@ -1,0 +1,29 @@
+#!/bin/bash
+#PBS -N asr_bench_figures
+#PBS -l select=1:ncpus=4:mem=16gb
+#PBS -l walltime=0:30:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/figures.log
+#PBS -e logs/figures.log
+#PBS -j oe
+#PBS -k oed
+
+# CPU-only: regenerate the authoritative cross-dataset publication figures from the
+# committed/scored results of BOTH datasets. Run this LAST (after the TIE and Svarah
+# jobs finish) so the combined artifact_contrast figure sees both datasets. Safe to
+# re-run any time; reads results/<ds>/, writes paper/figures/.
+#   qsub -v DATASETS=tie,svarah hpc/job_figures.pbs
+
+WORKDIR=${WORKDIR:-$(pwd)}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+WHISPER_ENV=${WHISPER_ENV:-whisper}
+DATASETS=${DATASETS:-tie,svarah}
+
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+mkdir -p "${WORKDIR}/logs"
+cd "${WORKDIR}"
+conda activate "${WHISPER_ENV}"
+
+echo "=== Rebuilding paper figures for '${DATASETS}' $(date) ==="
+python paper/figures/make_paper_figures.py --dataset "${DATASETS}"
+echo "=== done $(date) ==="

@@ -6,6 +6,7 @@
 #PBS -o logs/qwen3.log
 #PBS -e logs/qwen3.log
 #PBS -j oe
+#PBS -k oed
 
 WORKDIR=${WORKDIR:-$(pwd)}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}

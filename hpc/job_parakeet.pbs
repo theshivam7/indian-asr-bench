@@ -6,6 +6,7 @@
 #PBS -o logs/parakeet.log
 #PBS -e logs/parakeet.log
 #PBS -j oe
+#PBS -k oed
 
 WORKDIR=${WORKDIR:-$(pwd)}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
