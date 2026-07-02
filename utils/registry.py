@@ -190,6 +190,7 @@ TIE = DatasetSpec(
     applicable_modes=("transcript_raw", "transcript_clean", "hf_raw", "hf_clean", "whisper_norm"),
     license="CC BY-SA 2.0",
     citation="Rai et al., ICWSM 2024 (NPTEL-derived)",
+    hf_revision="28c53e285feae86f4ba25d8aaeca4fd0c709784c",  # 2024-11-16; predates all runs
     neer_register_col=None,     # academic prose: no entity-dense register -> NEER not applicable
 )
 
@@ -226,6 +227,7 @@ SVARAH = DatasetSpec(
     applicable_modes=("transcript_raw", "transcript_clean", "whisper_norm"),
     license="CC BY 4.0",
     citation="Javed et al., INTERSPEECH 2023",
+    hf_revision="ebbf7777fe771490696a3f7b007097606fa8c924",  # 2025-03-10
     neer_register_col=None,                   # no register field in this HF config; see note above
     neer_register_value=None,
     verified=True,

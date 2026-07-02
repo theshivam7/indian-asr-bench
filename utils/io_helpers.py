@@ -190,6 +190,57 @@ def build_sample_row(
     return row
 
 
+_MANIFEST_PACKAGES = ("torch", "datasets", "numpy", "librosa", "soundfile", "jiwer",
+                      "openai-whisper", "transformers", "nemo_toolkit", "qwen-asr")
+
+
+def write_run_manifest(model_key: str, dataset_key: str, spec=None, extra: dict | None = None) -> str:
+    """Write wer_<model>_manifest.json beside the raw CSV: everything needed to
+    reproduce (or audit) a Stage-1 run — model/dataset identity, pinned dataset
+    revision, package versions, git commit, host, timestamp, and engine-specific
+    decode parameters (via `extra`). Costs nothing; answers every 'which version
+    produced this?' question later."""
+    import json
+    import platform
+    import subprocess
+    from datetime import datetime, timezone
+    from importlib import metadata
+
+    versions = {}
+    for pkg in _MANIFEST_PACKAGES:
+        try:
+            versions[pkg] = metadata.version(pkg)
+        except metadata.PackageNotFoundError:
+            pass
+    try:
+        commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_PROJECT_ROOT,
+                                capture_output=True, text=True, timeout=10).stdout.strip()
+    except Exception:
+        commit = ""
+    from utils.registry import MODEL_BY_KEY, get_dataset
+
+    mspec = MODEL_BY_KEY.get(model_key)
+    dspec = spec or get_dataset(dataset_key)
+    manifest = {
+        "model_key": model_key,
+        "model_id": mspec.model_id if mspec else "",
+        "engine": mspec.engine if mspec else "",
+        "dataset": dataset_key,
+        "hf_id": dspec.hf_id,
+        "hf_revision": dspec.hf_revision,
+        "git_commit": commit,
+        "python": platform.python_version(),
+        "hostname": platform.node(),
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "packages": versions,
+        **(extra or {}),
+    }
+    path = os.path.join(stage1_raw_dir(dataset_key), f"wer_{model_key}_manifest.json")
+    with open(path, "w") as f:
+        json.dump(manifest, f, indent=2)
+    return path
+
+
 def build_md_table(df: pd.DataFrame) -> str:
     """Render a pandas DataFrame as a GitHub-Flavored Markdown table."""
     cols = df.columns.tolist()
