@@ -19,6 +19,7 @@ import sys
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -26,13 +27,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from utils.wer_compute import compute_corpus_wer
 from utils.registry import ALL_MODES as MODES, PRIMARY_MODE
 from utils.io_helpers import stage2_dir, analysis_dir
+from analysis.statistics import _clip_errors
 
 # The fine-tuning study is TIE-only (Svarah is eval-only, not fine-tunable).
 DATASET = "tie"
 BASELINE = "medium_hf"       # same-engine pretrained baseline (headline)
 SECONDARY = "medium"         # original openai-whisper number (continuity)
 FINETUNED = "medium_ft"
-DISJOINT = "medium_ft_disjoint"   # speaker-disjoint re-split FT (hardens the null; data lands in Phase D)
+# Speaker-disjoint re-split FT, one entry per training seed. A null result from a
+# single seed is not credible (FT seed variance ~ the effect size being denied),
+# so the study runs 3 seeds and reports the spread + a paired bootstrap CI.
+DISJOINT_SEEDS = {
+    "medium_ft_disjoint": 42,
+    "medium_ft_disjoint_s43": 43,
+    "medium_ft_disjoint_s44": 44,
+}
 
 DISPLAY = {
     "medium": "Whisper Medium (openai-whisper)",
@@ -57,6 +66,38 @@ def corpus_wer(df: pd.DataFrame) -> float:
     refs = df["reference"].fillna("").tolist()
     hyps = df["hypothesis"].fillna("").tolist()
     return compute_corpus_wer(refs, hyps)["corpus_wer"] * 100
+
+
+def paired_speaker_bootstrap(df_base: pd.DataFrame, df_ft: pd.DataFrame,
+                             B: int = 2000, seed: int = 42):
+    """Paired bootstrap CI + p for corpus-WER(ft) − corpus-WER(base), resampling
+    SPEAKERS (accounts for within-speaker correlation; see analysis/statistics.py).
+
+    Returns (diff_pp, ci_lo_pp, ci_hi_pp, p_value, n_clips, n_speakers)."""
+    cols = ["ID", "reference", "hypothesis"]
+    a = df_base[cols + ["Speaker_ID"]].merge(df_ft[cols], on="ID", suffixes=("_a", "_b"))
+    ea, wa = zip(*(_clip_errors(r, h) for r, h in zip(a["reference_a"], a["hypothesis_a"])))
+    eb, _ = zip(*(_clip_errors(r, h) for r, h in zip(a["reference_b"], a["hypothesis_b"])))
+    ea, eb, wa = np.array(ea, float), np.array(eb, float), np.array(wa, float)
+
+    spk = a["Speaker_ID"].astype(str).str.strip()
+    labels = np.where(spk != "", spk, "clip:" + a["ID"].astype(str))
+    uniq = sorted(set(labels))
+    gpos = {g: i for i, g in enumerate(uniq)}
+    gidx = np.array([gpos[l] for l in labels])
+    G = len(uniq)
+    Ea = np.bincount(gidx, weights=ea, minlength=G)
+    Eb = np.bincount(gidx, weights=eb, minlength=G)
+    W = np.bincount(gidx, weights=wa, minlength=G)
+
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, G, size=(B, G))
+    sw = W[idx].sum(axis=1)
+    d = (Eb[idx].sum(axis=1) - Ea[idx].sum(axis=1)) / sw   # ft − base, per resample
+    obs = (eb.sum() - ea.sum()) / wa.sum()
+    lo, hi = np.percentile(d, [2.5, 97.5])
+    p = 2.0 * min(((d <= 0).sum() + 1) / (B + 1), ((d >= 0).sum() + 1) / (B + 1))
+    return obs * 100, lo * 100, hi * 100, min(p, 1.0), len(a), G
 
 
 def fmt_delta(base: float, ft: float) -> tuple[str, str]:
@@ -92,9 +133,10 @@ lines = [
 
 # --------------- 1. Corpus WER across all 4 modes ---------------
 print("\n--- Corpus WER by mode ---")
-have = {m: {} for m in (SECONDARY, BASELINE, FINETUNED, DISJOINT)}
+ALL_FT_MODELS = (SECONDARY, BASELINE, FINETUNED, *DISJOINT_SEEDS)
+have = {m: {} for m in ALL_FT_MODELS}
 for mode in MODES:
-    for model in (SECONDARY, BASELINE, FINETUNED, DISJOINT):
+    for model in ALL_FT_MODELS:
         df = load(model, mode)
         if df is not None:
             have[model][mode] = corpus_wer(df)
@@ -132,38 +174,54 @@ if PRIMARY_MODE in have[BASELINE] and PRIMARY_MODE in have[FINETUNED]:
         "",
     ]
 
-# --------------- 1b. Speaker-disjoint re-split fine-tune (hardens the null) ---------------
-if have[DISJOINT]:
+# --------------- 1b. Speaker-disjoint re-split fine-tune (multi-seed; hardens the null) ---------------
+disjoint_present = [m for m in DISJOINT_SEEDS if have[m].get(PRIMARY_MODE) is not None]
+if disjoint_present:
     lines += [
-        "## Speaker-disjoint re-split fine-tune",
+        "## Speaker-disjoint re-split fine-tune (multi-seed)",
         "",
         "Same recipe as the headline fine-tune, but every train clip whose speaker also "
         "appears in `test` is removed first (see `speaker_overlap.md`). Evaluated on the "
-        f"SAME test set as `{BASELINE}`, so any gain here cannot come from speaker adaptation.",
+        f"SAME test set as `{BASELINE}`, so any gain here cannot come from speaker "
+        "adaptation. Run with multiple training seeds: a null claim from one seed would "
+        "be indistinguishable from seed variance.",
         "",
-        "| Mode | Pretrained (HF) | Fine-tuned (disjoint) | Δ abs | Δ rel |",
-        "|------|:---------------:|:----------------------:|:-----:|:-----:|",
+        f"| Seed | WER (`{PRIMARY_MODE}`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p |",
+        "|------|:----:|:----:|:----:|:----:|",
     ]
-    for mode in MODES:
-        base = have[BASELINE].get(mode)
-        dft = have[DISJOINT].get(mode)
-        if base is None or dft is None:
-            continue
-        d_abs, d_rel = fmt_delta(base, dft)
-        star = " **(gold)**" if mode == PRIMARY_MODE else ""
-        lines.append(f"| `{mode}`{star} | {base:.2f}% | {dft:.2f}% | {d_abs} | {d_rel} |")
-        print(f"  [disjoint] {mode:18s} base(HF)={base:.2f}%  ft_disjoint={dft:.2f}%  delta={d_abs}")
+    df_base_pm = load(BASELINE, PRIMARY_MODE)
+    diffs, halfwidths = [], []
+    for m in disjoint_present:
+        seed = DISJOINT_SEEDS[m]
+        wer_m = have[m][PRIMARY_MODE]
+        df_m = load(m, PRIMARY_MODE)
+        d, lo, hi, p, n, g = paired_speaker_bootstrap(df_base_pm, df_m)
+        diffs.append(d)
+        halfwidths.append((hi - lo) / 2)
+        sig = "" if lo <= 0 <= hi else " *"
+        lines.append(f"| {seed} | {wer_m:.2f}% | {d:+.2f} pp | [{lo:+.2f}, {hi:+.2f}]{sig} | {p:.3f} |")
+        print(f"  [disjoint s{seed}] wer={wer_m:.2f}%  diff={d:+.2f}pp  CI=[{lo:+.2f},{hi:+.2f}]  p={p:.3f}  ({n} clips, {g} speakers)")
     lines.append("")
-    if PRIMARY_MODE in have[BASELINE] and PRIMARY_MODE in have[DISJOINT]:
-        b = have[BASELINE][PRIMARY_MODE]
-        f = have[DISJOINT][PRIMARY_MODE]
-        d_abs, d_rel = fmt_delta(b, f)
-        verdict = "improves" if f < b else "does NOT improve"
+
+    wers = [have[m][PRIMARY_MODE] for m in disjoint_present]
+    b = have[BASELINE][PRIMARY_MODE]
+    if len(disjoint_present) > 1:
         lines += [
-            f"> **Headline, speaker-disjoint ({PRIMARY_MODE})**: with zero train/test speaker "
-            f"overlap, fine-tuning {verdict} WER {b:.2f}% → {f:.2f}%  ({d_abs}, {d_rel} relative).",
+            f"Across {len(disjoint_present)} seeds: WER {np.mean(wers):.2f}% "
+            f"(range {min(wers):.2f}–{max(wers):.2f}%), mean Δ vs pretrained "
+            f"{np.mean(diffs):+.2f} pp; seed-to-seed spread "
+            f"{max(wers) - min(wers):.2f} pp.",
             "",
         ]
+    mde = float(np.mean(halfwidths))
+    lines += [
+        f"> **Minimum detectable effect**: the paired 95% CI half-width is ≈{mde:.2f} pp, "
+        f"so a true fine-tuning gain of ≥{mde:.2f} pp would have been detected. The "
+        f"observed differences ({', '.join(f'{d:+.2f}' for d in diffs)} pp) are within "
+        f"that resolution — the correct claim is *any residual gain is below "
+        f"≈{mde:.1f} pp*, not merely 'not significant'.",
+        "",
+    ]
 else:
     print("  [SKIP] no medium_ft_disjoint results yet (run job_finetune_disjoint.pbs first)")
 

@@ -105,6 +105,12 @@ MODEL_SPECS = (
     ModelSpec("medium_hf", "Whisper Medium (HF)", "hf_whisper", "openai/whisper-medium", "whisper_medium_ft", "enc_dec", "769M", "#E69F00", 60, chart=False, tie_only=True),
     ModelSpec("medium_ft", "Whisper Medium (FT)", "hf_whisper", "models/whisper_medium_ft", "whisper_medium_ft", "enc_dec", "769M", "#B07200", 70, chart=False, tie_only=True),
     ModelSpec("medium_ft_disjoint", "Whisper Medium (FT, speaker-disjoint)", "hf_whisper", "models/whisper_medium_ft_disjoint", "whisper_medium_ft", "enc_dec", "769M", "#7A4E00", 80, chart=False, tie_only=True),
+    # Seed replicates of the disjoint FT (seeds 43/44; the entry above is seed 42). The
+    # null result ("FT gains vanish once speaker leakage is removed") is only credible if
+    # it is stable across training seeds — Whisper FT seed variance is the same order as
+    # the effect being denied. Excluded from charts; aggregated in compare_finetune.py.
+    ModelSpec("medium_ft_disjoint_s43", "Whisper Medium (FT, disjoint, seed 43)", "hf_whisper", "models/whisper_medium_ft_disjoint_s43", "whisper_medium_ft", "enc_dec", "769M", "#6B4400", 81, chart=False, tie_only=True),
+    ModelSpec("medium_ft_disjoint_s44", "Whisper Medium (FT, disjoint, seed 44)", "hf_whisper", "models/whisper_medium_ft_disjoint_s44", "whisper_medium_ft", "enc_dec", "769M", "#5C3A00", 82, chart=False, tie_only=True),
 )
 MODEL_BY_KEY = {m.key: m for m in MODEL_SPECS}
 ALL_MODELS = tuple(m.key for m in MODEL_SPECS)

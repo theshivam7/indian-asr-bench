@@ -24,6 +24,9 @@ Usage:
 Tunable via env vars:
     FT_EPOCHS (10)  FT_BATCH (8)  FT_GRAD_ACCUM (2)  FT_LR (1e-5)  FT_PATIENCE (2)
     FT_OUTPUT_DIR (models/whisper_medium_ft)  FT_BASE_MODEL (openai/whisper-medium)
+    FT_SEED (42)  — training seed (init order, dataloader shuffling, dropout/SpecAugment);
+                    the multi-seed disjoint study runs 42/43/44 so the null result is not
+                    an artifact of one seed's variance
     MAX_TRAIN_SAMPLES (unset)  — subset training data for a quick smoke test
 """
 
@@ -67,7 +70,7 @@ LR = float(os.environ.get("FT_LR", "1e-5"))
 PATIENCE = int(os.environ.get("FT_PATIENCE", "2"))
 MAX_TRAIN_SAMPLES = os.environ.get("MAX_TRAIN_SAMPLES")
 MAX_AUDIO_SECONDS = 30
-SEED = 42
+SEED = int(os.environ.get("FT_SEED", "42"))
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -80,7 +83,7 @@ print(f"  base model : {BASE_MODEL}")
 print(f"  output dir : {OUTPUT_DIR}")
 print(f"  device     : {device}  (bf16={use_bf16})")
 print(f"  epochs(cap): {EPOCHS}  batch: {BATCH}  grad_accum: {GRAD_ACCUM}  "
-      f"eff_batch: {BATCH * GRAD_ACCUM}  lr: {LR}  patience: {PATIENCE}")
+      f"eff_batch: {BATCH * GRAD_ACCUM}  lr: {LR}  patience: {PATIENCE}  seed: {SEED}")
 if MAX_TRAIN_SAMPLES:
     print(f"  SMOKE TEST : capping train to {MAX_TRAIN_SAMPLES} samples")
 print()
