@@ -13,7 +13,12 @@ eval "$(conda shell.bash hook)"
 conda activate "$ENV_NAME"
 
 echo "=== Installing PyTorch cu118 via conda (matches environments/parakeet.yaml) ==="
-conda install -y "pytorch==2.5.1" "torchaudio==2.5.1" "pytorch-cuda=11.8" \
+# Build string pinned exactly, not just the version: an unpinned "pytorch==2.5.1"
+# lets the solver silently substitute a CPU-only build from a channel other than
+# `pytorch` (confirmed to happen on NSCC when conda-forge is also on the channel
+# list) even with pytorch-cuda present as a constraint.
+conda install -y "pytorch::pytorch=2.5.1=py3.10_cuda11.8_cudnn9.1.0_0" \
+    "pytorch::torchaudio=2.5.1=py310_cu118" "pytorch::pytorch-cuda=11.8" \
     -c pytorch -c nvidia
 
 echo "=== Installing remaining dependencies ==="
