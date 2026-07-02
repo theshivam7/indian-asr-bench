@@ -9,8 +9,12 @@ dependencies:
   - pip
   - conda-forge::ffmpeg
   - pip:
+      # torch pinned to the cu118 wheel to match this cluster's driver/CUDA-11.8 module
+      # (parakeet.yaml/qwen3.yaml pin the same via conda pytorch-cuda=11.8) — a bare
+      # `torch==2.5.1` resolves to a default wheel that silently falls back to CPU here.
+      - --extra-index-url https://download.pytorch.org/whl/cu118
       - openai-whisper==20250625
-      - torch==2.5.1
+      - torch==2.5.1+cu118
       - datasets==3.6.0
       - jiwer==3.1.0
       - pandas==2.2.3
