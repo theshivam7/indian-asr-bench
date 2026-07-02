@@ -291,6 +291,12 @@ Stage 3  compare_all / statistics / error_analysis / entity_analysis ──► r
 
 ## Reproducing Results
 
+Every Stage-1 run writes a `wer_<model>_manifest.json` beside its raw CSV recording the
+model + pinned dataset revision, decode parameters, package versions, git commit, and host.
+Decode settings and known nondeterminism are documented in
+[`docs/DECODE_CONFIG.md`](docs/DECODE_CONFIG.md) — the committed raw transcripts are the
+reproducibility anchor.
+
 **Analysis only (no GPU)** — recompute every table + figure from the committed transcripts:
 
 ```bash

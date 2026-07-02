@@ -69,7 +69,8 @@ def main():
     from utils.registry import MODEL_BY_KEY
     from utils.datasets import load_eval
     from utils.io_helpers import (results_dir, stage1_raw_dir, build_sample_row,
-                                  sample_id, save_checkpoint, remove_checkpoint)
+                                  sample_id, save_checkpoint, remove_checkpoint,
+                                  write_run_manifest)
 
     model_key = args.model
     dataset = args.dataset
@@ -133,6 +134,8 @@ def main():
 
     out_path = os.path.join(stage1_raw_dir(dataset), f"wer_{model_key}_raw.csv")
     pd.DataFrame(all_rows).to_csv(out_path, index=False)
+    write_run_manifest(model_key, dataset, spec,
+                       extra={"decode_kwargs": {"batch_size": BATCH_SIZE, "engine_defaults": "nemo"}})
     print(f"\nSaved: {out_path}  ({len(all_rows)} samples)")
     remove_checkpoint(model_key, dataset)
     print("Done.")

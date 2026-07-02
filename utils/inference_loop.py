@@ -24,6 +24,7 @@ from utils.io_helpers import (
     sample_id,
     save_checkpoint,
     remove_checkpoint,
+    write_run_manifest,
 )
 
 
@@ -38,7 +39,8 @@ def _install_sigterm_handler(state: dict) -> None:
     signal.signal(signal.SIGTERM, handler)
 
 
-def run_transcription(model_key: str, dataset_key: str, transcribe_one, *, checkpoint_every: int = 200) -> str:
+def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
+                      checkpoint_every: int = 200, manifest_extra: dict | None = None) -> str:
     """Transcribe a dataset's eval split with `transcribe_one` and write the raw CSV."""
     ds, spec = load_eval(dataset_key)
     split = spec.splits["eval"]
@@ -74,7 +76,9 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *, check
 
     out_path = os.path.join(out_dir, f"wer_{model_key}_raw.csv")
     pd.DataFrame(rows).to_csv(out_path, index=False)
+    manifest = write_run_manifest(model_key, dataset_key, spec, extra=manifest_extra)
     print(f"\nSaved: {out_path}  ({len(rows)} samples)")
+    print(f"Manifest: {manifest}")
     print("Run 'python normalize_and_score.py --dataset %s' for scoring." % dataset_key)
     remove_checkpoint(model_key, dataset_key)
     return out_path

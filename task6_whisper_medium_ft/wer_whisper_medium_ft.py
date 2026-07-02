@@ -38,6 +38,7 @@ from utils.io_helpers import (
     save_checkpoint,
     remove_checkpoint,
     raw_audio_column,
+    write_run_manifest,
 )
 
 warnings.filterwarnings("ignore")
@@ -113,6 +114,7 @@ for idx, sample in enumerate(tqdm(ds_meta, desc=f"test ({MODEL_NAME})")):
 
 out_path = os.path.join(stage1_raw_dir(), f"wer_{MODEL_NAME}_raw.csv")
 pd.DataFrame(all_rows).to_csv(out_path, index=False)
+write_run_manifest(MODEL_NAME, "tie", extra={"decode_kwargs": {"engine_defaults": "hf_whisper chunked pipeline"}})
 print(f"\nSaved: {out_path}  ({len(all_rows)} samples)")
 print("Run 'python normalize_and_score.py' for WER evaluation.")
 

@@ -52,6 +52,9 @@ def main() -> None:
     run_transcription(
         args.model, args.dataset,
         transcribe_one=lambda sample: transcribe_sample(model, sample, transcribe_kw, audio_col),
+        # openai-whisper defaults apply for everything not listed here: greedy decoding with
+        # temperature fallback (0.0->1.0, stochastic above 0) and condition_on_previous_text=True.
+        manifest_extra={"decode_kwargs": {**transcribe_kw, "engine_defaults": "openai-whisper"}},
     )
     print("\nDone.")
 

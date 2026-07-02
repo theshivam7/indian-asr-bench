@@ -62,7 +62,8 @@ def main():
 
     audio_col = get_dataset(args.dataset).audio_col
     run_transcription(MODEL_KEY, args.dataset,
-                      transcribe_one=lambda s: transcribe_qwen3(model, s, audio_col))
+                      transcribe_one=lambda s: transcribe_qwen3(model, s, audio_col),
+                      manifest_extra={"decode_kwargs": {"language": "English", "max_new_tokens": 512}})
     print("Done.")
 
 
