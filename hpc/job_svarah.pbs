@@ -41,6 +41,12 @@ conda activate "${WHISPER_ENV}"
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok, '| device count:', torch.cuda.device_count()); sys.exit(0 if ok else 1)" \
     || { echo "[FATAL] CUDA not available in ${WHISPER_ENV} - aborting before a CPU-bound run"; exit 1; }
+
+# Fail-early preflight: exercises dataset load, ID validation, and audio decode on
+# CPU. If the data/env is broken, die here in seconds, not hours into inference.
+python scripts/smoke_test.py --dataset svarah \
+    || { echo "[FATAL] Svarah smoke test failed - fix before burning GPU time"; exit 1; }
+
 for M in base medium large large_v3_turbo; do
   echo -e "\n=== Svarah Stage 1: whisper ${M} ==="
   python task_whisper/run_whisper.py --model "${M}" --dataset svarah
@@ -69,6 +75,10 @@ python analysis/compare_all.py --dataset svarah
 python analysis/statistics.py --dataset svarah
 python analysis/error_analysis.py --dataset svarah
 python analysis/entity_analysis.py --dataset svarah
-python paper/figures/make_paper_figures.py --dataset tie,svarah
+if [ -f paper/figures/make_paper_figures.py ]; then
+    python paper/figures/make_paper_figures.py --dataset tie,svarah
+else
+    echo "[skip] paper/ is local-only (not tracked in git) - generate figures locally"
+fi
 
 echo "=== Svarah pipeline complete $(date) ==="

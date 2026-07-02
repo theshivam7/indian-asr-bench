@@ -32,5 +32,9 @@ python analysis/statistics.py --dataset "${DATASET}"
 python analysis/error_analysis.py --dataset "${DATASET}"
 [ "${DATASET}" = "tie" ] && python analysis/compare_finetune.py
 [ "${DATASET}" = "svarah" ] && python analysis/entity_analysis.py --dataset svarah
-python paper/figures/make_paper_figures.py --dataset "${DATASET}"
+if [ -f paper/figures/make_paper_figures.py ]; then
+    python paper/figures/make_paper_figures.py --dataset "${DATASET}"
+else
+    echo "[skip] paper/ is local-only (not tracked in git) - generate figures locally"
+fi
 echo "=== done $(date) ==="

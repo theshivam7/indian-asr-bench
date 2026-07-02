@@ -14,30 +14,21 @@ import os
 import sys
 import tempfile
 import warnings
-import wave
 
-import librosa
-import numpy as np
 import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from utils.io_helpers import audio_to_wav_16k
 
 MODEL_KEY = "qwen3"
 
 
 def transcribe_qwen3(model, sample: dict, audio_col: str) -> str:
-    audio = sample[audio_col]
-    arr = np.array(audio["array"], dtype=np.float32).flatten()
-    sr = audio["sampling_rate"]
-    if sr != 16000:
-        arr = librosa.resample(arr, orig_sr=sr, target_sr=16000)
-    audio_int16 = (np.clip(arr, -1.0, 1.0) * 32767).astype(np.int16)
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         tmp_path = tmp.name
-        with wave.open(tmp_path, "w") as wf:
-            wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(16000)
-            wf.writeframes(audio_int16.tobytes())
     try:
+        audio_to_wav_16k(sample[audio_col], tmp_path)
         results = model.transcribe(audio=tmp_path, language="English")
         r = results[0]
         return (r.text if hasattr(r, "text") else str(r)).strip()

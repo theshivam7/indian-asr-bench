@@ -119,14 +119,34 @@ def sample_id(sample: dict, spec) -> str:
 
     Usually spec.id_col is a plain string column. Some datasets (Svarah) have no
     separate id/filename field, so id_col points at the same HF column as
-    audio_col; since that column is an Audio() feature, accessing it returns the
-    decoded {"path", "array", "sampling_rate"} dict, not a string. Pull "path"
-    back out in that case rather than stringifying the whole decoded waveform.
+    audio_col; with audio_undecoded specs that column yields the raw
+    {"bytes", "path"} storage dict — take the path's basename (stable across cache
+    locations and runs). Must stay consistent with utils.datasets.extract_ids.
+    Raises rather than returning an empty ID: a blank ID silently corrupts
+    checkpoint-resume and every downstream per-clip join.
     """
     val = sample.get(spec.id_col, "")
     if isinstance(val, dict):
-        val = val.get("path", "")
-    return str(val)
+        val = os.path.basename(val.get("path") or "")
+    sid = str(val)
+    if not sid:
+        raise ValueError(f"sample_id: empty id from column '{spec.id_col}' "
+                         f"(dataset '{spec.key}') — refusing to emit a blank ID.")
+    return sid
+
+
+def audio_to_wav_16k(audio_value, wav_path: str) -> None:
+    """Decode any raw audio value ({array,...} or {bytes,path}) to a 16 kHz mono
+    int16 WAV file — the single audio path shared by all Stage-1 engines."""
+    import wave
+
+    samples, _ = decode_audio_value(audio_value, target_sr=16000)
+    audio_int16 = (np.clip(samples, -1.0, 1.0) * 32767).astype(np.int16)
+    with wave.open(wav_path, "w") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(16000)
+        wf.writeframes(audio_int16.tobytes())
 
 
 def build_sample_row(

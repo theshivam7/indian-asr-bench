@@ -143,9 +143,18 @@ class DatasetSpec:
     applicable_modes: tuple      # subset of ALL_MODES valid for this dataset
     license: str
     citation: str
+    hf_revision: str | None = None   # pinned HF dataset commit sha (reproducibility; None = latest)
     neer_register_col: str | None = None   # csv column whose value selects the entity-dense register (Svarah use-cases)
     neer_register_value: str | None = None
     verified: bool = True        # False -> column_map is provisional, adapter must confirm against ds.features
+    audio_undecoded: bool = False  # True -> adapter casts audio_col to Audio(decode=False) on load,
+    #                               so accessing it yields the raw {"bytes","path"} storage dict and
+    #                               datasets' decode machinery (torchcodec-mandatory in datasets>=4,
+    #                               but no torchcodec release satisfies both torch==2.5.1 and
+    #                               datasets>=4) is never invoked. Engines decode via
+    #                               utils.io_helpers.decode_audio_value (soundfile) instead.
+    #                               Keep False for TIE: its "audio" column stores raw float arrays
+    #                               (not Audio-typed bytes), which already bypasses the decoder.
 
 
 TIE = DatasetSpec(
@@ -214,6 +223,7 @@ SVARAH = DatasetSpec(
     neer_register_col=None,                   # no register field in this HF config; see note above
     neer_register_value=None,
     verified=True,
+    audio_undecoded=True,   # bytes-stored audio: bypass datasets' (torchcodec) decoder entirely
 )
 
 DATASET_SPECS = (TIE, SVARAH)

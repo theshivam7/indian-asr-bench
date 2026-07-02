@@ -2,40 +2,25 @@
 
 import os
 import tempfile
-import wave
 
-import librosa
-import numpy as np
+from utils.io_helpers import audio_to_wav_16k
 
 
 def transcribe_sample(model, sample: dict, transcribe_kw: dict, audio_col: str = "audio") -> str:
     """Transcribe a single HF dataset sample using a loaded Whisper model.
 
-    Returns the raw (unnormalized) transcription string.
+    Audio is decoded via io_helpers (handles both raw-array and bytes storage,
+    independent of datasets' Audio decode machinery). Returns the raw
+    (unnormalized) transcription string.
     """
-    audio_data = sample[audio_col]
-    audio_array = np.array(audio_data["array"], dtype=np.float32).flatten()
-    sr = audio_data["sampling_rate"]
-
-    if sr != 16000:
-        audio_array = librosa.resample(audio_array, orig_sr=sr, target_sr=16000)
-
-    audio_int16 = (np.clip(audio_array, -1.0, 1.0) * 32767).astype(np.int16)
-
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         tmp_path = tmp.name
-        with wave.open(tmp_path, "w") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(16000)
-            wf.writeframes(audio_int16.tobytes())
-
     try:
+        audio_to_wav_16k(sample[audio_col], tmp_path)
         result = model.transcribe(tmp_path, **transcribe_kw)
         return result["text"].strip()
     except Exception as e:
-        sample_id = sample.get("ID", "?")
-        print(f"  [WARN] Failed to transcribe {sample_id}: {e}")
+        print(f"  [WARN] Failed to transcribe a sample: {e}")
         return ""
     finally:
         os.unlink(tmp_path)

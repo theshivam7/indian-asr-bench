@@ -223,9 +223,6 @@ dependencies:
       - tiktoken==0.12.0
       - tokenizers==0.21.1
       - toolz==1.0.0
-      # Required by datasets>=3.x to decode mp3-encoded Audio() columns (Svarah).
-      # Pinned to match torch 2.5.1 per torchcodec's compatibility table (0.1 <-> torch 2.5).
-      - torchcodec==0.1
       - torchmetrics==1.7.1
       - tqdm==4.67.1
       - traitlets==5.14.3

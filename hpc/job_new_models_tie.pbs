@@ -55,6 +55,10 @@ python normalize_and_score.py --dataset tie
 python analysis/compare_all.py --dataset tie
 python analysis/statistics.py --dataset tie
 python analysis/error_analysis.py --dataset tie
-python paper/figures/make_paper_figures.py --dataset tie
+if [ -f paper/figures/make_paper_figures.py ]; then
+    python paper/figures/make_paper_figures.py --dataset tie
+else
+    echo "[skip] paper/ is local-only (not tracked in git) - generate figures locally"
+fi
 
 echo "=== TIE new-models complete $(date) ==="
