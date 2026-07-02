@@ -163,6 +163,10 @@ def main(dataset: str) -> None:
             })
 
     print("\n" + "=" * 70 + "\nSUMMARY (corpus WER %)\n" + "=" * 70)
+    if not all_summary:
+        print(f"[normalize_and_score] no raw transcripts found for any model of "
+              f"'{dataset}' under {stage1_raw_dir(dataset)} — nothing to summarize.")
+        return
     df_summary = pd.DataFrame(all_summary)
     present_modes = [m for m in modes if m in set(df_summary["mode"])]
     pivot = df_summary.pivot_table(index="model", columns="mode", values="corpus_wer_pct", aggfunc="first")[present_modes]
