@@ -24,14 +24,18 @@ CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
 
 module load "${CUDA_MODULE}" 2>/dev/null || true
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
-export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}"
+export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}" XDG_CACHE_HOME="${HF_CACHE}"
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 cd "${WORKDIR}"
 
 echo "=== Svarah pipeline started $(date) on $(hostname) ==="
 
+echo "--- GPU / CUDA diagnostics ---"
+nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
+
 # Stage 1 — Whisper family (base / medium / large / large-v3-turbo)
 conda activate "${WHISPER_ENV}"
+python -c "import torch; print('torch sees CUDA:', torch.cuda.is_available(), '| device count:', torch.cuda.device_count())"
 for M in base medium large large_v3_turbo; do
   echo -e "\n=== Svarah Stage 1: whisper ${M} ==="
   python task_whisper/run_whisper.py --model "${M}" --dataset svarah

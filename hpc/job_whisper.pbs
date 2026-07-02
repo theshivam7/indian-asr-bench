@@ -23,7 +23,7 @@ DATASET=${DATASET:-tie}
 
 module load "${CUDA_MODULE}" 2>/dev/null || true
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
-export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}"
+export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}" XDG_CACHE_HOME="${HF_CACHE}"
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 cd "${WORKDIR}"
 conda activate "${WHISPER_ENV}"
