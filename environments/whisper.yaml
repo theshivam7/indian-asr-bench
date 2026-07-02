@@ -28,8 +28,6 @@ dependencies:
       - num2words==0.5.14
       - matplotlib==3.10.3
       - whisper_normalizer==0.1.0   # Stage 2 whisper_norm mode + Stage 3 run in this env
-      # Required by datasets>=3.x to decode compressed-codec (e.g. mp3) Audio()
-      # columns (Svarah) — wav/flac-based TIE decoded fine without it, mp3-based
-      # Svarah raises ImportError without it. Pinned to match torch 2.5.1 per
-      # torchcodec's compatibility table (0.1 <-> torch 2.5).
-      - torchcodec==0.1
+      # Decodes bytes-stored audio (Svarah) via utils.io_helpers.decode_audio_value.
+      # pip wheels bundle libsndfile>=1.2 (mp3-capable) — no ffmpeg/torchcodec needed.
+      - soundfile==0.13.1

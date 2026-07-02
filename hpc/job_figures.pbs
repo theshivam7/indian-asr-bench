@@ -25,5 +25,9 @@ cd "${WORKDIR}"
 conda activate "${WHISPER_ENV}"
 
 echo "=== Rebuilding paper figures for '${DATASETS}' $(date) ==="
-python paper/figures/make_paper_figures.py --dataset "${DATASETS}"
+if [ -f paper/figures/make_paper_figures.py ]; then
+    python paper/figures/make_paper_figures.py --dataset "${DATASETS}"
+else
+    echo "[skip] paper/ is local-only (not tracked in git) - generate figures locally"
+fi
 echo "=== done $(date) ==="

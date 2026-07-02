@@ -60,7 +60,11 @@ python analysis/compare_all.py --dataset "${DATASET}"
 python analysis/statistics.py --dataset "${DATASET}"
 python analysis/error_analysis.py --dataset "${DATASET}"
 [ "${DATASET}" = "svarah" ] && python analysis/entity_analysis.py --dataset svarah
-python paper/figures/make_paper_figures.py --dataset "${DATASET}"
+if [ -f paper/figures/make_paper_figures.py ]; then
+    python paper/figures/make_paper_figures.py --dataset "${DATASET}"
+else
+    echo "[skip] paper/ is local-only (not tracked in git) - generate figures locally"
+fi
 
 echo "================================================================"
 echo "Pipeline complete: $(date) — results in ${WORKDIR}/results/${DATASET}/"

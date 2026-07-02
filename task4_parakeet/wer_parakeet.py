@@ -21,10 +21,7 @@ import signal
 import sys
 import tempfile
 import warnings
-import wave
 
-import librosa
-import numpy as np
 import pandas as pd
 import torch
 from tqdm import tqdm
@@ -35,24 +32,14 @@ BATCH_SIZE = 16
 CHECKPOINT_EVERY = 50
 
 
-def _audio_to_wav(sample: dict, audio_col: str, path: str) -> None:
-    audio_data = sample[audio_col]
-    arr = np.array(audio_data["array"], dtype=np.float32).flatten()
-    sr = audio_data["sampling_rate"]
-    if sr != 16000:
-        arr = librosa.resample(arr, orig_sr=sr, target_sr=16000)
-    audio_int16 = (np.clip(arr, -1.0, 1.0) * 32767).astype(np.int16)
-    with wave.open(path, "w") as wf:
-        wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(16000)
-        wf.writeframes(audio_int16.tobytes())
-
-
 def transcribe_batch(model, samples, audio_col):
+    from utils.io_helpers import audio_to_wav_16k
+
     tmp_paths = []
     try:
         for s in samples:
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-                _audio_to_wav(s, audio_col, tmp.name)
+                audio_to_wav_16k(s[audio_col], tmp.name)
                 tmp_paths.append(tmp.name)
         outputs = model.transcribe(tmp_paths, batch_size=len(tmp_paths))
         return [(o.text if hasattr(o, "text") else str(o)).strip() for o in outputs]

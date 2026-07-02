@@ -8,4 +8,4 @@ librosa==0.11.0
 numpy==1.26.4
 num2words==0.5.14
 whisper_normalizer==0.1.0
-torchcodec==0.1
+soundfile==0.13.1

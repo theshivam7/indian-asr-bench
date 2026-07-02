@@ -42,6 +42,61 @@ def _validate_schema(spec, ds) -> None:
     print("  Once the names match the real schema, set verified=True in the registry.")
 
 
+def extract_ids(ds, spec) -> list[str]:
+    """Per-clip IDs for a whole split, WITHOUT materializing audio bytes.
+
+    Reads the id column straight from arrow storage. If it is a struct column
+    (Svarah: id_col == audio_col, storage {"bytes","path"}), pull the "path"
+    field columnar-wise — loading ds[id_col] would decode/copy every audio blob.
+    Must stay consistent with utils.io_helpers.sample_id (basename of path).
+    """
+    import os
+    import pyarrow as pa
+
+    col = ds.data.column(spec.id_col)
+    if pa.types.is_struct(col.type):
+        paths = col.combine_chunks().field("path").to_pylist()
+        return [os.path.basename(p) if p else "" for p in paths]
+    return [str(v) for v in col.to_pylist()]
+
+
+def _validate_data(spec, ds) -> None:
+    """Fail-early data checks: run before any GPU time is spent.
+
+    Raises with an actionable message on: empty split, empty IDs, duplicate IDs
+    (would corrupt checkpoint-resume and every downstream per-clip join), or a
+    first sample whose audio cannot be decoded.
+    """
+    if len(ds) == 0:
+        raise ValueError(f"[datasets] '{spec.key}' split loaded 0 samples — wrong split name or gated access?")
+
+    ids = extract_ids(ds, spec)
+    n_empty = sum(1 for i in ids if not i)
+    if n_empty:
+        raise ValueError(
+            f"[datasets] '{spec.key}': {n_empty}/{len(ids)} samples have an EMPTY id "
+            f"(id_col='{spec.id_col}') — checkpoint resume and Stage-2/3 joins would silently break."
+        )
+    if len(set(ids)) != len(ids):
+        from collections import Counter
+        dupes = [k for k, c in Counter(ids).most_common(5) if c > 1]
+        raise ValueError(
+            f"[datasets] '{spec.key}': {len(ids) - len(set(ids))} DUPLICATE ids in "
+            f"id_col='{spec.id_col}' (e.g. {dupes}) — per-clip joins in statistics/error analysis "
+            f"would misalign. Pick a unique id column in the DatasetSpec."
+        )
+
+    if spec.audio_undecoded:
+        from utils.io_helpers import decode_audio_value
+
+        samples, sr = decode_audio_value(ds[0][spec.audio_col])
+        if len(samples) == 0 or sr <= 0:
+            raise ValueError(f"[datasets] '{spec.key}': probe decode of sample 0 returned no audio "
+                             f"(sr={sr}) — check soundfile install / audio codec.")
+        print(f"  Probe decode OK: sample 0 -> {len(samples)/sr:.2f}s @ {sr}Hz")
+    print(f"  Data checks OK: {len(ids)} samples, ids unique + non-empty")
+
+
 def load_split(dataset_key: str, role: str = "eval"):
     """Load one split of a dataset. Returns (hf_dataset, DatasetSpec)."""
     from datasets import load_dataset
@@ -50,11 +105,21 @@ def load_split(dataset_key: str, role: str = "eval"):
     if role not in spec.splits:
         raise ValueError(f"Dataset '{dataset_key}' has no '{role}' split. Available: {spec.splits}")
     split = spec.splits[role]
-    print(f"Loading {spec.hf_id} [{split}] ...  (cache: {HF_CACHE})")
-    ds = load_dataset(spec.hf_id, split=split, cache_dir=HF_CACHE)
+    rev = f" @ {spec.hf_revision[:12]}" if spec.hf_revision else ""
+    print(f"Loading {spec.hf_id} [{split}]{rev} ...  (cache: {HF_CACHE})")
+    ds = load_dataset(spec.hf_id, split=split, cache_dir=HF_CACHE, revision=spec.hf_revision)
     print(f"  Loaded {len(ds)} samples")
     print(f"  Features: {ds.column_names}")
+    if spec.audio_undecoded:
+        # Access the audio column as its raw {"bytes","path"} storage dict. This is a
+        # metadata-only cast: datasets' Audio decode machinery (torchcodec-mandatory in
+        # datasets>=4) is never invoked; engines decode via io_helpers.decode_audio_value.
+        from datasets import Audio
+
+        ds = ds.cast_column(spec.audio_col, Audio(decode=False))
+        print(f"  Cast '{spec.audio_col}' -> Audio(decode=False) (torchcodec-free bytes access)")
     _validate_schema(spec, ds)
+    _validate_data(spec, ds)
     return ds, spec
 
 
