@@ -22,3 +22,6 @@ dependencies:
       - librosa==0.11.0
       - numpy==1.26.4
       - num2words==0.5.14
+      # Required by datasets>=3.x to decode mp3-encoded Audio() columns (Svarah).
+      # Pinned to match torch 2.5.1 per torchcodec's compatibility table (0.1 <-> torch 2.5).
+      - torchcodec==0.1
