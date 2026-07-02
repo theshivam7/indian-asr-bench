@@ -8,12 +8,12 @@ import librosa
 import numpy as np
 
 
-def transcribe_sample(model, sample: dict, transcribe_kw: dict) -> str:
+def transcribe_sample(model, sample: dict, transcribe_kw: dict, audio_col: str = "audio") -> str:
     """Transcribe a single HF dataset sample using a loaded Whisper model.
 
     Returns the raw (unnormalized) transcription string.
     """
-    audio_data = sample["audio"]
+    audio_data = sample[audio_col]
     audio_array = np.array(audio_data["array"], dtype=np.float32).flatten()
     sr = audio_data["sampling_rate"]
 
