@@ -13,6 +13,8 @@ CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
 PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
 HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
+DATASET=${DATASET:-tie}
+MODEL=${MODEL:-parakeet}
 
 module load "${CUDA_MODULE}" 2>/dev/null || true
 
@@ -30,4 +32,4 @@ python -c "import torch; print('torch:', torch.__version__, '| cuda:', torch.ver
 python -c "import nemo.collections.asr; print('nemo: OK')"
 echo "=== END ENV CHECK ==="
 
-python task4_parakeet/wer_parakeet.py
+python task4_parakeet/wer_parakeet.py --model "${MODEL}" --dataset "${DATASET}"
