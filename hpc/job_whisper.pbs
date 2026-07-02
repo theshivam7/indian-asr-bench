@@ -1,0 +1,32 @@
+#!/bin/bash
+#PBS -N asr_bench_whisper
+#PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
+#PBS -l walltime=6:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/whisper.log
+#PBS -e logs/whisper.log
+#PBS -j oe
+
+# One openai-whisper model on one dataset (replaces the old job_base/medium/large).
+#   qsub -v MODEL=large,DATASET=tie      hpc/job_whisper.pbs
+#   qsub -v MODEL=large_v3_turbo,DATASET=svarah hpc/job_whisper.pbs
+# MODEL in {base, medium, large, large_v3_turbo}; DATASET in {tie, svarah}.
+
+WORKDIR=${WORKDIR:-$(pwd)}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+WHISPER_ENV=${WHISPER_ENV:-whisper}
+HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
+MODEL=${MODEL:-medium}
+DATASET=${DATASET:-tie}
+
+module load "${CUDA_MODULE}" 2>/dev/null || true
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}"
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
+cd "${WORKDIR}"
+conda activate "${WHISPER_ENV}"
+
+echo "=== whisper ${MODEL} on ${DATASET} $(date) ==="
+python task_whisper/run_whisper.py --model "${MODEL}" --dataset "${DATASET}"
+echo "=== done $(date) ==="

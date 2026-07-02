@@ -1,8 +1,0 @@
-model,transcript_raw,transcript_clean,hf_raw,hf_clean
-base,17.91,17.53,20.24,18.07
-medium,15.11,14.76,18.01,15.76
-large,16.31,15.93,19.14,16.94
-parakeet,15.97,15.6,18.54,16.4
-qwen3,18.15,16.66,17.99,17.61
-medium_hf,14.75,14.42,17.72,15.51
-medium_ft,14.71,14.61,17.7,15.7

@@ -10,7 +10,7 @@ so the only difference is the model weights. This isolates the true fine-tuning 
 decoding/engine differences. medium_hf lands near the existing openai-whisper medium number
 (14.72% transcript_clean) and serves as the apples-to-apples baseline for the comparison.
 
-Saves to results/stage1_raw_transcripts/wer_{MODEL_NAME}_raw.csv (same schema as all other models),
+Saves to results/tie/stage1_raw_transcripts/wer_{MODEL_NAME}_raw.csv (same schema as all other models),
 so Stage 2 (normalize_and_score.py) and Stage 3 (analysis/) treat it as just another model.
 
 Resumable — re-running picks up from the last checkpoint.
@@ -48,15 +48,23 @@ CHECKPOINT_EVERY = 200
 REPO_ROOT = os.path.join(os.path.dirname(__file__), "..")
 DEFAULT_FT_DIR = os.path.join(REPO_ROOT, "models", "whisper_medium_ft")
 
-# Resolve which weights to load.
-if MODEL_NAME == "medium_ft":
+# Resolve which weights to load. MODEL_SOURCE (an explicit path/HF id) overrides the
+# per-name default, so any local fine-tuned variant (e.g. the speaker-disjoint model,
+# MODEL_NAME=medium_ft_disjoint) can be evaluated without editing this script.
+_source = os.environ.get("MODEL_SOURCE")
+if _source:
+    model_path = _source
+elif MODEL_NAME == "medium_ft":
     model_path = os.environ.get("FT_OUTPUT_DIR", DEFAULT_FT_DIR)
-    if not os.path.isdir(model_path):
-        sys.exit(f"[ERROR] Fine-tuned model not found at {model_path}. Run finetune.py first.")
 elif MODEL_NAME == "medium_hf":
     model_path = os.environ.get("FT_BASE_MODEL", "openai/whisper-medium")
 else:
-    sys.exit(f"[ERROR] Unsupported MODEL_NAME='{MODEL_NAME}'. Use 'medium_ft' or 'medium_hf'.")
+    sys.exit(f"[ERROR] MODEL_NAME='{MODEL_NAME}' needs an explicit MODEL_SOURCE "
+             f"(path or HF id), or use 'medium_ft' / 'medium_hf'.")
+
+# Local model dirs must exist; HF ids (contain no path separator) are downloaded.
+if os.sep in model_path and not os.path.isdir(model_path):
+    sys.exit(f"[ERROR] model weights not found at {model_path}. Run finetune.py first.")
 
 print(f"=== Stage 1 transcription: {MODEL_NAME}  (weights: {model_path}) ===\n")
 pipe = build_asr_pipeline(model_path)

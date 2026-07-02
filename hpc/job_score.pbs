@@ -1,0 +1,35 @@
+#!/bin/bash
+#PBS -N asr_bench_score
+#PBS -l select=1:ncpus=4:mem=16gb
+#PBS -l walltime=1:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/score.log
+#PBS -e logs/score.log
+#PBS -j oe
+
+# CPU-only: recompute Stage 2 (scoring) + Stage 3 (analysis/figures) from the
+# committed raw transcripts. No GPU, no inference. Use this after a normalization or
+# metric change. Set DATASET (default tie).
+#   qsub -v DATASET=svarah hpc/job_score.pbs
+
+WORKDIR=${WORKDIR:-$(pwd)}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+WHISPER_ENV=${WHISPER_ENV:-whisper}
+HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+DATASET=${DATASET:-tie}
+
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}"
+mkdir -p "${WORKDIR}/logs"
+cd "${WORKDIR}"
+conda activate "${WHISPER_ENV}"
+
+echo "=== Scoring + analysis for dataset '${DATASET}' $(date) ==="
+python normalize_and_score.py --dataset "${DATASET}"
+python analysis/compare_all.py --dataset "${DATASET}"
+python analysis/statistics.py --dataset "${DATASET}"
+python analysis/error_analysis.py --dataset "${DATASET}"
+[ "${DATASET}" = "tie" ] && python analysis/compare_finetune.py
+[ "${DATASET}" = "svarah" ] && python analysis/entity_analysis.py --dataset svarah
+python paper/figures/make_paper_figures.py --dataset "${DATASET}"
+echo "=== done $(date) ==="

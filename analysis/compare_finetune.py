@@ -5,12 +5,12 @@ Headline   : medium_ft  vs  medium_hf   (pretrained Whisper Medium through the S
              pipeline). Same engine, same decoding => the delta is the true fine-tuning gain.
 Secondary  : medium_ft  vs  medium      (the original openai-whisper number, for continuity).
 
-Reads results/stage2_processed/{mode}/wer_{medium,medium_hf,medium_ft}_{mode}.csv
-(produced by normalize_and_score.py). Writes:
-    results/analysis/finetune_comparison.md
-    results/analysis/finetune_comparison.png
+Reads results/tie/stage2_processed/{mode}/wer_{medium,medium_hf,medium_ft}_{mode}.csv
+(produced by normalize_and_score.py --dataset tie). Writes:
+    results/tie/analysis/finetune_comparison.md
+    results/tie/analysis/finetune_comparison.png
 
-Run after normalize_and_score.py.
+Run after normalize_and_score.py --dataset tie.
 """
 
 import os
@@ -24,23 +24,25 @@ import pandas as pd
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.wer_compute import compute_corpus_wer
-from utils.normalize import MODES
+from utils.registry import ALL_MODES as MODES, PRIMARY_MODE
+from utils.io_helpers import stage2_dir, analysis_dir
 
-PRIMARY_MODE = "transcript_clean"
+# The fine-tuning study is TIE-only (Svarah is eval-only, not fine-tunable).
+DATASET = "tie"
 BASELINE = "medium_hf"       # same-engine pretrained baseline (headline)
 SECONDARY = "medium"         # original openai-whisper number (continuity)
 FINETUNED = "medium_ft"
+DISJOINT = "medium_ft_disjoint"   # speaker-disjoint re-split FT (hardens the null; data lands in Phase D)
 
 DISPLAY = {
     "medium": "Whisper Medium (openai-whisper)",
     "medium_hf": "Whisper Medium (pretrained, HF)",
     "medium_ft": "Whisper Medium (fine-tuned)",
+    "medium_ft_disjoint": "Whisper Medium (fine-tuned, speaker-disjoint)",
 }
 
-RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
-STAGE2_DIR = os.path.join(RESULTS_DIR, "stage2_processed")
-ANALYSIS_DIR = os.path.join(RESULTS_DIR, "analysis")
-os.makedirs(ANALYSIS_DIR, exist_ok=True)
+STAGE2_DIR = stage2_dir(DATASET)
+ANALYSIS_DIR = analysis_dir(DATASET)
 
 
 def load(model: str, mode: str) -> pd.DataFrame | None:

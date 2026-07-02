@@ -86,7 +86,7 @@ All numbers are corpus/per-sample WER on the `test` split under **`transcript_cl
 > The **fine-tuned** Whisper Medium is not in this ranking because it runs through a different decoder (HuggingFace `transformers`, not `openai-whisper`) — mixing it here would confound fine-tuning with a decoding-engine change. Its fair, engine-controlled comparison is in [Fine-tuning](#fine-tuning-whisper-medium).
 
 <p align="center">
-  <img src="results/analysis/wer_by_model.png" width="680" alt="Model ranking by corpus WER (transcript_clean)">
+  <img src="results/tie/analysis/wer_by_model.png" width="680" alt="Model ranking by corpus WER (transcript_clean)">
 </p>
 
 ### Key findings
@@ -184,7 +184,7 @@ Corpus WER across all four modes:
 The +0.20 pp gap is within single-run noise, so the honest claim is **"no significant gain," not "fine-tuning hurts."**
 
 <p align="center">
-  <img src="results/analysis/finetune_comparison.png" width="640" alt="Whisper Medium pretrained vs fine-tuned across all four modes">
+  <img src="results/tie/analysis/finetune_comparison.png" width="640" alt="Whisper Medium pretrained vs fine-tuned across all four modes">
 </p>
 
 ### Fine-tuned breakdowns (same analysis as the pretrained models)
@@ -238,7 +238,7 @@ The +0.20 pp gap is within single-run noise, so the honest claim is **"no signif
 
 > **Long-clip decoding note.** On 60s+ clips the HF chunked pipeline scores ~119% WER for *both* the pretrained and fine-tuned models, vs 37% for the same weights under `openai-whisper`. That is a **decoding-pipeline artifact** (long-form chunk stitching), not a fine-tuning effect — it hits both equally, so the head-to-head stays fair. It also inflates the Std Dev in the tables above.
 
-> ⚠️ **Speaker overlap (disclosed).** The dataset's official splits share speakers: **100% of test speakers — and 100% of test clips — come from speakers also seen in training** ([`speaker_overlap.md`](results/analysis/speaker_overlap.md), via [`check_speaker_overlap.py`](task6_whisper_medium_ft/check_speaker_overlap.py)). There is **no clip-level leakage**, but the comparison is *speaker-matched*, so any effect partly reflects speaker adaptation. The official splits were not modified; this is disclosed so the numbers read correctly.
+> ⚠️ **Speaker overlap (disclosed).** The dataset's official splits share speakers: **100% of test speakers — and 100% of test clips — come from speakers also seen in training** ([`speaker_overlap.md`](results/tie/analysis/speaker_overlap.md), via [`check_speaker_overlap.py`](task6_whisper_medium_ft/check_speaker_overlap.py)). There is **no clip-level leakage**, but the comparison is *speaker-matched*, so any effect partly reflects speaker adaptation. The official splits were not modified; this is disclosed so the numbers read correctly.
 
 Model card and usage: **[theshivam7/whisper-medium-indian-english](https://huggingface.co/theshivam7/whisper-medium-indian-english)**.
 
@@ -263,43 +263,77 @@ The `*_raw` modes apply **minimal cleanup** only — strip wrapping quotes, lowe
 
 ---
 
+## Framework architecture
+
+The benchmark is a **generalized multi-dataset framework**: one pipeline, driven by a
+central registry, that runs identically on any dataset. Only dataset *loading* is
+dataset-specific — everything after Stage 1 is dataset-agnostic.
+
+```
+DatasetSpec + ModelSpec (utils/registry.py — single source of truth)
+        │
+Stage 1  inference driver ──► results/<dataset>/stage1_raw_transcripts/wer_<model>_raw.csv   (GPU; immutable, committed)
+        │
+Stage 2  normalize_and_score.py --dataset X ──► results/<dataset>/stage2_processed/<mode>/    (CPU; WER + CER + hallucination)
+        │
+Stage 3  compare_all / statistics / error_analysis / entity_analysis ──► results/<dataset>/analysis/   (CPU)
+        │
+         paper/figures/make_paper_figures.py ──► paper/figures/   (publication PDFs/SVGs/PNGs)
+```
+
+- **`utils/registry.py`** — every model, dataset, evaluation mode, display name and colour. Nothing is defined elsewhere.
+- **`utils/datasets.py`** — dataset adapter; validates that a dataset's declared columns exist (catches provisional schemas).
+- **Raw transcripts are the immutable source of truth** — always committed, one CSV per (dataset, model). Any normalization/metric change recomputes Stage 2/3 from them with **no re-inference**.
+
+**Add a dataset** → append one `DatasetSpec` to `utils/registry.py` (HF id, column map, subgroup dims, applicable modes). No other file changes.
+**Add a model** → append one `ModelSpec` (engine, checkpoint id, arch class, colour) and run its engine driver with `--model`.
+**Add a metric** → add it in `utils/wer_compute.py` and surface it in `normalize_and_score.py` / the analysis scripts.
+
 ## Reproducing Results
 
-**Analysis only (no GPU)** — recompute every table above from the committed transcripts:
+**Analysis only (no GPU)** — recompute every table + figure from the committed transcripts:
 
 ```bash
 git clone https://github.com/theshivam7/indian-asr-bench && cd indian-asr-bench
 pip install -r requirements.txt
-python normalize_and_score.py    # Stage 2: 4-mode WER from results/stage1_raw_transcripts/
-python analysis/compare_all.py   # Stage 3: breakdowns + charts → results/analysis/
+python normalize_and_score.py --dataset tie      # Stage 2 → results/tie/stage2_processed/
+python analysis/compare_all.py --dataset tie     # Stage 3 tables + charts
+python analysis/statistics.py --dataset tie      # bootstrap CIs + paired significance
+python analysis/error_analysis.py --dataset tie  # codified artifact taxonomy
+python paper/figures/make_paper_figures.py --dataset tie
 ```
 
-**Transcription (GPU)** — each model has its own conda env and driver script:
+**Transcription (GPU)** — registry-driven drivers, `--model` / `--dataset`:
 
 ```bash
-bash task2_whisper_medium/setup.sh          # per-model env (task1..task5)
-conda activate whisper_medium
-python task2_whisper_medium/wer_whisper_medium.py   # resumable → results/stage1_raw_transcripts/
+bash task_whisper/setup.sh                                              # one env for all Whisper models
+python task_whisper/run_whisper.py --model large_v3_turbo --dataset tie # → results/tie/stage1_raw_transcripts/
+python task4_parakeet/wer_parakeet.py --model parakeet_ctc --dataset tie
+python task5_qwen3_asr/wer_qwen3.py --dataset svarah
 ```
 
-**Fine-tuning (GPU)** — train, then evaluate the fine-tune + same-engine baseline:
+**A whole dataset at once** (cluster): `qsub -v DATASET=svarah hpc/run_pipeline.pbs`, or CPU-only re-scoring with `qsub -v DATASET=tie hpc/job_score.pbs`.
+
+**Fine-tuning (GPU)** — standard + speaker-disjoint (hardens the null result):
 
 ```bash
 bash task6_whisper_medium_ft/setup.sh
-python task6_whisper_medium_ft/check_speaker_overlap.py     # pre-flight leakage disclosure
-python task6_whisper_medium_ft/finetune.py                  # → models/whisper_medium_ft/
+python task6_whisper_medium_ft/finetune.py                                        # → models/whisper_medium_ft/
+FT_SPEAKER_DISJOINT=1 FT_OUTPUT_DIR=models/whisper_medium_ft_disjoint \
+    python task6_whisper_medium_ft/finetune.py                                    # speaker-disjoint variant
 MODEL_NAME=medium_hf python task6_whisper_medium_ft/wer_whisper_medium_ft.py
 MODEL_NAME=medium_ft python task6_whisper_medium_ft/wer_whisper_medium_ft.py
 ```
 
-Conda specs are in [`environments/`](environments/); PBS/SLURM job scripts and cluster config in [`hpc/`](hpc/). All transcriptions were run on a single **NVIDIA A100-40GB** (NSCC ASPIRE2A).
+Conda specs in [`environments/`](environments/); PBS jobs in [`hpc/`](hpc/) (`job_whisper`, `job_parakeet`, `job_qwen3`,
+`job_svarah`, `job_new_models_tie`, `job_finetune_disjoint`, `job_score`). All runs on a single **NVIDIA A100-40GB** (NSCC ASPIRE2A).
 
 ---
 
 ## Error Analysis
 
 A deep look at the **top-20 highest-WER clips per model** reveals that the worst scores are mostly *not*
-model failures. Full analysis with evidence: [`results/analysis/error_analysis.md`](results/analysis/error_analysis.md).
+model failures. Full analysis with evidence: [`results/tie/analysis/error_analysis.md`](results/tie/analysis/error_analysis.md).
 
 **~70% of the worst-WER samples are dataset artifacts, not ASR errors.** The 100 worst rows (5 models × 20)
 come from just **42 distinct clips**, and classifying them by reference-word recall shows:

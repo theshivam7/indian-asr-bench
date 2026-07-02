@@ -1,11 +1,20 @@
 """
-Stage 1: ASR Transcription — NVIDIA Parakeet-TDT-0.6B-v2.
+Stage 1: ASR transcription — NVIDIA Parakeet (NeMo), batched.
 
-Saves to results/stage1_raw_transcripts/wer_parakeet_raw.csv.
-DO NOT re-run unless you need new transcriptions.
-Run normalize_and_score.py for WER evaluation.
+Drives both Parakeet models via the registry:
+    --model parakeet       -> Parakeet-TDT-0.6B-v2 (transducer)
+    --model parakeet_ctc   -> Parakeet-CTC-1.1B     (ctc; 2nd cannot-hallucinate witness)
+
+Usage:
+    python task4_parakeet/wer_parakeet.py --model parakeet_ctc --dataset tie
+    python task4_parakeet/wer_parakeet.py --model parakeet     --dataset svarah
+
+Writes results/<dataset>/stage1_raw_transcripts/wer_<model>_raw.csv.
+Uses batch NeMo transcription (its own loop, so not utils.inference_loop), but is
+dataset-aware through the DatasetSpec.
 """
 
+import argparse
 import logging
 import os
 import signal
@@ -15,68 +24,40 @@ import warnings
 import wave
 
 import librosa
-import nemo.collections.asr as nemo_asr
 import numpy as np
 import pandas as pd
 import torch
 from tqdm import tqdm
 
-# Suppress NeMo verbose logging (must be after nemo import so handlers exist)
-logging.getLogger("nemo_logger").setLevel(logging.WARNING)
-logging.getLogger("nemo").setLevel(logging.WARNING)
-logging.getLogger("lightning").setLevel(logging.WARNING)
-logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
-warnings.filterwarnings("ignore")
-
-# Disable cuDNN to avoid CUDNN_STATUS_NOT_INITIALIZED when loading LSTM weights
-# on systems where the cuDNN version does not match the CUDA runtime.
-# LSTM ops fall back to standard CUDA — still GPU-accelerated.
-torch.backends.cudnn.enabled = False
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from utils.io_helpers import (
-    load_dataset_test,
-    results_dir,
-    stage1_raw_dir,
-    build_sample_row,
-    save_checkpoint,
-    remove_checkpoint,
-)
-
-MODEL_NAME = "parakeet"
-MODEL_ID = "nvidia/parakeet-tdt-0.6b-v2"
-BATCH_SIZE = 16      # NeMo batch transcription size; reduce to 8 if GPU OOM
+BATCH_SIZE = 16
 CHECKPOINT_EVERY = 50
 
 
-def _audio_to_wav(sample: dict, path: str) -> None:
-    """Write a dataset audio sample to a 16 kHz mono WAV file."""
-    audio_data = sample["audio"]
-    audio_array = np.array(audio_data["array"], dtype=np.float32).flatten()
+def _audio_to_wav(sample: dict, audio_col: str, path: str) -> None:
+    audio_data = sample[audio_col]
+    arr = np.array(audio_data["array"], dtype=np.float32).flatten()
     sr = audio_data["sampling_rate"]
     if sr != 16000:
-        audio_array = librosa.resample(audio_array, orig_sr=sr, target_sr=16000)
-    audio_int16 = (np.clip(audio_array, -1.0, 1.0) * 32767).astype(np.int16)
+        arr = librosa.resample(arr, orig_sr=sr, target_sr=16000)
+    audio_int16 = (np.clip(arr, -1.0, 1.0) * 32767).astype(np.int16)
     with wave.open(path, "w") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(16000)
+        wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(16000)
         wf.writeframes(audio_int16.tobytes())
 
 
-def transcribe_batch(model, samples: list[dict]) -> list[str]:
-    """Write temp WAVs, call NeMo batch transcribe, clean up. Returns list of hyp strings."""
-    tmp_paths: list[str] = []
+def transcribe_batch(model, samples, audio_col):
+    tmp_paths = []
     try:
-        for sample in samples:
+        for s in samples:
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-                _audio_to_wav(sample, tmp.name)
+                _audio_to_wav(s, audio_col, tmp.name)
                 tmp_paths.append(tmp.name)
         outputs = model.transcribe(tmp_paths, batch_size=len(tmp_paths))
-        return [(out.text if hasattr(out, "text") else str(out)).strip() for out in outputs]
+        return [(o.text if hasattr(o, "text") else str(o)).strip() for o in outputs]
     except Exception as e:
-        print(f"  [WARN] Batch transcription failed: {e}", flush=True)
+        print(f"  [WARN] batch transcription failed: {e}", flush=True)
         return [""] * len(samples)
     finally:
         for p in tmp_paths:
@@ -86,90 +67,89 @@ def transcribe_batch(model, samples: list[dict]) -> list[str]:
                 pass
 
 
-def _make_sigterm_handler(model_name: str, rows_ref: list[dict]):
-    """Return a SIGTERM handler that saves checkpoint and interrupted CSV before exit."""
-    def handler(signum: int, frame) -> None:
-        print(f"\n[SIGTERM] Job killed. Saving {len(rows_ref)} rows...", flush=True)
-        if rows_ref:
-            save_checkpoint(rows_ref, model_name)
-            pd.DataFrame(rows_ref).to_csv(
-                os.path.join(stage1_raw_dir(), f"wer_{model_name}_interrupted.csv"),
-                index=False,
-            )
-            print("[SIGTERM] Checkpoint + interrupted CSV saved.", flush=True)
-        sys.exit(0)
-    return handler
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default="parakeet", choices=["parakeet", "parakeet_ctc"])
+    ap.add_argument("--dataset", default="tie")
+    args = ap.parse_args()
+
+    logging.getLogger("nemo_logger").setLevel(logging.WARNING)
+    logging.getLogger("nemo").setLevel(logging.WARNING)
+    warnings.filterwarnings("ignore")
+    torch.backends.cudnn.enabled = False  # avoid CUDNN_STATUS_NOT_INITIALIZED on LSTM load
+
+    import nemo.collections.asr as nemo_asr
+    from utils.registry import MODEL_BY_KEY
+    from utils.datasets import load_eval
+    from utils.io_helpers import (results_dir, stage1_raw_dir, build_sample_row,
+                                  save_checkpoint, remove_checkpoint)
+
+    model_key = args.model
+    dataset = args.dataset
+    model_id = MODEL_BY_KEY[model_key].model_id
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Loading {model_id} ({MODEL_BY_KEY[model_key].display}) on {device} ...")
+    model = nemo_asr.models.ASRModel.from_pretrained(model_id)
+    if device == "cuda":
+        model = model.cuda()
+    model.eval()
+    print("Model loaded.\n")
+
+    ds, spec = load_eval(dataset)
+    split = spec.splits["eval"]
+    audio_col = spec.audio_col
+
+    completed, ckpt_map = set(), {}
+    checkpoint_path = os.path.join(results_dir(dataset), f"wer_{model_key}_partial.csv")
+    if os.path.exists(checkpoint_path):
+        for r in pd.read_csv(checkpoint_path).to_dict("records"):
+            sid = str(r["ID"]); completed.add(sid); ckpt_map[sid] = r
+        print(f"  Resuming: {len(completed)} samples already done\n")
+
+    all_rows, pending, pending_meta = [], [], []
+
+    def _sigterm(signum, frame):
+        if all_rows:
+            save_checkpoint(all_rows, model_key, dataset)
+            pd.DataFrame(all_rows).to_csv(
+                os.path.join(stage1_raw_dir(dataset), f"wer_{model_key}_interrupted.csv"), index=False)
+        print(f"\n[SIGTERM] saved {len(all_rows)} rows", flush=True)
+        sys.exit(143)
+    signal.signal(signal.SIGTERM, _sigterm)
+
+    def flush():
+        if not pending:
+            return
+        hyps = transcribe_batch(model, pending, audio_col)
+        for s, (sid, tr), hyp in zip(pending, pending_meta, hyps):
+            all_rows.append(build_sample_row(s, sid, tr, hyp, spec=spec, split=split))
+            if len(all_rows) % CHECKPOINT_EVERY == 0:
+                save_checkpoint(all_rows, model_key, dataset)
+        pending.clear(); pending_meta.clear()
+
+    print(f"--- {spec.display} [{split}] : {len(ds)} samples, model={model_key} ---")
+    for sample in tqdm(ds, desc=f"{dataset}:{model_key}"):
+        transcript = str(sample.get(spec.gold_ref_col) or "").strip()
+        if not transcript:
+            continue
+        sid = str(sample.get(spec.id_col, ""))
+        if sid in completed:
+            flush()
+            hyp = str((ckpt_map.get(sid) or {}).get("hypothesis_raw") or "")
+            all_rows.append(build_sample_row(sample, sid, transcript, hyp, spec=spec, split=split))
+        else:
+            pending.append(sample); pending_meta.append((sid, transcript))
+            if len(pending) >= BATCH_SIZE:
+                flush()
+    flush()
+
+    out_path = os.path.join(stage1_raw_dir(dataset), f"wer_{model_key}_raw.csv")
+    pd.DataFrame(all_rows).to_csv(out_path, index=False)
+    print(f"\nSaved: {out_path}  ({len(all_rows)} samples)")
+    remove_checkpoint(model_key, dataset)
+    print("Done.")
 
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Loading {MODEL_ID} on device: {device} ...")
-model = nemo_asr.models.ASRModel.from_pretrained(MODEL_ID)
-if device == "cuda":
-    model = model.cuda()
-model.eval()
-print("Model loaded.\n")
-
-ds = load_dataset_test()
-
-completed_ids: set[str] = set()
-ckpt_map: dict[str, dict] = {}
-
-checkpoint_path = os.path.join(results_dir(), f"wer_{MODEL_NAME}_partial.csv")
-if os.path.exists(checkpoint_path):
-    df_partial = pd.read_csv(checkpoint_path)
-    for r in df_partial.to_dict("records"):
-        sid = str(r["ID"])
-        completed_ids.add(sid)
-        ckpt_map[sid] = r
-    print(f"  Resuming from checkpoint: {len(completed_ids)} samples already done\n")
-
-all_rows: list[dict] = []
-signal.signal(signal.SIGTERM, _make_sigterm_handler(MODEL_NAME, all_rows))
-
-print(f"--- Processing test split ({len(ds)} samples) ---")
-
-pending_samples: list[dict] = []
-pending_meta: list[tuple[str, str]] = []  # (sample_id, transcript)
-
-
-def flush_batch() -> None:
-    """Transcribe the current pending batch and append rows to all_rows."""
-    if not pending_samples:
-        return
-    hyps = transcribe_batch(model, pending_samples)
-    for sample, (sample_id, transcript), hyp_raw in zip(pending_samples, pending_meta, hyps):
-        all_rows.append(build_sample_row(sample, sample_id, transcript, hyp_raw))
-        if len(all_rows) % CHECKPOINT_EVERY == 0:
-            save_checkpoint(all_rows, MODEL_NAME)
-            print(f"  [checkpoint] {len(all_rows)} samples saved", flush=True)
-    pending_samples.clear()
-    pending_meta.clear()
-
-
-for sample in tqdm(ds, desc="test (transcribing)"):
-    transcript = (sample.get("Transcript") or "").strip()
-    if not transcript:
-        continue
-
-    sample_id = str(sample.get("ID", ""))
-
-    if sample_id in completed_ids:
-        flush_batch()
-        ckpt_row = ckpt_map.get(sample_id)
-        hyp_raw = str(ckpt_row.get("hypothesis_raw") or "") if ckpt_row else ""
-        all_rows.append(build_sample_row(sample, sample_id, transcript, hyp_raw))
-    else:
-        pending_samples.append(sample)
-        pending_meta.append((sample_id, transcript))
-        if len(pending_samples) >= BATCH_SIZE:
-            flush_batch()
-
-flush_batch()
-
-out_path = os.path.join(stage1_raw_dir(), f"wer_{MODEL_NAME}_raw.csv")
-pd.DataFrame(all_rows).to_csv(out_path, index=False)
-print(f"\nSaved: {out_path}  ({len(all_rows)} samples)")
-print("Run 'python normalize_and_score.py' for WER evaluation.")
-
-remove_checkpoint(MODEL_NAME)
-print("\nDone.")
+if __name__ == "__main__":
+    main()

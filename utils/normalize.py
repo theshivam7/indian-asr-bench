@@ -1,41 +1,34 @@
 """Research-grade forward normalization for ASR WER evaluation.
 
-4 evaluation modes — 2 reference sources × 2 cleanup levels:
+Each evaluation *mode* pairs a reference source with a normalizer; the mode
+registry itself lives in ``utils.registry`` (single source of truth). This module
+implements the three normalizers and a ``normalize_for_mode`` dispatcher.
 
-    transcript_raw   — Transcript,            minimal cleanup vs Whisper minimal cleanup
-    transcript_clean — Transcript,            full normalization vs Whisper full normalization
-    hf_raw           — Normalised_Transcript, minimal cleanup vs Whisper minimal cleanup
-    hf_clean         — Normalised_Transcript, full normalization vs Whisper full normalization
+Normalizers (all applied SYMMETRICALLY to both reference and hypothesis):
+    minimal  (minimal_clean_text)  — strip wrapping quotes + lowercase + remove punctuation.
+    custom   (normalize_text)      — minimal + possessive fix + number-to-words (project gold).
+    whisper  (whisper_normalize_text) — the community-standard Whisper EnglishTextNormalizer,
+                                        added for cross-paper comparability.
 
-Minimal cleanup (minimal_clean_text): strip wrapping quotes + lowercase + remove punctuation.
-Full normalization (normalize_text): minimal + possessive fix + number-to-words.
-All modes are symmetric: the same cleanup is applied to both ref and hyp.
+Reference-source roles ("gold"/"alt") are resolved by the caller via
+``utils.registry.get_reference_role`` onto the raw-CSV columns transcript_raw /
+normalised_transcript_raw.
 """
 
 import re
 import unicodedata
+
+from utils.registry import (
+    ALL_MODES as MODES,
+    get_normalizer,
+    get_reference_role,
+)
 
 try:
     from num2words import num2words as _num2words
     _NUM2WORDS_AVAILABLE = True
 except ImportError:
     _NUM2WORDS_AVAILABLE = False
-
-MODES = ("transcript_raw", "transcript_clean", "hf_raw", "hf_clean")
-
-_REFERENCE_SOURCE = {
-    "transcript_raw":   "Transcript",
-    "transcript_clean": "Transcript",
-    "hf_raw":           "Normalised_Transcript",
-    "hf_clean":         "Normalised_Transcript",
-}
-
-_IS_NORMALIZED = {
-    "transcript_raw":   False,
-    "transcript_clean": True,
-    "hf_raw":           False,
-    "hf_clean":         True,
-}
 
 _ORDINAL_PATTERN = re.compile(r'\b(\d+)(st|nd|rd|th)\b', re.IGNORECASE)
 _CARDINAL_PATTERN = re.compile(r'\b\d+(\.\d+)?\b')
@@ -109,12 +102,14 @@ def _normalize_whitespace(text: str) -> str:
 
 
 def normalize_text(text: str) -> str:
-    """Apply forward normalization: lowercase, fix possessives, convert numbers
-    to words, remove punctuation.
+    """Apply forward normalization: fix possessives, convert numbers to words,
+    lowercase, remove punctuation, collapse whitespace.
 
-    Contractions are intentionally left unexpanded (e.g. "don't" stays "don't"
-    rather than becoming "do not"). Used for all *_clean modes. Applied
-    symmetrically to both ref and hyp.
+    Contractions are deliberately NOT expanded to their two-word form: instead the
+    apostrophe is stripped, so "don't" -> "dont" and "bernoulli's" -> "bernoulli s"
+    (see _fix_possessives). This is applied symmetrically to both reference and
+    hypothesis, so it never rewards a rewrite that neither transcript uses. Used for
+    the *_clean (custom) modes.
     """
     if not text or not text.strip():
         return ""
@@ -149,9 +144,54 @@ def minimal_clean_text(text: str) -> str:
     return text
 
 
+# --------------------------------------------------------------------------- #
+# Whisper EnglishTextNormalizer (community standard) — lazy, cached.
+# Packaged by the `whisper_normalizer` PyPI wheel (no torch dependency), so it is
+# importable in the CPU-only analysis env. Only required when a `whisper` mode runs.
+# --------------------------------------------------------------------------- #
+_WHISPER_NORMALIZER = None
+
+
+def _get_whisper_normalizer():
+    global _WHISPER_NORMALIZER
+    if _WHISPER_NORMALIZER is None:
+        try:
+            from whisper_normalizer.english import EnglishTextNormalizer
+        except ImportError as e:  # pragma: no cover - dependency guard
+            raise ImportError(
+                "The 'whisper_norm' mode needs the `whisper_normalizer` package "
+                "(pip install whisper_normalizer). It packages Whisper's "
+                "EnglishTextNormalizer without pulling in torch."
+            ) from e
+        _WHISPER_NORMALIZER = EnglishTextNormalizer()
+    return _WHISPER_NORMALIZER
+
+
+def whisper_normalize_text(text: str) -> str:
+    """Community-standard Whisper English normalization (Radford et al. 2023).
+
+    Expands contractions, spells out numbers, standardises spelling and strips
+    punctuation. Applied symmetrically; used for the `whisper_norm` comparison mode.
+    """
+    if not text or not text.strip():
+        return ""
+    return _get_whisper_normalizer()(text).strip()
+
+
+_NORMALIZERS = {
+    "minimal": minimal_clean_text,
+    "custom": normalize_text,
+    "whisper": whisper_normalize_text,
+}
+
+
+def normalize_for_mode(mode: str, text: str) -> str:
+    """Apply the normalizer that `mode` selects (via the registry) to `text`."""
+    return _NORMALIZERS[get_normalizer(mode)](text)
+
+
 def get_reference_source(mode: str) -> str:
-    if mode not in _REFERENCE_SOURCE:
-        raise ValueError(f"Unknown mode: {mode}. Valid: {MODES}")
-    return _REFERENCE_SOURCE[mode]
+    """Backward-compatible alias: returns the canonical reference role (gold/alt)."""
+    return get_reference_role(mode)
 
 

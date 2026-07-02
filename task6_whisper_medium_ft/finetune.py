@@ -136,6 +136,20 @@ print(f"  train: {n_before} -> {len(train_ds)} after dropping empty / >{MAX_AUDI
 eval_ds = eval_ds.filter(has_usable_text, input_columns=["Transcript"])
 print(f"  validation: {len(eval_ds)} samples")
 
+# Speaker-disjoint fine-tuning (FT_SPEAKER_DISJOINT=1): remove from train every clip
+# whose speaker also appears in the test split, so no test speaker is ever seen in
+# training. Evaluated on the SAME test set as medium_hf, this hardens the null result
+# ("even with zero speaker overlap, fine-tuning does not help"). Set FT_OUTPUT_DIR=
+# models/whisper_medium_ft_disjoint to keep it separate from the standard FT model.
+if os.environ.get("FT_SPEAKER_DISJOINT"):
+    test_speakers = set(
+        str(s) for s in load_dataset("raianand/TIE_shorts", split="test", cache_dir=HF_CACHE)["Speaker_ID"]
+    )
+    n_before = len(train_ds)
+    train_ds = train_ds.filter(lambda spk: str(spk) not in test_speakers, input_columns=["Speaker_ID"])
+    print(f"  [speaker-disjoint] train {n_before} -> {len(train_ds)} after removing "
+          f"{len(test_speakers)} test speakers")
+
 if MAX_TRAIN_SAMPLES:
     train_ds = train_ds.select(range(min(int(MAX_TRAIN_SAMPLES), len(train_ds))))
     eval_ds = eval_ds.select(range(min(8, len(eval_ds))))
