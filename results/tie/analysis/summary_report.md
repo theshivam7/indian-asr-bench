@@ -14,6 +14,8 @@
 | medium_hf | Whisper Medium (HF) | 14.75 | 14.42 | 17.72 | 15.51 | 14.23 | 10.06 |
 | medium_ft | Whisper Medium (FT) | 14.71 | 14.61 | 17.7 | 15.7 | 14.31 | 10.25 |
 | medium_ft_disjoint | Whisper Medium (FT, speaker-disjoint) | N/A | N/A | N/A | N/A | N/A | N/A |
+| medium_ft_disjoint_s43 | Whisper Medium (FT, disjoint, seed 43) | N/A | N/A | N/A | N/A | N/A | N/A |
+| medium_ft_disjoint_s44 | Whisper Medium (FT, disjoint, seed 44) | N/A | N/A | N/A | N/A | N/A | N/A |
 
 ## Best model per mode
 

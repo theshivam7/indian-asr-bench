@@ -1,0 +1,25 @@
+{
+  "model_key": "qwen3",
+  "model_id": "Qwen/Qwen3-ASR-1.7B",
+  "engine": "qwen",
+  "dataset": "svarah",
+  "hf_id": "ai4bharat/Svarah",
+  "hf_revision": "ebbf7777fe771490696a3f7b007097606fa8c924",
+  "git_commit": "",
+  "python": "3.10.20",
+  "hostname": "x1000c2s3b0n0",
+  "timestamp_utc": "2026-07-03T01:18:12+00:00",
+  "packages": {
+    "torch": "2.5.1+cu118",
+    "datasets": "4.8.5",
+    "numpy": "2.2.6",
+    "librosa": "0.11.0",
+    "soundfile": "0.13.1",
+    "transformers": "4.57.6",
+    "qwen-asr": "0.0.6"
+  },
+  "decode_kwargs": {
+    "language": "English",
+    "max_new_tokens": 512
+  }
+}

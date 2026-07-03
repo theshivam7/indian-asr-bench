@@ -1,0 +1,25 @@
+{
+  "model_key": "large_v3_turbo",
+  "model_id": "turbo",
+  "engine": "openai_whisper",
+  "dataset": "svarah",
+  "hf_id": "ai4bharat/Svarah",
+  "hf_revision": "ebbf7777fe771490696a3f7b007097606fa8c924",
+  "git_commit": "",
+  "python": "3.10.20",
+  "hostname": "x1000c2s3b0n0",
+  "timestamp_utc": "2026-07-03T00:12:01+00:00",
+  "packages": {
+    "torch": "2.5.1",
+    "datasets": "4.8.5",
+    "numpy": "2.2.6",
+    "librosa": "0.11.0",
+    "soundfile": "0.13.1",
+    "jiwer": "4.0.0",
+    "openai-whisper": "20250625"
+  },
+  "decode_kwargs": {
+    "language": "en",
+    "engine_defaults": "openai-whisper"
+  }
+}

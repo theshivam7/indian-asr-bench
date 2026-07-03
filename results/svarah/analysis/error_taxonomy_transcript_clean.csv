@@ -1,0 +1,4 @@
+category,n_clips,mean_recall,mean_ratio,mean_wer,share_pct
+clip_over_run,6,0.97,6.99,6.027,6.2
+content_mismatch,89,0.0,5.83,5.824,91.8
+genuine_error,2,0.62,3.87,3.25,2.1

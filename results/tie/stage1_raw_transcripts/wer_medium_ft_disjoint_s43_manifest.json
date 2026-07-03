@@ -1,0 +1,24 @@
+{
+  "model_key": "medium_ft_disjoint_s43",
+  "model_id": "models/whisper_medium_ft_disjoint_s43",
+  "engine": "hf_whisper",
+  "dataset": "tie",
+  "hf_id": "raianand/TIE_shorts",
+  "hf_revision": "28c53e285feae86f4ba25d8aaeca4fd0c709784c",
+  "git_commit": "",
+  "python": "3.10.20",
+  "hostname": "x1000c2s4b0n0",
+  "timestamp_utc": "2026-07-03T02:09:42+00:00",
+  "packages": {
+    "torch": "2.5.1",
+    "datasets": "4.8.5",
+    "numpy": "1.26.4",
+    "librosa": "0.11.0",
+    "soundfile": "0.12.1",
+    "jiwer": "3.1.0",
+    "transformers": "4.46.3"
+  },
+  "decode_kwargs": {
+    "engine_defaults": "hf_whisper chunked pipeline"
+  }
+}
