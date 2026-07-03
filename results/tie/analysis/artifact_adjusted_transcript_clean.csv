@@ -1,6 +1,6 @@
-model,display,wer_all_pct,wer_adjusted_pct,artifact_inflation_pp,n_clips_all,n_clips_adjusted
-base,Whisper Base,17.53,16.99,0.54,985,975
-medium,Whisper Medium,14.76,14.23,0.53,985,975
-large,Whisper Large,15.93,15.36,0.57,985,975
-parakeet,Parakeet-TDT-0.6B,15.6,15.02,0.58,985,975
-qwen3,Qwen3-ASR-1.7B,16.66,16.12,0.55,985,975
+model,display,wer_all_pct,wer_adjusted_pct,artifact_inflation_pp,wer_excl_shortref_pct,n_clips_all,n_clips_adjusted
+base,Whisper Base,17.53,16.99,0.54,17.53,985,975
+medium,Whisper Medium,14.76,14.23,0.53,14.76,985,975
+large,Whisper Large,15.93,15.36,0.57,15.93,985,975
+parakeet,Parakeet-TDT-0.6B,15.6,15.02,0.58,15.6,985,975
+qwen3,Qwen3-ASR-1.7B,16.66,16.12,0.55,16.66,985,975

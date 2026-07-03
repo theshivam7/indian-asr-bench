@@ -13,8 +13,10 @@ Resampling unit: **speakers**, when the dataset exposes a speaker id. Clips from
 one speaker share accent/microphone/room, so their errors are correlated;
 resampling clips i.i.d. understates variance and overstates significance
 (TIE: 986 clips from 280 speakers, median 3 clips/speaker). Clip-level CIs are
-reported alongside for transparency; datasets without a speaker id (Svarah's HF
-config) fall back to clip-level with an explicit note.
+reported alongside for transparency. Datasets without a speaker id fall back to
+the recording tag embedded in the clip ID when the registry defines
+`cluster_id_regex` (Svarah: 3232 recordings over 6656 clips), else to clip-level
+— each fallback is stated explicitly in the report.
 
 Consistency guards: duplicate clip IDs raise; a model whose scored table covers
 fewer clips than the common intersection triggers a loud warning (prevents two
@@ -135,7 +137,8 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
     E_clip = {m: tables[m].loc[common, "errors"].to_numpy() for m in models}
     point = {m: E_clip[m].sum() / ref_words.sum() for m in models}
 
-    # --- Cluster structure: speakers if available, else clips ---
+    # --- Cluster structure: speakers if available, else recording tag from the
+    # clip ID (spec.cluster_id_regex), else clips ---
     speakers = tables[models[0]].loc[common, "speaker"].to_numpy()
     have_speakers = pd.Series(speakers).replace("", np.nan).notna().sum() > 0 and \
         len(set(s for s in speakers if s)) > 1
@@ -143,6 +146,15 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
         # clips with a missing speaker id become their own singleton cluster
         labels = np.array([s if s else f"clip:{cid}" for s, cid in zip(speakers, common)])
         cluster_unit = "speaker"
+    elif spec.cluster_id_regex:
+        tags = pd.Series(common).str.extract(spec.cluster_id_regex, expand=False)
+        labels = np.array([t if isinstance(t, str) and t else f"clip:{cid}"
+                           for t, cid in zip(tags, common)])
+        cluster_unit = "recording"
+        print(f"  [note] '{dataset}' exposes no speaker id — clustering by the recording "
+              f"tag extracted from clip IDs ({spec.cluster_id_regex}); this captures "
+              f"within-recording correlation but may still understate within-SPEAKER "
+              f"correlation (one speaker can contribute several recordings).")
     else:
         labels = np.array([f"clip:{cid}" for cid in common])
         cluster_unit = "clip"
@@ -229,6 +241,13 @@ def main(dataset: str, mode: str, B: int) -> None:
             f.write("Speaker-level resampling accounts for within-speaker correlation "
                     "(clips from one speaker share accent/channel); clip-level CIs are in the "
                     "CSV for comparison and are narrower, i.e. anti-conservative.\n\n")
+        elif unit == "recording":
+            f.write("No speaker id is exposed for this dataset; resampling clusters on the "
+                    "recording tag embedded in the clip filename (chunks of one recording share "
+                    "accent/channel/session). This is not a full speaker id — one speaker can "
+                    "contribute several recordings — so CIs may still understate within-speaker "
+                    "correlation, but strictly less than clip-level resampling would. Clip-level "
+                    "CIs are in the CSV for comparison.\n\n")
         else:
             f.write("No speaker id is exposed for this dataset, so resampling is clip-level; "
                     "CIs may understate within-speaker correlation (limitation).\n\n")

@@ -153,6 +153,25 @@ if os.environ.get("FT_SPEAKER_DISJOINT"):
     print(f"  [speaker-disjoint] train {n_before} -> {len(train_ds)} after removing "
           f"{len(test_speakers)} test speakers")
 
+# Size-matched speaker-OVERLAPPING control (FT_SIZE_MATCHED=<n_clips>): random
+# train subset of the same size the speaker-disjoint filter leaves (640 clips
+# after the duration/text filters), sampled with a FIXED rng seed so all control
+# runs across FT_SEED values train on the IDENTICAL subset — only init/shuffling
+# vary, mirroring the disjoint multi-seed design. Separates the small-training-set
+# effect from the disjointness effect: the disjoint runs change both at once.
+# Mutually exclusive with FT_SPEAKER_DISJOINT.
+if os.environ.get("FT_SIZE_MATCHED"):
+    if os.environ.get("FT_SPEAKER_DISJOINT"):
+        raise SystemExit("FT_SIZE_MATCHED and FT_SPEAKER_DISJOINT are mutually exclusive")
+    n_target = int(os.environ["FT_SIZE_MATCHED"])
+    if n_target >= len(train_ds):
+        raise SystemExit(f"FT_SIZE_MATCHED={n_target} >= filtered train size {len(train_ds)}")
+    import numpy as _np
+    subset_idx = _np.random.default_rng(20260703).choice(len(train_ds), size=n_target, replace=False)
+    train_ds = train_ds.select(sorted(int(i) for i in subset_idx))
+    print(f"  [size-matched control] train subsampled to {len(train_ds)} clips "
+          f"(fixed subset rng 20260703, speaker overlap preserved)")
+
 if MAX_TRAIN_SAMPLES:
     train_ds = train_ds.select(range(min(int(MAX_TRAIN_SAMPLES), len(train_ds))))
     eval_ds = eval_ds.select(range(min(8, len(eval_ds))))

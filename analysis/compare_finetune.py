@@ -42,6 +42,21 @@ DISJOINT_SEEDS = {
     "medium_ft_disjoint_s43": 43,
     "medium_ft_disjoint_s44": 44,
 }
+# Size-matched (speaker-OVERLAPPING) control runs: same clip count as the disjoint
+# train set, sampled at random from the full train split. Separates the effect of
+# the 12x training-set shrinkage from the effect of speaker-disjointness itself.
+SIZEMATCH_SEEDS = {
+    "medium_ft_sizematch_s42": 42,
+    "medium_ft_sizematch_s43": 43,
+    "medium_ft_sizematch_s44": 44,
+}
+# Disjoint train-set size, printed by finetune.py's "[speaker-disjoint]" log
+# line and independently recomputed from the dataset's Metadata.csv
+# (2026-07-03), applying the same filters finetune.py applies (non-empty
+# transcript, <=30 s) BEFORE the speaker filter: removing the 280 test speakers
+# keeps 51/331 speakers, 567/7200 clips, 3.8/46.9 hours.
+DISJOINT_TRAIN = {"clips": 567, "clips_total": 7200, "speakers": 51,
+                  "speakers_total": 331, "hours": 3.8, "hours_total": 46.9}
 
 DISPLAY = {
     "medium": "Whisper Medium (openai-whisper)",
@@ -134,7 +149,7 @@ lines = [
 
 # --------------- 1. Corpus WER across all 4 modes ---------------
 print("\n--- Corpus WER by mode ---")
-ALL_FT_MODELS = (SECONDARY, BASELINE, FINETUNED, *DISJOINT_SEEDS)
+ALL_FT_MODELS = (SECONDARY, BASELINE, FINETUNED, *DISJOINT_SEEDS, *SIZEMATCH_SEEDS)
 have = {m: {} for m in ALL_FT_MODELS}
 for mode in MODES:
     for model in ALL_FT_MODELS:
@@ -178,6 +193,7 @@ if PRIMARY_MODE in have[BASELINE] and PRIMARY_MODE in have[FINETUNED]:
 # --------------- 1b. Speaker-disjoint re-split fine-tune (multi-seed; hardens the null) ---------------
 disjoint_present = [m for m in DISJOINT_SEEDS if have[m].get(PRIMARY_MODE) is not None]
 if disjoint_present:
+    dt = DISJOINT_TRAIN
     lines += [
         "## Speaker-disjoint re-split fine-tune (multi-seed)",
         "",
@@ -186,6 +202,15 @@ if disjoint_present:
         f"SAME test set as `{BASELINE}`, so any gain here cannot come from speaker "
         "adaptation. Run with multiple training seeds: a null claim from one seed would "
         "be indistinguishable from seed variance.",
+        "",
+        f"> **Training-set confound (disclosed)**: TIE_shorts' official test speakers are so "
+        f"entangled with train that removing them keeps only **{dt['clips']}/{dt['clips_total']} "
+        f"train clips ({dt['hours']}/{dt['hours_total']} h, {dt['speakers']}/{dt['speakers_total']} "
+        f"speakers)**. The disjoint runs therefore differ from the headline fine-tune in BOTH "
+        f"speaker overlap and training-set size (~13x smaller) — this dataset cannot support a "
+        f"size-matched speaker-disjoint split at all, which is itself an evaluation-validity "
+        f"finding. Any WER regression below must not be attributed to speaker-disjointness "
+        f"alone; see the size-matched control section (when run) for the separation.",
         "",
         f"| Seed | WER (`{PRIMARY_MODE}`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |",
         "|------|:----:|:----:|:----:|:----:|:----:|",
@@ -244,8 +269,43 @@ if disjoint_present:
             f"The seed-to-seed spread ({max(wers) - min(wers):.2f} pp) is itself larger than the per-seed "
             f"effect being estimated, so a single-seed run — including the checkpoint published as the "
             f"'primary' disjoint model — is not representative of the study as a whole. The safe claim is: "
-            f"under a strict speaker-disjoint split, this fine-tuning recipe shows no evidence of improving "
-            f"WER, and at least one seed shows evidence of making it worse.",
+            f"fine-tuning on the speaker-disjoint training subset ({DISJOINT_TRAIN['clips']} clips) shows "
+            f"no evidence of improving WER over pretrained, and at least one seed shows evidence of making "
+            f"it worse. Whether the worsening is caused by the disjointness or by the 13x-smaller training "
+            f"set is separated by the size-matched control below (if run).",
+            "",
+        ]
+
+    # ---- Size-matched speaker-overlapping control (separates size from disjointness) ----
+    sm_present = [m for m in SIZEMATCH_SEEDS if have[m].get(PRIMARY_MODE) is not None]
+    if sm_present:
+        lines += [
+            "## Size-matched control (speaker-overlapping, multi-seed)",
+            "",
+            f"Same recipe and clip count as the disjoint runs ({DISJOINT_TRAIN['clips']} train clips), "
+            "but sampled at random from the FULL train split — speaker overlap with test is preserved. "
+            "If these runs regress like the disjoint runs, the disjoint regression is a small-training-set "
+            "effect; if they hold up, the disjointness itself is implicated.",
+            "",
+            f"| Seed | WER (`{PRIMARY_MODE}`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |",
+            "|------|:----:|:----:|:----:|:----:|:----:|",
+        ]
+        sm_pvals, sm_rows = [], []
+        for m in sm_present:
+            d, lo, hi, p, n, g = paired_speaker_bootstrap(df_base_pm, load(m, PRIMARY_MODE))
+            sm_pvals.append(p)
+            sm_rows.append((SIZEMATCH_SEEDS[m], have[m][PRIMARY_MODE], d, lo, hi, p))
+        sm_holm = _holm(sm_pvals) if len(sm_pvals) > 1 else sm_pvals
+        for (seed, wer_m, d, lo, hi, p), ph in zip(sm_rows, sm_holm):
+            sig = "" if lo <= 0 <= hi else " *"
+            lines.append(f"| {seed} | {wer_m:.2f}% | {d:+.2f} pp | [{lo:+.2f}, {hi:+.2f}]{sig} | {p:.3f} | {ph:.3f} |")
+            print(f"  [sizematch s{seed}] wer={wer_m:.2f}%  diff={d:+.2f}pp  CI=[{lo:+.2f},{hi:+.2f}]  p={p:.3f}  p_holm={ph:.3f}")
+        lines.append("")
+    else:
+        lines += [
+            "_Size-matched control runs (`medium_ft_sizematch_s*`) not yet available — "
+            "submit `hpc/job_finetune_sizematch.pbs` (SEED=42/43/44) to separate the "
+            "training-set-size effect from the speaker-disjointness effect._",
             "",
         ]
 else:
@@ -393,6 +453,9 @@ lines += [
     "  `openai-whisper` number is shown only as a continuity reference.",
     "- **Speaker overlap**: see `speaker_overlap.md`. If test speakers also appear in train, part of the",
     "  gain reflects speaker adaptation (disclosed, per the dataset's official splits).",
+    "- **Disjoint train-set size**: the speaker-disjoint runs train on 567 clips (3.8 h) vs the official",
+    "  split's 7200 (46.9 h, after the same duration/text filters) — speaker-disjointness and training-set",
+    "  size are confounded on this dataset by construction. The size-matched control isolates the size effect.",
     "",
 ]
 

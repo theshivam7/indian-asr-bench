@@ -20,3 +20,12 @@ medium_hf,SLOW,17.69,373
 medium_ft,AVG,15.75,199
 medium_ft,FAST,12.28,413
 medium_ft,SLOW,17.1,373
+medium_ft_disjoint,AVG,18.88,199
+medium_ft_disjoint,FAST,13.86,413
+medium_ft_disjoint,SLOW,17.65,373
+medium_ft_disjoint_s43,AVG,15.15,199
+medium_ft_disjoint_s43,FAST,12.4,413
+medium_ft_disjoint_s43,SLOW,17.85,373
+medium_ft_disjoint_s44,AVG,18.23,199
+medium_ft_disjoint_s44,FAST,12.16,413
+medium_ft_disjoint_s44,SLOW,17.52,373
