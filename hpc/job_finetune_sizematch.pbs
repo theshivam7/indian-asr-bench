@@ -1,0 +1,74 @@
+#!/bin/bash
+#PBS -N asr_ft_sizematch
+#PBS -l select=1:ngpus=1:ncpus=8:mem=64gb
+#PBS -l walltime=6:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/
+#PBS -j oe
+#PBS -k oed
+#PBS -V
+
+# Size-matched speaker-OVERLAPPING control for the disjoint fine-tuning study.
+#
+# The speaker-disjoint runs train on only 567/7200 clips (3.8/46.9 h) because
+# 280 of TIE_shorts' 331 train speakers also appear in test — so those runs
+# change BOTH speaker overlap and training-set size at once. This job fine-tunes
+# on a random 567-clip subset of the FULL train split (speaker overlap
+# preserved; the subset is fixed across seeds by an internal rng so only
+# init/shuffling vary — mirroring the disjoint multi-seed design):
+#
+#   disjoint regresses AND control regresses  -> small-training-set effect
+#   disjoint regresses AND control holds up   -> disjointness itself implicated
+#
+# Residual difference (disclosed): the control subset spans ~300 speakers while
+# the disjoint set spans 51 — speaker DIVERSITY per clip is not matched, only
+# clip count/hours. Submit one job per seed:
+#
+#   qsub -v SEED=42 hpc/job_finetune_sizematch.pbs
+#   qsub -v SEED=43 hpc/job_finetune_sizematch.pbs
+#   qsub -v SEED=44 hpc/job_finetune_sizematch.pbs
+#
+# ~1.5 h training (567 clips x <=10 epochs) + ~1 h transcription per job.
+
+if [ -z "${SEED}" ]; then
+    echo "[FATAL] SEED is not set. Submit with: qsub -v SEED=42 $0"
+    exit 1
+fi
+
+WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+WHISPER_FT_ENV=${WHISPER_FT_ENV:-whisper_medium_ft}
+HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
+
+module load "${CUDA_MODULE}" 2>/dev/null || true
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}"
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" "${WORKDIR}/models"
+cd "${WORKDIR}"
+
+conda activate "${WHISPER_FT_ENV}"
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+
+echo "--- GPU / CUDA diagnostics (size-matched control, seed ${SEED}) ---"
+nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
+python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok); sys.exit(0 if ok else 1)" \
+    || { echo "[FATAL] CUDA not available in ${WHISPER_FT_ENV} - aborting"; exit 1; }
+
+# Keep weights off the quota-limited $HOME (same pattern as the disjoint jobs).
+FT_OUT="${FT_SIZEMATCH_OUTPUT:-models/whisper_medium_ft_sizematch}_s${SEED}"
+MODEL_KEY="medium_ft_sizematch_s${SEED}"
+mkdir -p "$(dirname "${FT_OUT}")"
+
+echo "=== Stage 0: size-matched control fine-tune, seed ${SEED} $(date) ==="
+FT_SIZE_MATCHED=567 FT_SEED="${SEED}" FT_OUTPUT_DIR="${FT_OUT}" \
+    python task6_whisper_medium_ft/finetune.py
+
+echo "=== Stage 1: transcribe ${MODEL_KEY} on test ==="
+MODEL_NAME="${MODEL_KEY}" MODEL_SOURCE="${FT_OUT}" \
+    python task6_whisper_medium_ft/wer_whisper_medium_ft.py
+
+# Stage 2/3 deliberately NOT run here (same race-avoidance as the disjoint seed
+# jobs): after ALL control seeds finish, run ONE scoring pass:
+#   python normalize_and_score.py --dataset tie && python analysis/compare_finetune.py
+echo "=== size-matched control seed ${SEED} complete (raw CSV written; scoring deferred) $(date) ==="

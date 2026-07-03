@@ -40,11 +40,11 @@ ASR benchmarks are dominated by American and British English. Indian English —
 This project does four things:
 
 1. **Benchmarks up to seven pretrained ASR systems** on two datasets — [TIE_shorts](https://huggingface.co/datasets/raianand/TIE_shorts) (986 NPTEL-style lecture clips, "found" YouTube data) and [Svarah](https://huggingface.co/datasets/ai4bharat/Svarah) (6,656 curated read-speech clips) — across five normalization modes and every demographic/acoustic breakdown.
-2. **Fine-tunes Whisper Medium** on the in-domain `train` split and evaluates it two ways: under the dataset's official (speaker-overlapping) splits, and under a **speaker-disjoint re-split run with 3 training seeds** — reporting the honest result, including a statistically significant *regression* in one seed (see [Fine-tuning](#fine-tuning-whisper-medium)).
-3. **Analyzes the failure modes** in depth with a full-corpus, multi-model consensus artifact classifier (not just a hand-reviewed tail): dataset artifacts are rare in the full corpus (TIE 1.0%, Svarah 4.4%) but dominate the worst-WER tail (TIE 62%, Svarah 98%) — see [Error Analysis](#error-analysis).
+2. **Fine-tunes Whisper Medium** on the in-domain `train` split and evaluates it two ways: under the dataset's official (speaker-overlapping) splits, and under a **speaker-disjoint re-split run with 3 training seeds** — reporting the honest result, including a statistically significant *regression* in one seed, and disclosing that the official splits leave only **567 of 7,200 train clips** speaker-disjoint, so disjointness and training-set size are confounded by construction (see [Fine-tuning](#fine-tuning-whisper-medium)).
+3. **Analyzes the failure modes** in depth with a full-corpus, multi-model consensus artifact classifier (not just a hand-reviewed tail): reference artifacts are rare in both corpora (TIE 1.0%, Svarah 0.8% of classifiable clips) but dominate TIE's worst-WER tail (62%), while Svarah's tail is instead dominated by an **isolated-word subtask** (23% of its clips have <4-word references) where WER is quantized and the classifier is undefined — see [Error Analysis](#error-analysis).
 4. **Validates that classifier against human judgment** with a blind, stratified annotation protocol, rather than trusting an unvalidated heuristic (see [`analysis/validation/PROTOCOL.md`](analysis/validation/PROTOCOL.md)).
 
-Two recurring themes: **how you normalize text moves WER as much as which model you pick**, and **the median clip is 3–4 pp better than the corpus WER** because a rare-but-severe artifact tail inflates the average.
+Two recurring themes: **how you normalize text moves WER as much as which model you pick**, and **the median clip is 3–4 pp better than the corpus WER** because a rare-but-severe tail (reference artifacts on TIE; sub-second isolated-word items on Svarah) inflates the average.
 
 ---
 
@@ -196,8 +196,8 @@ Svarah has no `Normalised_Transcript` field (unlike TIE), so only three modes ap
 **Key findings:**
 
 1. **Whisper Large is best on Svarah (7.11%)** — roughly half TIE's error rate, consistent with Svarah's controlled read-speech recording vs. TIE's noisier scraped lecture audio.
-2. **Normalization choice matters far more here than on TIE for the CTC/TDT/LLM models** — Parakeet-TDT drops from 13.03% (`raw`) to 8.35% (`whisper_norm`), a 4.7pp swing, because `whisper_norm`'s number/abbreviation handling suits Svarah's read-speech prompts.
-3. **The dataset-artifact story reverses TIE's "found vs. curated" expectation** (see [Error Analysis](#error-analysis) below): despite being a controlled recording, Svarah's full-corpus artifact share (4.4%) is *higher* than TIE's (1.0%), and its worst-WER tail is almost entirely artifacts (98% vs. TIE's 62%). Read-speech prompts still misalign with recorded audio at a non-trivial rate.
+2. **Normalization choice matters far more here than on TIE for the CTC/TDT/LLM models** — Parakeet-TDT drops from 13.03% (`raw`) to 8.35% (`whisper_norm`), a 4.7pp swing. The mechanism: Parakeet and Qwen3 transcribe fillers verbatim ("and uh", "mm hmm") on Svarah's spontaneous portions and spell digits differently on its read prompts; `transcript_clean` **penalizes the more faithful transcription**, while `whisper_norm` strips fillers and unifies numerals. Whisper models, which omit fillers by training, barely move (7.89% → 7.69%).
+3. **The curated dataset is cleaner, as expected — but only after fixing the classifier**: among classifiable clips (references ≥4 words), Svarah's artifact share is **0.8%** vs. TIE's **1.0%**. A naive run of the same classifier reports 4.4% on Svarah — an artifact *of the instrument*: 23% of Svarah's clips are 1–2-word isolated-word items ("cat", "jump", sub-second audio) where any single-word miss saturates recall and auto-flags the clip. On those flagged short clips the models *disagree with each other* (inter-hypothesis distance 0.89) — the signature of genuinely hard decontextualized words ("tree"→"three", "left"→"lift"), the exact opposite of the models-agree/reference-disagrees signature that defines a true reference fault. Heuristic artifact detectors do not transfer across dataset designs unaudited — itself an evaluation-validity lesson.
 
 ---
 
@@ -285,6 +285,8 @@ The +0.20 pp gap is within single-run noise, so the honest claim on this officia
 
 Result 1 above is measured on TIE_shorts' **official splits, which have speaker overlap**: every test speaker also appears in training (see the disclosure below). To check whether that overlap was masking a real effect, we removed every training clip whose speaker appears in `test` and re-ran the fine-tune from scratch with **3 independent training seeds** — a single-seed run isn't credible here, since Whisper fine-tune seed variance is the same order of magnitude as the effect being measured.
 
+> **Training-set confound (disclosed).** The official test speakers are so entangled with train that removing them keeps only **567 of 7,200 train clips (3.8 of 46.9 hours; 51 of 331 speakers)**. The disjoint runs therefore differ from Result 1 in *both* speaker overlap and training-set size (~13× smaller) — on this dataset a size-matched speaker-disjoint split is impossible by construction, which is itself an evaluation-validity finding: **TIE_shorts' official splits cannot measure generalization to unseen speakers.** Any regression below must not be attributed to disjointness alone; a size-matched speaker-overlapping control (`hpc/job_finetune_sizematch.pbs`, 567 random clips, 3 seeds) separates the two effects.
+
 | Seed | WER (`transcript_clean`) | Δ vs. pretrained (paired, speaker-clustered bootstrap) | 95% CI | p (Holm-corrected) |
 |:----:|:---:|:---:|:---:|:---:|
 | **42** | **16.17%** | **+1.75 pp** | **[+0.13, +4.17]** | **0.048 (significant)** |
@@ -293,7 +295,7 @@ Result 1 above is measured on TIE_shorts' **official splits, which have speaker 
 
 Across 3 seeds: WER 15.39% (range 14.80–16.17%), mean Δ +0.97 pp vs. pretrained, seed-to-seed spread 1.37 pp — itself larger than the per-seed effect being estimated. One seed (42) shows a **statistically significant WER regression** that survives Holm-Bonferroni correction across the 3 seeds; the other two fall within the study's minimum detectable effect (≈1.2 pp) and are not distinguishable from no effect.
 
-**The honest claim:** under a strict speaker-disjoint split, this fine-tuning recipe shows no evidence of improving WER, and at least one seed shows evidence of making it measurably worse. This is a stronger and more informative finding than a plain null result — it says the official-split "no gain" reading in Result 1 was, if anything, generous. Full breakdown and methodology: [`results/tie/analysis/finetune_comparison.md`](results/tie/analysis/finetune_comparison.md).
+**The honest claim:** fine-tuning on the speaker-disjoint training subset (567 clips) shows no evidence of improving WER over pretrained, and at least one seed shows evidence of making it measurably worse. Whether the worsening comes from the disjointness or from the 13×-smaller training set is an open question the size-matched control is designed to answer — but either way, the official-split "no gain" reading in Result 1 was, if anything, generous. Full breakdown and methodology: [`results/tie/analysis/finetune_comparison.md`](results/tie/analysis/finetune_comparison.md).
 
 The checkpoint published as [whisper-medium-indian-english-disjoint](https://huggingface.co/theshivam7/whisper-medium-indian-english-disjoint) is seed 42 — the significant-regression seed — published for exact reproducibility of that result, not as a recommended model; see its model card for the full multi-seed context.
 
@@ -398,36 +400,42 @@ FT_SPEAKER_DISJOINT=1 FT_OUTPUT_DIR=models/whisper_medium_ft_disjoint \
     python task6_whisper_medium_ft/finetune.py                                    # speaker-disjoint, seed 42
 FT_SPEAKER_DISJOINT=1 FT_SEED=43 FT_OUTPUT_DIR=models/whisper_medium_ft_disjoint_s43 \
     python task6_whisper_medium_ft/finetune.py                                    # + seeds 43, 44 (multi-seed study)
+FT_SIZE_MATCHED=567 FT_SEED=42 FT_OUTPUT_DIR=models/whisper_medium_ft_sizematch_s42 \
+    python task6_whisper_medium_ft/finetune.py                                    # size-matched control (x3 seeds)
 MODEL_NAME=medium_hf python task6_whisper_medium_ft/wer_whisper_medium_ft.py
 MODEL_NAME=medium_ft python task6_whisper_medium_ft/wer_whisper_medium_ft.py
 ```
 
-Or on the cluster: `bash hpc/submit_all.sh --phase seeds` submits both extra-seed jobs and chains a single rescore job after both finish (avoids two jobs racing on the shared results files).
+Or on the cluster: `bash hpc/submit_all.sh --phase seeds` submits both extra-seed jobs and chains a single rescore job after both finish (avoids two jobs racing on the shared results files); `qsub -v SEED=42 hpc/job_finetune_sizematch.pbs` (×3 seeds) runs the size-matched control.
 
 Conda specs in [`environments/`](environments/); PBS jobs + the `submit_all.sh` one-shot submitter in [`hpc/`](hpc/)
 (`job_whisper`, `job_parakeet`, `job_qwen3`, `job_svarah`, `job_new_models_tie`, `job_finetune_disjoint`,
-`job_finetune_disjoint_seed`, `job_score`, `job_figures`). All runs on a single **NVIDIA A100-40GB** (NSCC ASPIRE2A).
+`job_finetune_disjoint_seed`, `job_finetune_sizematch`, `job_score`, `job_figures`). All runs on a single **NVIDIA A100-40GB** (NSCC ASPIRE2A).
 
 ---
 
 ## Error Analysis
 
-Dataset artifacts (clip/reference misalignment) are classified with a **full-corpus, multi-model consensus classifier** — every clip, not just a hand-reviewed tail — using per-clip reference-word recall and hypothesis/reference length ratio, averaged across all models. Full analysis with evidence: [`results/tie/analysis/error_analysis_transcript_clean.md`](results/tie/analysis/error_analysis_transcript_clean.md) (TIE) and [`results/svarah/analysis/error_analysis_transcript_clean.md`](results/svarah/analysis/error_analysis_transcript_clean.md) (Svarah).
+Dataset artifacts (clip/reference misalignment) are classified with a **full-corpus, multi-model consensus classifier** — every clip, not just a hand-reviewed tail — using per-clip reference-word recall and hypothesis/reference length ratio, averaged across all models. Clips with **<4-word references are excluded as unclassifiable** (`short_ref`): with an *n*-word reference, recall is quantized to multiples of 1/*n* and one wrong word crosses either threshold, so the signals carry no information there. Full analysis with evidence: [`results/tie/analysis/error_analysis_transcript_clean.md`](results/tie/analysis/error_analysis_transcript_clean.md) (TIE) and [`results/svarah/analysis/error_analysis_transcript_clean.md`](results/svarah/analysis/error_analysis_transcript_clean.md) (Svarah).
 
-**Artifacts are rare in the full corpus but dominate the worst-WER tail — and this holds on both datasets:**
+**Reference artifacts are rare in both corpora; what dominates each dataset's tail differs:**
 
 | | TIE_shorts | Svarah |
 |---|:---:|:---:|
-| Full-corpus artifact share | **1.0%** (95% CI 0.6–1.9%) | **4.4%** (95% CI 4.0–5.0%) |
-| Worst-20-per-model tail artifact share | **62%** (95% CI 47–75%) | **98%** (95% CI 93–99%) |
-| Per-model WER inflation from artifacts | ≈0.53–0.58 pp | see `artifact_adjusted_transcript_clean.csv` |
+| Artifact share (classifiable clips, refs ≥4 words) | **1.0%** (95% CI 0.6–1.9%) | **0.8%** (95% CI 0.6–1.0%) |
+| Short-reference (<4 words) share of corpus | 0.1% (1 clip) | **23.0%** (1,530 clips) |
+| Worst-20-per-model tail: artifacts | **62%** (95% CI 47–75%) | 4% |
+| Worst-20-per-model tail: short-ref clips | 0% | **95%** |
+| Per-model WER inflation from artifacts | ≈0.53–0.58 pp | ≈0.29–0.36 pp |
 
-The original hand-analysis figure (**~70% of the worst-20 samples are dataset artifacts**) survives as the **tail** statistic above — it was never wrong, but reporting it as if it applied to the whole corpus would be. The counterintuitive result is that Svarah — the *curated*, controlled-recording dataset — has a *higher* full-corpus artifact rate and a near-total artifact tail (98%) compared to TIE's scraped YouTube audio (1.0%, 62%); "found" data isn't automatically the messier of the two.
+The original hand-analysis figure (**~70% of the worst-20 samples are dataset artifacts**) survives as TIE's **tail** statistic — it was never wrong, but reporting it as if it applied to the whole corpus would be. On Svarah the curated dataset is indeed cleaner (0.8% vs 1.0%), **but a naive run of the same classifier reports 4.4%** — an instrument artifact, not a data artifact: Svarah's isolated-word items (sub-second clips like "cat", "jump") auto-flag on any single-word miss, yet on those clips the models *disagree with each other* (inter-hypothesis distance 0.89 vs 0.17 on TIE's true artifacts) — the signature of genuinely hard decontextualized words, not reference faults. **An artifact classifier tuned on one dataset design does not transfer to another unaudited** — the paper's evaluation-validity thesis applied to its own instrument.
 
-**Two independent lines of evidence that these are reference errors, not model errors, on both datasets:**
+**Two independent lines of evidence that TIE's flagged clips are reference errors, not model errors:**
 
 1. **Clip over-run** — the model transcribes the reference correctly **plus** real speech the clip cut off. Proof: a CTC model (Parakeet, which structurally cannot hallucinate), an LLM (Qwen3), and Whisper all emit the *same* extra words on these clips — real audio the reference omitted, not a hallucination. Example (TIE, `-2aOCNaOiLs`): REF "considered in problem forty five" → every model outputs "…forty five **let us do that**" (80% WER, model perfect).
 2. **Inter-hypothesis agreement** — on flagged clips, models agree with *each other* (mean pairwise hypothesis distance ≈0.17–0.20) far more than they agree with the reference (≈0.98–1.0 WER against it) — architecture-independent evidence the fault is in the reference, since these models share no decoder or training objective.
+
+On Svarah the same check is applied honestly in reverse: its `clip_over_run` flags (14 long-ref clips — reference truncation and disfluency clean-up in spontaneous chunks) show the agree-with-each-other signature (0.19), but its residual `content_mismatch` flags (25 clips) do **not** (0.74) — so Svarah's true reference-fault rate is, if anything, *below* the 0.8% headline. The agreement check acts as a built-in audit on the classifier itself.
 
 **Other patterns (TIE, evidence in the doc):**
 
@@ -436,7 +444,7 @@ The original hand-analysis figure (**~70% of the worst-20 samples are dataset ar
 - **Hallucination is the top genuine failure**; Whisper Large has the most WER>100% clips (9 of its 20) — matching its highest Std Dev.
 - **No female speaker** appears in any model's top-20 (weak N, but consistent).
 
-**Implication:** median WER (11.1% for Medium on TIE) is a more honest estimate of typical quality than corpus WER (14.8%) — the ~3.5 pp gap is this rare-but-severe tail. Model *rankings* are essentially unaffected (all models hit the same artifacts equally); only the absolute numbers are inflated by a consistent ≈0.55 pp.
+**Implication:** median WER (11.1% for Medium on TIE) is a more honest estimate of typical quality than corpus WER (14.8%) — the ~3.5 pp gap is this rare-but-severe tail. Model *rankings* are essentially unaffected (all models hit the same artifacts equally); only the absolute numbers are inflated by a consistent ≈0.55 pp on TIE (≈0.3 pp on Svarah).
 
 **Classifier validation:** the consensus classifier above is a heuristic, not ground truth. A blind, stratified human-annotation protocol — annotators see only the audio and reference, never the model output or predicted label — is implemented in [`analysis/validation/`](analysis/validation/) to measure its precision/recall against human judgment. See [`PROTOCOL.md`](analysis/validation/PROTOCOL.md) for the methodology; results pending the annotation pass.
 

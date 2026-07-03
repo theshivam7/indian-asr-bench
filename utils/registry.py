@@ -111,6 +111,16 @@ MODEL_SPECS = (
     # the effect being denied. Excluded from charts; aggregated in compare_finetune.py.
     ModelSpec("medium_ft_disjoint_s43", "Whisper Medium (FT, disjoint, seed 43)", "hf_whisper", "models/whisper_medium_ft_disjoint_s43", "whisper_medium_ft", "enc_dec", "769M", "#6B4400", 81, chart=False, tie_only=True),
     ModelSpec("medium_ft_disjoint_s44", "Whisper Medium (FT, disjoint, seed 44)", "hf_whisper", "models/whisper_medium_ft_disjoint_s44", "whisper_medium_ft", "enc_dec", "769M", "#5C3A00", 82, chart=False, tie_only=True),
+    # Size-matched control for the disjoint study. Removing the 280 test speakers
+    # leaves only 567/7200 train clips (3.8/46.9 h, after the duration/text
+    # filters), so the disjoint comparison confounds speaker-disjointness with a
+    # ~13x smaller training set. This control
+    # fine-tunes on an equally sized RANDOM (speaker-overlapping) train subset:
+    # if it regresses like the disjoint runs, the regression is a small-data
+    # effect; if it holds up, the disjointness itself is implicated.
+    ModelSpec("medium_ft_sizematch_s42", "Whisper Medium (FT, size-matched ctrl, seed 42)", "hf_whisper", "models/whisper_medium_ft_sizematch_s42", "whisper_medium_ft", "enc_dec", "769M", "#4D3000", 83, chart=False, tie_only=True),
+    ModelSpec("medium_ft_sizematch_s43", "Whisper Medium (FT, size-matched ctrl, seed 43)", "hf_whisper", "models/whisper_medium_ft_sizematch_s43", "whisper_medium_ft", "enc_dec", "769M", "#3E2700", 84, chart=False, tie_only=True),
+    ModelSpec("medium_ft_sizematch_s44", "Whisper Medium (FT, size-matched ctrl, seed 44)", "hf_whisper", "models/whisper_medium_ft_sizematch_s44", "whisper_medium_ft", "enc_dec", "769M", "#2F1E00", 85, chart=False, tie_only=True),
 )
 MODEL_BY_KEY = {m.key: m for m in MODEL_SPECS}
 ALL_MODELS = tuple(m.key for m in MODEL_SPECS)
@@ -153,6 +163,11 @@ class DatasetSpec:
     neer_register_col: str | None = None   # csv column whose value selects the entity-dense register (Svarah use-cases)
     neer_register_value: str | None = None
     verified: bool = True        # False -> column_map is provisional, adapter must confirm against ds.features
+    cluster_id_regex: str | None = None  # regex with ONE capture group applied to the clip ID to
+    #                               recover a resampling-cluster tag when no speaker column exists.
+    #                               Used by analysis/statistics.py as the bootstrap cluster unit.
+    #                               Document per dataset what the tag actually is (recording vs
+    #                               speaker) — the statistics report states it verbatim.
     audio_undecoded: bool = False  # True -> adapter casts audio_col to Audio(decode=False) on load,
     #                               so accessing it yields the raw {"bytes","path"} storage dict and
     #                               datasets' decode machinery (torchcodec-mandatory in datasets>=4,
@@ -230,6 +245,13 @@ SVARAH = DatasetSpec(
     hf_revision="ebbf7777fe771490696a3f7b007097606fa8c924",  # 2025-03-10
     neer_register_col=None,                   # no register field in this HF config; see note above
     neer_register_value=None,
+    # audio_filepath embeds a recording/file tag: "<num>_f2235_chunk_24.wav" -> f2235.
+    # Verified 2026-07-03: 3232 distinct tags over 6656 clips, each tag demographically
+    # consistent (never >1 gender/age/native-language), chunks of one recording share it.
+    # This is a RECORDING id, not a speaker id (the Svarah paper reports 117 speakers),
+    # so recording-level resampling still understates within-speaker correlation — but it
+    # is strictly less anti-conservative than clip-level.
+    cluster_id_regex=r"_(f\d+)_chunk",
     verified=True,
     audio_undecoded=True,   # bytes-stored audio: bypass datasets' (torchcodec) decoder entirely
 )

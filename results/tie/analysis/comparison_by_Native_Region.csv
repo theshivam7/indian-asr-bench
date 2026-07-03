@@ -27,3 +27,15 @@ medium_ft,EAST,14.66,352
 medium_ft,NORTH,13.31,202
 medium_ft,SOUTH,13.66,362
 medium_ft,WEST,22.53,69
+medium_ft_disjoint,EAST,14.63,352
+medium_ft_disjoint,NORTH,18.0,202
+medium_ft_disjoint,SOUTH,15.95,362
+medium_ft_disjoint,WEST,18.97,69
+medium_ft_disjoint_s43,EAST,14.75,352
+medium_ft_disjoint_s43,NORTH,14.48,202
+medium_ft_disjoint_s43,SOUTH,13.92,362
+medium_ft_disjoint_s43,WEST,20.15,69
+medium_ft_disjoint_s44,EAST,14.56,352
+medium_ft_disjoint_s44,NORTH,14.15,202
+medium_ft_disjoint_s44,SOUTH,15.52,362
+medium_ft_disjoint_s44,WEST,19.24,69

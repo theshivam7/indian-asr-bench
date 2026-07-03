@@ -13,3 +13,9 @@ medium_hf,F,19.08,58
 medium_hf,M,14.14,927
 medium_ft,F,24.3,58
 medium_ft,M,14.03,927
+medium_ft_disjoint,F,19.38,58
+medium_ft_disjoint,M,15.97,927
+medium_ft_disjoint_s43,F,19.35,58
+medium_ft_disjoint_s43,M,14.53,927
+medium_ft_disjoint_s44,F,19.25,58
+medium_ft_disjoint_s44,M,14.96,927

@@ -13,9 +13,12 @@
 | qwen3 | Qwen3-ASR-1.7B | 18.15 | 16.66 | 17.99 | 17.61 | 15.4 | 10.45 |
 | medium_hf | Whisper Medium (HF) | 14.75 | 14.42 | 17.72 | 15.51 | 14.23 | 10.06 |
 | medium_ft | Whisper Medium (FT) | 14.71 | 14.61 | 17.7 | 15.7 | 14.31 | 10.25 |
-| medium_ft_disjoint | Whisper Medium (FT, speaker-disjoint) | N/A | N/A | N/A | N/A | N/A | N/A |
-| medium_ft_disjoint_s43 | Whisper Medium (FT, disjoint, seed 43) | N/A | N/A | N/A | N/A | N/A | N/A |
-| medium_ft_disjoint_s44 | Whisper Medium (FT, disjoint, seed 44) | N/A | N/A | N/A | N/A | N/A | N/A |
+| medium_ft_disjoint | Whisper Medium (FT, speaker-disjoint) | 16.53 | 16.17 | 19.39 | 17.1 | 15.95 | 10.92 |
+| medium_ft_disjoint_s43 | Whisper Medium (FT, disjoint, seed 43) | 15.14 | 14.8 | 18.01 | 15.73 | 14.53 | 10.43 |
+| medium_ft_disjoint_s44 | Whisper Medium (FT, disjoint, seed 44) | 15.58 | 15.2 | 18.52 | 16.16 | 15.01 | 10.68 |
+| medium_ft_sizematch_s42 | Whisper Medium (FT, size-matched ctrl, seed 42) | N/A | N/A | N/A | N/A | N/A | N/A |
+| medium_ft_sizematch_s43 | Whisper Medium (FT, size-matched ctrl, seed 43) | N/A | N/A | N/A | N/A | N/A | N/A |
+| medium_ft_sizematch_s44 | Whisper Medium (FT, size-matched ctrl, seed 44) | N/A | N/A | N/A | N/A | N/A | N/A |
 
 ## Best model per mode
 

@@ -13,3 +13,9 @@ medium_hf,Engineering,14.39,691
 medium_hf,Non-Engineering,14.48,294
 medium_ft,Engineering,14.46,691
 medium_ft,Non-Engineering,14.97,294
+medium_ft_disjoint,Engineering,16.64,691
+medium_ft_disjoint,Non-Engineering,15.06,294
+medium_ft_disjoint_s43,Engineering,14.7,691
+medium_ft_disjoint_s43,Non-Engineering,15.02,294
+medium_ft_disjoint_s44,Engineering,14.48,691
+medium_ft_disjoint_s44,Non-Engineering,16.89,294
