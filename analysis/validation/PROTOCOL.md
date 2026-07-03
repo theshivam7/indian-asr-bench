@@ -4,9 +4,15 @@
 
 The benchmark's central diagnostic classifies clips as dataset artifacts
 (`clip_over_run`, `content_mismatch`) vs. unflagged, from cross-model consensus
-recall/length-ratio statistics (`analysis/error_analysis.py`). This protocol
-measures that classifier against blind human judgment, so the paper can report
-validated precision/recall instead of an unvalidated heuristic.
+recall/length-ratio statistics (`analysis/error_analysis.py`). Clips with
+references shorter than 4 words are a third outcome, `short_ref` — the
+recall/ratio signals are quantized to uselessness there, so the classifier
+declares them **unclassifiable** rather than flagging them. This protocol
+measures the classifier against blind human judgment, so the paper can report
+validated precision/recall instead of an unvalidated heuristic. `short_ref`
+clips are excluded from every stratum (they are outside the instrument's
+domain, so they belong in neither the precision nor the recall estimate);
+`build_validation_sample.py` enforces this.
 
 ## Sampling design (stratified; built by `build_validation_sample.py`)
 

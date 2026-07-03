@@ -361,11 +361,21 @@ def main(dataset: str, mode: str) -> None:
     pool = pool[pool["ID"].isin(common)].copy()
 
     cons = consensus_table(pool)
+    # Naive (guard-free) classification, kept for the instrument-transfer audit:
+    # what the classifier reports if short references are NOT excluded. On Svarah
+    # this is how the spurious headline arises (isolated-word items auto-flag).
+    cons["category_naive"] = cons.apply(
+        lambda r: classify(r["recall_mean"], r["ratio_mean"], r["ref_words"], min_ref=0), axis=1)
     tail = analyze_tail(pool, n_models)
     tax_full = full_corpus_taxonomy(cons)
     adjusted = artifact_adjusted_wer(pool, cons)
     print("  computing inter-hypothesis agreement (pairwise edit distances) ...", flush=True)
     agree = agreement_analysis(pool, cons)
+    # Same agreement table under the NAIVE (guard-free) classification — the
+    # instrument audit: if the naive flags were true reference faults they would
+    # show the models-agree signature; on short-ref corpora they show the opposite.
+    cons_naive = cons.drop(columns=["category"]).rename(columns={"category_naive": "category"})
+    agree_naive = agreement_analysis(pool, cons_naive)
     sens = threshold_sensitivity(cons)
 
     cons.to_csv(os.path.join(out, f"error_analysis_full_{mode}.csv"), index=False)
@@ -374,6 +384,7 @@ def main(dataset: str, mode: str) -> None:
     tax_full.to_csv(os.path.join(out, f"error_taxonomy_full_{mode}.csv"), index=False)
     adjusted.to_csv(os.path.join(out, f"artifact_adjusted_{mode}.csv"), index=False)
     agree.to_csv(os.path.join(out, f"agreement_{mode}.csv"), index=False)
+    agree_naive.to_csv(os.path.join(out, f"agreement_naive_{mode}.csv"), index=False)
     sens.to_csv(os.path.join(out, f"threshold_sensitivity_{mode}.csv"), index=False)
 
     n_art_full = int(tax_full.loc[tax_full["category"].isin(ARTIFACT_CATEGORIES), "n_clips"].sum())
@@ -427,6 +438,17 @@ def main(dataset: str, mode: str) -> None:
                 "better than acoustically-grounded ones would suggest caption "
                 "memorization).\n\n")
         f.write(build_md_table(agree) + "\n\n")
+
+        n_art_naive = int((cons["category_naive"] != "unflagged").sum())
+        naive_share = round(n_art_naive / len(cons) * 100, 1)
+        f.write("### Instrument audit: the same classifier WITHOUT the short-ref guard\n\n")
+        f.write(f"A naive (guard-free) run flags {n_art_naive}/{len(cons)} clips "
+                f"({naive_share}%) as artifacts. The agreement table below shows whether "
+                f"those naive flags carry the reference-fault signature (models agree with "
+                f"each other, disagree with the reference). Where they instead show high "
+                f"inter-hypothesis distance, the naive flags are classifier failures on "
+                f"short references, not data faults.\n\n")
+        f.write(build_md_table(agree_naive) + "\n\n")
 
         f.write(f"## Worst-{TOP_K} tail (continuity with the original hand analysis)\n\n")
         f.write(f"Top-{TOP_K} highest-WER clips per model ({tail['n_rows']} rows -> "

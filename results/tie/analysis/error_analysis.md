@@ -1,5 +1,11 @@
 # Deep Error Analysis — Why the Worst Samples Fail
 
+> **Provenance note.** This is the original *hand* analysis of the worst-20 tail, kept for
+> continuity. It is superseded by the codified full-corpus report
+> (`error_analysis_transcript_clean.md`): the "~70% artifacts" headline below is a **tail**
+> statistic (worst-20-per-model clips) — over the full corpus the artifact share is **1.0%**
+> of classifiable clips. Both numbers are correct; they answer different questions.
+
 Analysis of the **top-20 highest-WER clips per model** (`transcript_clean`, gold mode) across the
 five pretrained systems. The goal is to explain *why* WER is high, not just report it. Every claim
 below is verified against the actual reference/hypothesis text and is reproducible from

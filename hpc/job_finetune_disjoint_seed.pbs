@@ -10,7 +10,7 @@
 
 # Seed replicate of the speaker-disjoint fine-tune. The seed-42 run is
 # job_finetune_disjoint.pbs; this job trains + evaluates one additional seed so
-# the null result is demonstrably not one seed's variance. Submit as:
+# the multi-seed result is demonstrably not one seed's variance. Submit as:
 #
 #   qsub -v SEED=43 hpc/job_finetune_disjoint_seed.pbs
 #   qsub -v SEED=44 hpc/job_finetune_disjoint_seed.pbs

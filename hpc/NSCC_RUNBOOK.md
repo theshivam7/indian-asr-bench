@@ -82,7 +82,20 @@ bash hpc/submit_all.sh --phase 3 --after 14763802   # job id from phase 1's outp
 ```
 
 The script auto-forwards the scratch paths (`HF_CACHE`, `FT_OUTPUT_DIR`,
-`FT_DISJOINT_OUTPUT`) and your env locations to every job, and prints the job IDs.
+`FT_DISJOINT_OUTPUT`, `FT_SIZEMATCH_OUTPUT`) and your env locations to every job,
+and prints the job IDs.
+
+Two follow-up phases for the fine-tuning study:
+
+```bash
+# Disjoint-FT seed replicates 43/44 (parallel) + one chained rescore:
+bash hpc/submit_all.sh --phase seeds
+
+# Size-matched speaker-overlapping control (seeds 42/43/44, ~2.5h each, parallel)
+# + one chained rescore. Separates the train-size effect from the disjointness
+# effect (the disjoint filter keeps only 567/7200 train clips):
+bash hpc/submit_all.sh --phase sizematch
+```
 
 ## 2. After the jobs finish
 

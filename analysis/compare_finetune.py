@@ -44,7 +44,7 @@ DISJOINT_SEEDS = {
 }
 # Size-matched (speaker-OVERLAPPING) control runs: same clip count as the disjoint
 # train set, sampled at random from the full train split. Separates the effect of
-# the 12x training-set shrinkage from the effect of speaker-disjointness itself.
+# the ~13x training-set shrinkage from the effect of speaker-disjointness itself.
 SIZEMATCH_SEEDS = {
     "medium_ft_sizematch_s42": 42,
     "medium_ft_sizematch_s43": 43,

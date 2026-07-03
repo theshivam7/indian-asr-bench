@@ -38,6 +38,16 @@ Corpus WER on all common clips vs. excluding consensus-artifact clips (`wer_adju
 | short_ref | 1530 | 0.369 | 0.403 | 0.374 | 0.421 | 0.356 |
 | unflagged | 5087 | 0.108 | 0.119 | 0.099 | 0.121 | 0.089 |
 
+### Instrument audit: the same classifier WITHOUT the short-ref guard
+
+A naive (guard-free) run flags 295/6656 clips (4.4%) as artifacts. The agreement table below shows whether those naive flags carry the reference-fault signature (models agree with each other, disagree with the reference). Where they instead show high inter-hypothesis distance, the naive flags are classifier failures on short references, not data faults.
+
+| category | n_clips | inter_hyp_dist | cross_arch_dist | hyp_to_ref_wer | ref_wer_grounded | ref_wer_free |
+| --- | --- | --- | --- | --- | --- | --- |
+| clip_over_run | 33 | 0.32 | 0.324 | 0.982 | 0.882 | 1.021 |
+| content_mismatch | 262 | 0.892 | 0.922 | 1.203 | 1.196 | 1.205 |
+| unflagged | 6361 | 0.14 | 0.156 | 0.119 | 0.15 | 0.107 |
+
 ## Worst-20 tail (continuity with the original hand analysis)
 
 Top-20 highest-WER clips per model (140 rows -> 96 distinct). **Tail artifact share: 4.2%** (95% Wilson CI 1.6–10.2%).
