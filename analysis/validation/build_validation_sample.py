@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from utils.registry import PRIMARY_MODE, MODEL_BY_KEY, models_for_dataset, get_dataset
 from utils.io_helpers import stage2_dir, analysis_dir
-from analysis.error_analysis import classify
+from analysis.error_analysis import classify, ARTIFACT_CATEGORIES
 
 CAP_A = 60   # census cap: all consensus-flagged clips
 CAP_B = 30   # census cap: borderline (>=1 individual model flag, no consensus flag)
@@ -66,12 +66,16 @@ def main() -> None:
             continue
         df = pd.read_csv(path)
         df["ID"] = df["ID"].astype(str)
-        for cid, rec, rat, ref in zip(df["ID"], df["ref_recall"], df["length_ratio"], df["reference_raw"]):
-            if classify(rec, rat) != "unflagged":
+        for cid, rec, rat, ref, ref_n in zip(df["ID"], df["ref_recall"], df["length_ratio"],
+                                             df["reference_raw"], df["reference"]):
+            n_words = len(ref_n.split()) if isinstance(ref_n, str) else 0
+            if classify(rec, rat, n_words) in ARTIFACT_CATEGORIES:
                 per_model_flagged.add(cid)
             references.setdefault(cid, str(ref))
 
-    flagged = cons[cons["category"] != "unflagged"]
+    # Stratum A = consensus ARTIFACT flags only; short_ref clips are unclassifiable
+    # by the instrument being validated, so they don't belong in its precision sample.
+    flagged = cons[cons["category"].isin(ARTIFACT_CATEGORIES)]
     strat_a = flagged["ID"].tolist()[:CAP_A]
     borderline = sorted((per_model_flagged - set(flagged["ID"])) & set(cons["ID"]))
     strat_b = list(rng.permutation(borderline))[:CAP_B]
