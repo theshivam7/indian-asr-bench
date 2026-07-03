@@ -32,7 +32,14 @@ PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup       # also create mis
 
 Without `--phase`, the submitter only submits **phase 1** (see `hpc/NSCC_RUNBOOK.md` for the
 phased 1/2/3 submission flow, and the `--after <job_id>` flag for chaining phases you submit
-separately).
+separately). Two additional phases cover the fine-tuning replicates:
+
+- `--phase seeds` — disjoint-FT seed replicates 43/44 (`job_finetune_disjoint_seed.pbs` ×2)
+  plus ONE chained `job_score.pbs` rescore after both (avoids racing on shared Stage-2/3 files).
+- `--phase sizematch` — the **size-matched speaker-overlapping control** (`job_finetune_sizematch.pbs`
+  ×3, seeds 42/43/44, 567 random train clips each) plus one chained rescore. This is the control
+  that separates the training-set-size effect from the speaker-disjointness effect (the disjoint
+  filter leaves only 567/7200 clips, so the two are confounded in the disjoint runs).
 
 Dependency graph (`-->` = PBS `afterok`):
 
@@ -43,6 +50,13 @@ job_svarah ──────────┘   ^          (GPU ~10h)  writes res
      │                   │
 job_finetune_disjoint ───┘          (GPU ~10h)  writes results/tie (rescore)
      (afterok job_new_models_tie)
+
+job_finetune_disjoint_seed (SEED=43) ─┐
+job_finetune_disjoint_seed (SEED=44) ─┴─> job_score (CPU rescore, afterok both)
+
+job_finetune_sizematch (SEED=42) ─┐
+job_finetune_sizematch (SEED=43) ─┼─> job_score (CPU rescore, afterok all three)
+job_finetune_sizematch (SEED=44) ─┘
 ```
 
 TIE-new-models and Svarah run **in parallel** (disjoint result dirs); the disjoint
@@ -73,7 +87,11 @@ qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full f
 Bundled multi-step jobs: `job_new_models_tie.pbs` (turbo + parakeet_ctc on TIE,
 then rescore + analyse), `job_svarah.pbs` (all 7 models on Svarah → Stage 2/3 +
 NEER), `job_finetune_disjoint.pbs` (speaker-disjoint fine-tune → transcribe →
-rescore → FT report).
+rescore → FT report), `job_finetune_disjoint_seed.pbs` (one extra disjoint seed,
+`-v SEED=43|44`; scoring deferred), `job_finetune_sizematch.pbs` (size-matched
+control, `-v SEED=42|43|44`; scoring deferred), `job_score_disjoint_seed42.pbs`
+(one-off: transcribe + score an existing seed-42 disjoint checkpoint without
+retraining).
 
 ## Fine-tuning (standalone)
 
@@ -83,7 +101,8 @@ qsub -P <id> -W depend=afterok:$JOBID hpc/job_medium_ft.pbs # Stage 1+2+3: trans
 ```
 
 Overridable training knobs: `FT_EPOCHS`, `FT_BATCH`, `FT_GRAD_ACCUM`, `FT_LR`,
-`FT_PATIENCE`; `FT_SPEAKER_DISJOINT=1` + `FT_OUTPUT_DIR=...` for the disjoint variant.
+`FT_PATIENCE`; `FT_SPEAKER_DISJOINT=1` + `FT_OUTPUT_DIR=...` for the disjoint variant;
+`FT_SIZE_MATCHED=567` + `FT_SEED=<s>` for the size-matched control.
 
 ## Notes
 

@@ -25,8 +25,14 @@ Tunable via env vars:
     FT_EPOCHS (10)  FT_BATCH (8)  FT_GRAD_ACCUM (2)  FT_LR (1e-5)  FT_PATIENCE (2)
     FT_OUTPUT_DIR (models/whisper_medium_ft)  FT_BASE_MODEL (openai/whisper-medium)
     FT_SEED (42)  — training seed (init order, dataloader shuffling, dropout/SpecAugment);
-                    the multi-seed disjoint study runs 42/43/44 so the null result is not
+                    the multi-seed disjoint study runs 42/43/44 so the result is not
                     an artifact of one seed's variance
+    FT_SPEAKER_DISJOINT (unset)  — remove every train clip whose speaker appears in test
+                    (leaves 567 clips / 3.8 h; NB this confounds disjointness with
+                    training-set size — see the size-matched control below)
+    FT_SIZE_MATCHED (unset)  — <n_clips>: random speaker-OVERLAPPING train subset of that
+                    size (fixed across FT_SEED values); the control that separates the
+                    train-size effect from the disjointness effect
     MAX_TRAIN_SAMPLES (unset)  — subset training data for a quick smoke test
 """
 
@@ -141,9 +147,11 @@ print(f"  validation: {len(eval_ds)} samples")
 
 # Speaker-disjoint fine-tuning (FT_SPEAKER_DISJOINT=1): remove from train every clip
 # whose speaker also appears in the test split, so no test speaker is ever seen in
-# training. Evaluated on the SAME test set as medium_hf, this hardens the null result
-# ("even with zero speaker overlap, fine-tuning does not help"). Set FT_OUTPUT_DIR=
-# models/whisper_medium_ft_disjoint to keep it separate from the standard FT model.
+# training. Evaluated on the SAME test set as medium_hf. NB: because 280/331 train
+# speakers appear in test, this keeps only 567 clips (3.8 h) — the comparison changes
+# BOTH speaker overlap and training-set size (~13x); see the size-matched control
+# below for the separation. Set FT_OUTPUT_DIR=models/whisper_medium_ft_disjoint to
+# keep it separate from the standard FT model.
 if os.environ.get("FT_SPEAKER_DISJOINT"):
     test_speakers = set(
         str(s) for s in load_dataset("raianand/TIE_shorts", split="test", cache_dir=HF_CACHE)["Speaker_ID"]
@@ -154,7 +162,7 @@ if os.environ.get("FT_SPEAKER_DISJOINT"):
           f"{len(test_speakers)} test speakers")
 
 # Size-matched speaker-OVERLAPPING control (FT_SIZE_MATCHED=<n_clips>): random
-# train subset of the same size the speaker-disjoint filter leaves (640 clips
+# train subset of the same size the speaker-disjoint filter leaves (567 clips
 # after the duration/text filters), sampled with a FIXED rng seed so all control
 # runs across FT_SEED values train on the IDENTICAL subset — only init/shuffling
 # vary, mirroring the disjoint multi-seed design. Separates the small-training-set

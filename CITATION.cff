@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this benchmark or its analyses, please cite it as below."
+title: "Indian-ASR-Bench: Auditing WER Benchmarks for Indian-English ASR"
+authors:
+  - family-names: Sharma
+    given-names: Shivam
+    affiliation: "Nanyang Technological University, Singapore"
+  - family-names: Liu
+    given-names: Changsong
+    affiliation: "Nanyang Technological University, Singapore"
+year: 2026
+url: "https://github.com/theshivam7/indian-asr-bench"
+repository-code: "https://github.com/theshivam7/indian-asr-bench"
+license: MIT
+keywords:
+  - automatic speech recognition
+  - Indian English
+  - word error rate
+  - benchmark
+  - evaluation validity

@@ -77,9 +77,10 @@ def main() -> None:
     # by the instrument being validated, so they don't belong in its precision sample.
     flagged = cons[cons["category"].isin(ARTIFACT_CATEGORIES)]
     strat_a = flagged["ID"].tolist()[:CAP_A]
-    borderline = sorted((per_model_flagged - set(flagged["ID"])) & set(cons["ID"]))
+    classifiable = cons[cons["category"] != "short_ref"]  # short_ref: outside the instrument's domain
+    borderline = sorted((per_model_flagged - set(flagged["ID"])) & set(classifiable["ID"]))
     strat_b = list(rng.permutation(borderline))[:CAP_B]
-    rest = cons[~cons["ID"].isin(set(strat_a) | set(strat_b))].sort_values("wer_mean", ascending=False)
+    rest = classifiable[~classifiable["ID"].isin(set(strat_a) | set(strat_b))].sort_values("wer_mean", ascending=False)
     strat_c = rest["ID"].head(N_C).tolist()
     pool_d = rest["ID"].iloc[N_C:].tolist()
     strat_d = list(rng.choice(pool_d, size=min(N_D, len(pool_d)), replace=False))

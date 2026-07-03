@@ -28,7 +28,10 @@
   <a href="#results">Results</a> &nbsp;·&nbsp;
   <a href="#fine-tuning-whisper-medium">Fine-tuning</a> &nbsp;·&nbsp;
   <a href="#evaluation-methodology">Methodology</a> &nbsp;·&nbsp;
-  <a href="#reproducing-results">Reproduce</a>
+  <a href="#error-analysis">Error&nbsp;Analysis</a> &nbsp;·&nbsp;
+  <a href="#reproducing-results">Reproduce</a> &nbsp;·&nbsp;
+  <a href="#limitations">Limitations</a> &nbsp;·&nbsp;
+  <a href="#citation">Citation</a>
 </p>
 
 ---
@@ -83,7 +86,7 @@ The pretrained models are evaluated as-is (the headline benchmark, run on both d
 |-----------|-------------|
 | Gender | Female 53.8% (3,579), Male 46.2% (3,077) |
 | Age | 30–45 40.1% (2,670), 18–30 33.3% (2,219), 45–60 19.6% (1,305), 60+ 6.9% (462) |
-| Native language | 65 languages represented (Assamese, Bengali, Bodo, Gujarati, Hindi, Kannada, Kashmiri, Konkani, Maithili, Malayalam, and more) |
+| Native language | 19 native languages represented (Assamese, Bengali, Bodo, Gujarati, Hindi, Kannada, Kashmiri, Konkani, Maithili, Malayalam, and more); speakers from 65 districts per the [dataset paper](https://arxiv.org/abs/2305.15760) |
 
 ---
 
@@ -102,6 +105,8 @@ All numbers are corpus/per-sample WER on the `test` split under **`transcript_cl
 | Whisper Large | 15.93% | 16.88% | 11.43% | 19.20% | 35.21% | 48.94% |
 | Qwen3-ASR-1.7B | 16.66% | 17.34% | 12.90% | 15.93% | 35.00% | 45.07% |
 | Whisper Base | 17.53% | 18.38% | 13.51% | 16.95% | 38.16% | 50.00% |
+
+**Statistical significance** (speaker-clustered paired bootstrap over 280 speakers, Holm-corrected across all 10 pairs — [`statistics_transcript_clean.md`](results/tie/analysis/statistics_transcript_clean.md)): Whisper Medium's lead over every other model is significant, **including over Whisper Large** (−1.17 pp, p<sub>Holm</sub>=0.01) — a case where the smaller model significantly beats the bigger one. Parakeet-TDT vs. Whisper Large is *not* significant (p<sub>Holm</sub>=0.40): a 600M transducer is statistically indistinguishable from a 1.5B encoder-decoder here.
 
 > The **fine-tuned** Whisper Medium is not in this ranking because it runs through a different decoder (HuggingFace `transformers`, not `openai-whisper`) — mixing it here would confound fine-tuning with a decoding-engine change. Its fair, engine-controlled comparison is in [Fine-tuning](#fine-tuning-whisper-medium).
 
@@ -188,6 +193,8 @@ Svarah has no `Normalised_Transcript` field (unlike TIE), so only three modes ap
 | Parakeet-TDT-0.6B | 13.03% | 11.73% | 8.35% |
 | Parakeet-CTC-1.1B | 17.71% | 15.65% | 11.18% |
 | Whisper Base | 14.88% | 14.53% | 14.37% |
+
+**Statistical significance** (recording-clustered paired bootstrap over 3,232 recordings — Svarah's public release exposes no speaker IDs, so the recording tag embedded in each filename is the strictest available cluster unit; Holm-corrected across all 21 pairs — [`statistics_transcript_clean.md`](results/svarah/analysis/statistics_transcript_clean.md)): 19 of 21 pairwise differences are significant. The two exceptions: Whisper Medium vs. large-v3-turbo, and Parakeet-TDT vs. Qwen3.
 
 <p align="center">
   <img src="results/svarah/analysis/wer_by_model.png" width="680" alt="Model ranking by corpus WER on Svarah (transcript_clean)">
@@ -342,7 +349,7 @@ Stage 2  normalize_and_score.py --dataset X ──► results/<dataset>/stage2_p
         │
 Stage 3  compare_all / statistics / error_analysis / entity_analysis ──► results/<dataset>/analysis/   (CPU)
         │
-         paper/figures/make_paper_figures.py ──► paper/figures/   (publication PDFs/SVGs/PNGs)
+         paper figures (local paper workspace, not shipped) ──► paper/figures/
 ```
 
 - **`utils/registry.py`** — every model, dataset, evaluation mode, display name and colour. Nothing is defined elsewhere.
@@ -368,10 +375,12 @@ git clone https://github.com/theshivam7/indian-asr-bench && cd indian-asr-bench
 pip install -r requirements.txt
 python normalize_and_score.py --dataset tie      # Stage 2 → results/tie/stage2_processed/
 python analysis/compare_all.py --dataset tie     # Stage 3 tables + charts
-python analysis/statistics.py --dataset tie      # bootstrap CIs + paired significance
-python analysis/error_analysis.py --dataset tie  # codified artifact taxonomy
-python paper/figures/make_paper_figures.py --dataset tie
+python analysis/statistics.py --dataset tie      # cluster-bootstrap CIs + Holm-corrected paired tests
+python analysis/error_analysis.py --dataset tie  # codified artifact taxonomy (+ instrument audit)
+python analysis/compare_finetune.py              # fine-tuning report (TIE)
 ```
+
+(Repeat with `--dataset svarah` for the second corpus. The publication-figure script lives in the local paper workspace and is not part of the shipped pipeline; every table and chart above regenerates from the committed transcripts alone.)
 
 **Transcription (GPU)** — registry-driven drivers, `--model` / `--dataset`:
 
@@ -450,9 +459,41 @@ On Svarah the same check is applied honestly in reverse: its `clip_over_run` fla
 
 ---
 
+## Limitations
+
+Stated so the numbers above are read correctly:
+
+- **Classifier validation is pending.** The artifact classifier is backed by the inter-hypothesis agreement evidence and manual reading of flagged clips, but the blind human-annotation pass has not yet run.
+- **Svarah clustering is by recording, not speaker.** 3,232 recording clusters is the strictest unit the public release supports; true speaker clustering (117 speakers per the dataset paper) would widen CIs further. TIE uses true speaker clusters.
+- **The disjoint fine-tune is confounded by construction** (567-clip train set); the size-matched control (`hpc/job_finetune_sizematch.pbs`) that resolves the attribution is defined but not yet run.
+- **Training-data contamination is possible** — NPTEL lectures are public and may appear in Whisper's web-scraped training data. A small probe (grounded vs. free-decoding agreement with *flawed* references) found no memorization signal, but at n=10 it is low-powered.
+- **Stage-1 transcripts are single runs** with temperature-fallback decoding ([`docs/DECODE_CONFIG.md`](docs/DECODE_CONFIG.md)); the committed raw CSVs are the reproducibility anchor.
+- **Small cells** (duration extremes n=4–5; 58 female speakers on TIE) support qualitative reading only.
+
+---
+
+## Citation
+
+If you use this benchmark, the analyses, or the fine-tuned checkpoints, please cite:
+
+```bibtex
+@misc{sharma2026indianasrbench,
+  title        = {Indian-ASR-Bench: Auditing WER Benchmarks for Indian-English ASR},
+  author       = {Sharma, Shivam and Liu, Changsong},
+  year         = {2026},
+  howpublished = {\url{https://github.com/theshivam7/indian-asr-bench}},
+}
+```
+
+Please also cite the datasets you use: [TIE_shorts](https://huggingface.co/datasets/raianand/TIE_shorts) and [Svarah](https://arxiv.org/abs/2305.15760) (Javed et al., Interspeech 2023).
+
+---
+
 ## About
 
 Built by **Shivam Sharma** (student at **IIT Madras**) during a research internship at **Nanyang Technological University (NTU), Singapore**. The project provides a reproducible, transparently-documented WER benchmark for Indian English speech across both found (lecture) and curated (read-speech) audio — including a deliberately-disclosed negative fine-tuning result — so that both the strong pretrained baselines and the limits of in-domain fine-tuning are visible to other researchers.
+
+**Acknowledgements:** computing resources were provided by NSCC Singapore (ASPIRE2A, NVIDIA A100-40GB).
 
 Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -460,4 +501,4 @@ Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE). The dataset ([raianand/TIE_shorts](https://huggingface.co/datasets/raianand/TIE_shorts)) is under its own license; review the dataset card before use.
+MIT — see [LICENSE](LICENSE). The datasets ([raianand/TIE_shorts](https://huggingface.co/datasets/raianand/TIE_shorts), [ai4bharat/Svarah](https://huggingface.co/datasets/ai4bharat/Svarah)) are under their own licenses; review the dataset cards before use.

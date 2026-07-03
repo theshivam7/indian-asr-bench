@@ -10,14 +10,20 @@
 # limits / storage). Each phase writes disjoint result dirs, so you can also run
 # them in parallel if your allocation allows (PHASE=all).
 #
-#   PHASE 1  job_new_models_tie   GPU ~5h   turbo + parakeet_ctc on TIE, rescore
-#   PHASE 2  job_svarah           GPU ~10h  all 7 models on Svarah (biggest download)
-#   PHASE 3  job_finetune_disjoint GPU ~10h speaker-disjoint FT + figures
+#   PHASE 1      job_new_models_tie        GPU ~5h   turbo + parakeet_ctc on TIE, rescore
+#   PHASE 2      job_svarah                GPU ~10h  all 7 models on Svarah (biggest download)
+#   PHASE 3      job_finetune_disjoint     GPU ~10h  speaker-disjoint FT (seed 42) + figures
+#   PHASE seeds  job_finetune_disjoint_seed x2 GPU   disjoint FT seeds 43/44 + one rescore
+#   PHASE sizematch job_finetune_sizematch x3 GPU ~2.5h  size-matched control (seeds 42/43/44)
+#                                                    + one rescore — separates the train-size
+#                                                    effect from the disjointness effect
 #
 # USAGE (from the repo root on a login node):
 #     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase 1     # then 2, then 3
 #     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup       # create/verify envs only
 #     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase all   # submit all, chained by afterok
+#     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase seeds     # disjoint seeds 43/44
+#     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase sizematch # size-matched control
 #
 # Phase 2 (Svarah) writes disjoint results — safe to submit while Phase 1 is still
 # running. Phase 3 rescores the SAME results/tie/ dir as Phase 1, so queue it with
@@ -112,6 +118,7 @@ VARS="WORKDIR=${WORKDIR},HF_CACHE=${HF_CACHE},CONDA_BASE=${CONDA_BASE},CUDA_MODU
 VARS="${VARS},WHISPER_ENV=${WHISPER_ENV},PARAKEET_ENV=${PARAKEET_ENV},QWEN3_ENV=${QWEN3_ENV},WHISPER_FT_ENV=${WHISPER_FT_ENV}"
 # Keep fine-tune model weights off HOME (quota): write them onto scratch.
 VARS="${VARS},FT_OUTPUT_DIR=${SCRATCH}/models/whisper_medium_ft,FT_DISJOINT_OUTPUT=${SCRATCH}/models/whisper_medium_ft_disjoint"
+VARS="${VARS},FT_SIZEMATCH_OUTPUT=${SCRATCH}/models/whisper_medium_ft_sizematch"
 [ -n "${HF_TOKEN:-}" ] && VARS="${VARS},HF_TOKEN=${HF_TOKEN}"
 
 qsub_job() { qsub -P "$PROJECT" -v "$VARS" "$@"; }
@@ -120,11 +127,12 @@ submit_phase1() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_
 submit_phase2() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_svarah.pbs; }
 submit_phase3() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_finetune_disjoint.pbs; }
 submit_seed()   { local s="$1" d="${2:-}"; qsub -P "$PROJECT" -v "${VARS},SEED=${s}" ${d:+-W depend=afterok:$d} hpc/job_finetune_disjoint_seed.pbs; }
+submit_szm()    { local s="$1" d="${2:-}"; qsub -P "$PROJECT" -v "${VARS},SEED=${s}" ${d:+-W depend=afterok:$d} hpc/job_finetune_sizematch.pbs; }
 submit_figs()   { qsub_job -W depend=afterok"$1" hpc/job_figures.pbs; }
 
 case "$PHASE" in
   seeds)
-     # Seed replicates (43, 44) of the speaker-disjoint FT — the multi-seed null-result
+     # Seed replicates (43, 44) of the speaker-disjoint FT — the multi-seed
      # study. Independent of the seed-42 job (separate model dirs); safe in parallel.
      # Seed jobs write ONLY their raw CSVs; one score job (afterok both) rescores
      # results/tie once, avoiding concurrent writes to the shared Stage-2/3 files.
@@ -134,6 +142,18 @@ case "$PHASE" in
      echo "  [seeds ] disjoint FT s43 : $JA${AFTER:+ (afterok $AFTER)}"
      echo "  [seeds ] disjoint FT s44 : $JB${AFTER:+ (afterok $AFTER)}"
      echo "  [seeds ] rescore tie     : $JS (afterok $JA,$JB)" ;;
+  sizematch)
+     # Size-matched speaker-overlapping control (567 random train clips, one job per
+     # seed) — separates the training-set-size effect from the disjointness effect.
+     # Same race-avoidance pattern as `seeds`: one rescore job after all three.
+     JA=$(submit_szm 42 "$AFTER")
+     JB=$(submit_szm 43 "$AFTER")
+     JC=$(submit_szm 44 "$AFTER")
+     JS=$(qsub -P "$PROJECT" -v "${VARS},DATASET=tie" -W depend=afterok:"${JA}:${JB}:${JC}" hpc/job_score.pbs)
+     echo "  [szmtch] control s42     : $JA${AFTER:+ (afterok $AFTER)}"
+     echo "  [szmtch] control s43     : $JB${AFTER:+ (afterok $AFTER)}"
+     echo "  [szmtch] control s44     : $JC${AFTER:+ (afterok $AFTER)}"
+     echo "  [szmtch] rescore tie     : $JS (afterok $JA,$JB,$JC)" ;;
   1) J=$(submit_phase1 "$AFTER");    echo "  [phase 1] TIE new models : $J${AFTER:+ (afterok $AFTER)}" ;;
   2) J=$(submit_phase2 "$AFTER");    echo "  [phase 2] Svarah         : $J${AFTER:+ (afterok $AFTER)}" ;;
   3) J=$(submit_phase3 "$AFTER")
@@ -149,7 +169,7 @@ case "$PHASE" in
      echo "  [phase 2] Svarah         : $J2 (parallel)"
      echo "  [phase 3] disjoint FT    : $J3 (afterok $J1)"
      echo "  [final ] combined figs   : $F  (afterok $J2,$J3)" ;;
-  *) echo "ERROR: --phase must be 1, 2, 3, seeds, or all" >&2; exit 1 ;;
+  *) echo "ERROR: --phase must be 1, 2, 3, seeds, sizematch, or all" >&2; exit 1 ;;
 esac
 
 echo "------------------------------------------------------------------"

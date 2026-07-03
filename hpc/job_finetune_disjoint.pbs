@@ -10,8 +10,9 @@
 #PBS -V
 
 # Speaker-disjoint fine-tune of Whisper Medium: train with every test speaker
-# removed from the training set, evaluate on the SAME test set as medium_hf. Hardens
-# the null result ("even with zero speaker overlap, fine-tuning does not help").
+# removed from the training set, evaluate on the SAME test set as medium_hf.
+# NB: the filter keeps only 567/7200 train clips (3.8 h) — disjointness is confounded
+# with training-set size; job_finetune_sizematch.pbs is the control that separates them.
 # Trains, then transcribes the fine-tuned model, rescores, and rebuilds the FT report.
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
