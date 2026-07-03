@@ -27,12 +27,13 @@ Same recipe as the headline fine-tune, but every train clip whose speaker also a
 
 | Seed | WER (`transcript_clean`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p |
 |------|:----:|:----:|:----:|:----:|
+| 42 | 16.17% | +1.75 pp | [+0.13, +4.17] * | 0.016 |
 | 43 | 14.80% | +0.38 pp | [-0.01, +0.74] | 0.058 |
 | 44 | 15.20% | +0.79 pp | [-0.18, +2.25] | 0.163 |
 
-Across 2 seeds: WER 15.00% (range 14.80–15.20%), mean Δ vs pretrained +0.58 pp; seed-to-seed spread 0.40 pp.
+Across 3 seeds: WER 15.39% (range 14.80–16.17%), mean Δ vs pretrained +0.97 pp; seed-to-seed spread 1.37 pp.
 
-> **Minimum detectable effect**: the paired 95% CI half-width is ≈0.79 pp, so a true fine-tuning gain of ≥0.79 pp would have been detected. The observed differences (+0.38, +0.79 pp) are within that resolution — the correct claim is *any residual gain is below ≈0.8 pp*, not merely 'not significant'.
+> **Minimum detectable effect**: the paired 95% CI half-width is ≈1.20 pp, so a true fine-tuning gain of ≥1.20 pp would have been detected. The observed differences (+1.75, +0.38, +0.79 pp) are within that resolution — the correct claim is *any residual gain is below ≈1.2 pp*, not merely 'not significant'.
 
 ## By Region (`transcript_clean`)
 
