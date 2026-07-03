@@ -300,6 +300,10 @@ Result 1 above is measured on TIE_shorts' **official splits, which have speaker 
 | 43 | 14.80% | +0.38 pp | [−0.01, +0.74] | 0.116 |
 | 44 | 15.20% | +0.79 pp | [−0.18, +2.25] | 0.163 |
 
+<p align="center">
+  <img src="results/tie/analysis/finetune_disjoint_forest.png" width="640" alt="Forest plot: per-seed disjoint fine-tune effect vs pretrained with 95% speaker-clustered CIs and MDE band">
+</p>
+
 Across 3 seeds: WER 15.39% (range 14.80–16.17%), mean Δ +0.97 pp vs. pretrained, seed-to-seed spread 1.37 pp — itself larger than the per-seed effect being estimated. One seed (42) shows a **statistically significant WER regression** that survives Holm-Bonferroni correction across the 3 seeds; the other two fall within the study's minimum detectable effect (≈1.2 pp) and are not distinguishable from no effect.
 
 **The honest claim:** fine-tuning on the speaker-disjoint training subset (567 clips) shows no evidence of improving WER over pretrained, and at least one seed shows evidence of making it measurably worse. Whether the worsening comes from the disjointness or from the 13×-smaller training set is an open question the size-matched control is designed to answer — but either way, the official-split "no gain" reading in Result 1 was, if anything, generous. Full breakdown and methodology: [`results/tie/analysis/finetune_comparison.md`](results/tie/analysis/finetune_comparison.md).

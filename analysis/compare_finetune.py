@@ -241,6 +241,36 @@ if disjoint_present:
                       f"across these {len(disjoint_present)} seeds) for significance calls._")
     lines.append("")
 
+    # Forest plot: per-seed delta vs pretrained with 95% speaker-clustered CIs,
+    # Holm-marked, with the minimum-detectable-effect band. The figure version of
+    # the seed table above (committed so the README can embed it).
+    mde_fig = float(np.mean(halfwidths))
+    fig, ax = plt.subplots(figsize=(6.4, 0.55 * len(seed_rows) + 1.6))
+    ys = np.arange(len(seed_rows))[::-1]
+    ax.axvspan(-mde_fig, mde_fig, color="#EEEEEE", zorder=0)
+    ax.axvline(0, color="#555555", linewidth=1.0, zorder=1)
+    for yi, (seed, wer_m, d, lo, hi, p, n, g), ph in zip(ys, seed_rows, p_holm):
+        sig = ph < 0.05
+        c = "#D55E00" if sig else "#0072B2"
+        ax.errorbar(d, yi, xerr=[[d - lo], [hi - d]], fmt="o", ms=7, color=c,
+                    ecolor=c, elinewidth=1.6, capsize=3.5, zorder=2)
+        ax.text(hi + 0.12, yi, f"p={ph:.3f}" + ("*" if sig else ""),
+                fontsize=9, va="center", color=c)
+    ax.set_yticks(ys)
+    ax.set_yticklabels([f"seed {s}" for s, *_ in seed_rows])
+    ax.set_xlabel("Δ corpus WER vs. pretrained (pp) — 95% speaker-clustered bootstrap CI")
+    ax.text(-mde_fig + 0.06, ys[0] - 0.42, f"shaded: MDE ≈ {mde_fig:.1f} pp",
+            fontsize=8.5, ha="left", va="top", color="#666666")
+    ax.set_title("Speaker-disjoint fine-tune: per-seed effect (Holm-corrected)")
+    ax.grid(axis="x", alpha=0.3)
+    ax.set_xlim(left=min(-mde_fig - 0.4, min(r[3] for r in seed_rows) - 0.3),
+                right=max(r[4] for r in seed_rows) + 1.2)
+    fig.tight_layout()
+    forest_path = os.path.join(ANALYSIS_DIR, "finetune_disjoint_forest.png")
+    fig.savefig(forest_path, dpi=150)
+    plt.close(fig)
+    print(f"  Saved chart: {forest_path}")
+
     wers = [have[m][PRIMARY_MODE] for m in disjoint_present]
     b = have[BASELINE][PRIMARY_MODE]
     if len(disjoint_present) > 1:
