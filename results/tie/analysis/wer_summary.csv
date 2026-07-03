@@ -9,3 +9,5 @@ qwen3,Qwen3-ASR-1.7B,18.15,16.66,17.99,17.61,15.4,10.45
 medium_hf,Whisper Medium (HF),14.75,14.42,17.72,15.51,14.23,10.06
 medium_ft,Whisper Medium (FT),14.71,14.61,17.7,15.7,14.31,10.25
 medium_ft_disjoint,"Whisper Medium (FT, speaker-disjoint)",,,,,,
+medium_ft_disjoint_s43,"Whisper Medium (FT, disjoint, seed 43)",,,,,,
+medium_ft_disjoint_s44,"Whisper Medium (FT, disjoint, seed 44)",,,,,,

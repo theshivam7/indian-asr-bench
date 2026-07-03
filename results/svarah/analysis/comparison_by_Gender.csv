@@ -1,0 +1,15 @@
+model,Gender,corpus_wer_pct,num_samples
+base,Female,14.47,3579
+base,Male,14.6,3077
+medium,Female,8.03,3579
+medium,Male,7.73,3077
+large,Female,7.12,3579
+large,Male,7.08,3077
+large_v3_turbo,Female,8.17,3579
+large_v3_turbo,Male,8.02,3077
+parakeet,Female,12.26,3579
+parakeet,Male,11.05,3077
+parakeet_ctc,Female,15.78,3579
+parakeet_ctc,Male,15.48,3077
+qwen3,Female,11.87,3579
+qwen3,Male,11.75,3077

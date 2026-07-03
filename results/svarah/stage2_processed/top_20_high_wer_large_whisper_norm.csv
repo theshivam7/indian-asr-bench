@@ -1,0 +1,21 @@
+split,ID,Speaker_ID,Speech_Duration_seconds,Gender,Age,Native_Language,model,mode,reference_source,reference_raw,reference,hypothesis_raw,hypothesis,wer,cer,ref_recall,length_ratio
+test,281474976895472_f74_chunk_0.wav,,0.098,Female,30-45,Urdu,large,whisper_norm,gold,Up,up,I'll see you next time.,i will see you next time,6.0,11.5,0.0,6.0
+test,281474976897517_f2194_chunk_4.wav,,0.5996875,Male,30-45,Sindhi,large,whisper_norm,gold,Udaipur,udaipur,we're doing it for free.,we are doing it for free,6.0,3.0,0.0,6.0
+test,281474976885510_f2092_chunk_4.wav,,0.6919375,Male,18-30,Kannada,large,whisper_norm,gold,Chitradurga,chitradurga,history or Usa from the,history or usa from the,5.0,1.6364,0.0,5.0
+test,281474976897091_f2875_chunk_0.wav,,0.227875,Male,18-30,Hindi,large,whisper_norm,gold,Three,3,See you next time.,see you next time,4.0,17.0,0.0,4.0
+test,281474976909238_f2866_chunk_1.wav,,4.55175,Female,45-60,Punjabi,large,whisper_norm,gold,377138354339 ?,377138354339,377-138-3543-39,377 138 3543 39,4.0,0.25,0.0,4.0
+test,281474976890748_f2054_chunk_8.wav,,0.99425,Male,18-30,Dogri,large,whisper_norm,gold,Baisakhi,baisakhi,Best of all key,best of all key,4.0,1.5,0.0,4.0
+test,281474976888936_f2388_chunk_1.wav,,2.2556875,Female,18-30,Konkani,large,whisper_norm,gold,@upi,upi,at the rate of UPI.,at the rate of upi,4.0,5.0,1.0,5.0
+test,281474976901639_f213_chunk_0.wav,,0.7525,Female,45-60,Kannada,large,whisper_norm,gold,Down,down,I am Putana Brando.,i am putana brando,4.0,4.25,0.0,4.0
+test,281474976895598_f2758_chunk_0.wav,,0.678875,Male,18-30,Kannada,large,whisper_norm,gold,Five,5,ulsive four year contract.,ulsive 4 year contract,4.0,22.0,0.0,4.0
+test,281474976925712_f2835_chunk_0.wav,,0.1640625,Female,18-30,Dogri,large,whisper_norm,gold,Cat,cat,Bye-bye. Bye-bye.,bye bye bye bye,4.0,5.0,0.0,4.0
+test,281474976888919_f3231_chunk_13.wav,,10.92,Male,18-30,Nepali,large,whisper_norm,gold,"Merely I have read English newspapers, books, or novels to get some improvement and to get",merely i have read english newspapers books or novels to get some improvement and to get,"Merely I have read English newspapers, books or novels to get some improvement and to get some information on English the謝謝 I got some information on Paraguayan thou I receive Paraguayan God bless I Didis He had some people, which I believe that I heard, that Advwid not just He who Sue him the other day, C noodles Aman is sitcom modes C theatres show",merely i have read english newspapers books or novels to get some improvement and to get some information on english the謝謝 i got some information on paraguayan thou i receive paraguayan god bless i didis he had some people which i believe that i heard that advwid not just he who sue him the other day c noodles aman is sitcom modes c theaters show,3.0625,2.9545,1.0,4.0625
+test,281474976899562_f778_chunk_0.wav,,0.359,Female,45-60,Bengali,large,whisper_norm,gold,Help,help,Hail to you.,hail to you,3.0,2.25,0.0,3.0
+test,281474976895330_f1883_chunk_4.wav,,0.6163125,Male,30-45,Kashmiri,large,whisper_norm,gold,achievements,achievements,It's human.,it is human,3.0,0.8333,0.0,3.0
+test,281474976901658_f1671_chunk_0.wav,,1.04875,Female,45-60,Kannada,large,whisper_norm,gold,Sumoga,sumoga,Show more guy,show more guy,3.0,1.5,0.0,3.0
+test,281474976909239_f2867_chunk_1.wav,,5.020625,Female,45-60,Punjabi,large,whisper_norm,gold,83354714040,83354714040,833-547-14040,833 547 14040,3.0,0.1818,0.0,3.0
+test,281474976899764_f1405_chunk_0.wav,,0.193375,Female,30-45,Odia,large,whisper_norm,gold,Off,off,I'll...,i will .,3.0,2.6667,0.0,3.0
+test,281474976893074_f2254_chunk_3.wav,,0.8818125,Male,60+,Marathi,large,whisper_norm,gold,Tamil Nadu,tamil nadu,That meant a lot of...,that meant a lot of .,3.0,1.6,0.0,3.0
+test,281474976888161_f1851_chunk_13.wav,,0.690875,Male,30-45,Maithili,large,whisper_norm,gold,Rasgulla,rasgulla,Rest good luck.,rest good luck,3.0,1.25,0.0,3.0
+test,281474976903892_f2395_chunk_0.wav,,0.412875,Female,45-60,Nepali,large,whisper_norm,gold,Four,4,C window indeed,c window indeed,3.0,15.0,0.0,3.0
+test,281474976909234_f2865_chunk_1.wav,,1.210625,Female,45-60,Punjabi,large,whisper_norm,gold,PayUmoney,payumoney,Pay your money.,pay your money,3.0,0.5556,0.0,3.0

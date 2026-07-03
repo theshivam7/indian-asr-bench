@@ -1,0 +1,15 @@
+model,Gender,corpus_wer_pct,num_samples
+base,F,13.92,58
+base,M,17.74,927
+medium,F,12.05,58
+medium,M,14.92,927
+large,F,12.46,58
+large,M,16.14,927
+parakeet,F,11.78,58
+parakeet,M,15.83,927
+qwen3,F,14.05,58
+qwen3,M,16.82,927
+medium_hf,F,19.08,58
+medium_hf,M,14.14,927
+medium_ft,F,24.3,58
+medium_ft,M,14.03,927

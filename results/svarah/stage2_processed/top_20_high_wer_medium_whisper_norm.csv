@@ -1,0 +1,21 @@
+split,ID,Speaker_ID,Speech_Duration_seconds,Gender,Age,Native_Language,model,mode,reference_source,reference_raw,reference,hypothesis_raw,hypothesis,wer,cer,ref_recall,length_ratio
+test,281474976887177_f3253_chunk_8.wav,,1.08,Female,18-30,Malayalam,medium,whisper_norm,gold,language.,language,"language. So, I hope you enjoyed this video. I hope you found it helpful. I hope you found it helpful.",language so i hope you enjoyed this video i hope you found it helpful i hope you found it helpful,19.0,11.125,1.0,20.0
+test,281474976895331_f2252_chunk_4.wav,,0.64475,Male,30-45,Kashmiri,medium,whisper_norm,gold,Tobacco,tobacco,the back cool prime stream at tdl hookah channel and for more vids visit youtube.com,the back cool prime stream at tdl hookah channel and for more vids visit youtube com,16.0,11.1429,0.0,16.0
+test,281474976887155_f2742_chunk_1.wav,,5.0353125,Female,18-30,Malayalam,medium,whisper_norm,gold,85740051518,85740051518,8 5 7 4 0 0 5 1 5 1 8,8 5 7 4 0 0 5 one 5 one 8,11.0,1.4545,0.0,11.0
+test,281474976897517_f2194_chunk_4.wav,,0.5996875,Male,30-45,Sindhi,medium,whisper_norm,gold,Udaipur,udaipur,Again for episode 2 E broke theنا,again for episode 2 e broke theنا,7.0,4.1429,0.0,7.0
+test,281474976897102_f2877_chunk_0.wav,,0.2490625,Male,18-30,Hindi,medium,whisper_norm,gold,Stop,stop,and all that just to start...,and all that just to start .,7.0,6.25,0.0,7.0
+test,281474976890748_f2054_chunk_8.wav,,0.99425,Male,18-30,Dogri,medium,whisper_norm,gold,Baisakhi,baisakhi,Best of luck to you.,best of luck to you,5.0,2.125,0.0,5.0
+test,281474976899764_f2324_chunk_0.wav,,0.20475,Female,30-45,Odia,medium,whisper_norm,gold,Off,off,N elections results flosom,n elections results flosom,4.0,8.0,0.0,4.0
+test,281474976887081_f2283_chunk_7.wav,,0.694,Female,30-45,Gujarati,medium,whisper_norm,gold,Halarda,halarda,I let it out.,i let it out,4.0,1.5714,0.0,4.0
+test,281474976897387_f2253_chunk_2.wav,,0.9724375,Male,18-30,Odia,medium,whisper_norm,gold,Gajapati,gajapati,God's a party,god is a party,4.0,1.125,0.0,4.0
+test,281474976893905_f2310_chunk_4.wav,,0.9505625,Male,30-45,Bodo,medium,whisper_norm,gold,Pakistan,pakistan,"Okay, it's done.",okay it is done,4.0,1.375,0.0,4.0
+test,281474976900333_f1733_chunk_1.wav,,0.6526875,Male,45-60,Kashmiri,medium,whisper_norm,gold,Ikra,ikra,It Pas Jonesasion Test.,it pas jonesasion test,4.0,5.0,0.0,4.0
+test,281474976888936_f2388_chunk_1.wav,,2.2556875,Female,18-30,Konkani,medium,whisper_norm,gold,@upi,upi,at the rate of UPI.,at the rate of upi,4.0,5.0,1.0,5.0
+test,281474976888866_f2195_chunk_21.wav,,1.5000625,Female,18-30,Nepali,medium,whisper_norm,gold,buy a,buy a,b y y 먹고柯 Спасибо por ver!,b y y 먹고柯 спасибо por ver,3.5,5.0,0.0,3.5
+test,281474976909239_f2867_chunk_1.wav,,5.020625,Female,45-60,Punjabi,medium,whisper_norm,gold,83354714040,83354714040,833-547-14040,833 547 14040,3.0,0.1818,0.0,3.0
+test,281474976889296_f1847_chunk_1.wav,,0.5288125,Male,18-30,Urdu,medium,whisper_norm,gold,Amjad,amjad,I'm Jed.,i am jed,3.0,0.8,0.0,3.0
+test,281474976895330_f1883_chunk_4.wav,,0.6163125,Male,30-45,Kashmiri,medium,whisper_norm,gold,achievements,achievements,It's human.,it is human,3.0,0.8333,0.0,3.0
+test,281474976883938_f1692_chunk_0.wav,,0.482375,Female,18-30,Malayalam,medium,whisper_norm,gold,Irevi,irevi,It a b-,it a b,3.0,1.0,0.0,3.0
+test,281474976909238_f2866_chunk_1.wav,,4.55175,Female,45-60,Punjabi,medium,whisper_norm,gold,377138354339 ?,377138354339,377 138 354339,377 138 354339,3.0,0.1667,0.0,3.0
+test,281474976894268_f1720_chunk_3.wav,,0.92,Female,30-45,Kashmiri,medium,whisper_norm,gold,housing,housing,How S outs,how s outs,3.0,1.0,0.0,3.0
+test,281474976899578_f2277_chunk_4.wav,,0.8405,Female,45-60,Bengali,medium,whisper_norm,gold,method.,method,That's hard.,that is hard,3.0,1.5,0.0,3.0

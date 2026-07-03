@@ -1,0 +1,21 @@
+split,ID,Speaker_ID,Speech_Duration_seconds,Gender,Age,Native_Language,model,mode,reference_source,reference_raw,reference,hypothesis_raw,hypothesis,wer,cer,ref_recall,length_ratio
+test,281474976894812_f1306_chunk_0.wav,,0.2736875,Female,18-30,Malayalam,large_v3_turbo,whisper_norm,gold,Play,play,"I can admit that this will to my home, if your homes are fine. Wait, wait, please.ты put them on stage. Just start doing the other one. Now this is our reading mencion, the first video will come in, and do it again.",i can admit that this will to my home if your homes are fine wait wait please ты put them on stage just start doing the other one now this is our reading mencion the 1st video will come in and do it again,44.0,50.25,0.0,44.0
+test,281474976887069_f2936_chunk_1.wav,,6.1138125,Female,30-45,Gujarati,large_v3_turbo,whisper_norm,gold,76486997868,76486997868,7 6 4 8 6 9 9 7 8 6 8,7 6 4 8 6 9 9 7 8 6 8,11.0,0.9091,0.0,11.0
+test,281474976896927_f2662_chunk_0.wav,,0.4615625,Male,18-30,Gujarati,large_v3_turbo,whisper_norm,gold,Three,3,3 family to hug the,3 family to hug the,4.0,18.0,1.0,5.0
+test,281474976899578_f2277_chunk_4.wav,,0.8405,Female,45-60,Bengali,large_v3_turbo,whisper_norm,gold,method.,method,and it's hard,and it is hard,4.0,1.8333,0.0,4.0
+test,281474976884349_f1690_chunk_2.wav,,0.6885,Female,18-30,Tamil,large_v3_turbo,whisper_norm,gold,Coimbatore,coimbatore,go in the tour.,go in the tour,4.0,1.0,0.0,4.0
+test,281474976896582_f1500_chunk_0.wav,,0.681625,Female,60+,Tamil,large_v3_turbo,whisper_norm,gold,Visual,visual,P ella jua...,p ella jua .,4.0,1.6667,0.0,4.0
+test,281474976897085_f725_chunk_0.wav,,0.390875,Male,18-30,Hindi,large_v3_turbo,whisper_norm,gold,Cat,cat,Captpped in the video.,captpped in the video,4.0,6.0,0.0,4.0
+test,281474976899941_f80_chunk_0.wav,,0.42675,Male,30-45,Maithili,large_v3_turbo,whisper_norm,gold,House,house,How old is it?,how old is it,4.0,2.0,0.0,4.0
+test,281474976895330_f1883_chunk_4.wav,,0.6163125,Male,30-45,Kashmiri,large_v3_turbo,whisper_norm,gold,achievements,achievements,It's human.,it is human,3.0,0.8333,0.0,3.0
+test,281474976897517_f2194_chunk_0.wav,,0.753,Male,30-45,Sindhi,large_v3_turbo,whisper_norm,gold,Ajmer,ajmer,I do mean,i do mean,3.0,1.4,0.0,3.0
+test,281474976909234_f2865_chunk_1.wav,,1.210625,Female,45-60,Punjabi,large_v3_turbo,whisper_norm,gold,PayUmoney,payumoney,pay you money,pay you money,3.0,0.4444,0.0,3.0
+test,281474976887081_f2283_chunk_4.wav,,0.576375,Female,30-45,Gujarati,large_v3_turbo,whisper_norm,gold,Raaz,raaz,"For this $10,00",for this $1000,3.0,3.25,0.0,3.0
+test,281474976898110_f1472_chunk_0.wav,,0.3425,Female,18-30,Odia,large_v3_turbo,whisper_norm,gold,Time,time,I'm...,i am .,3.0,1.25,0.0,3.0
+test,281474976893991_f3340_chunk_0.wav,,0.47075,Female,45-60,Telugu,large_v3_turbo,whisper_norm,gold,Kichidi,kichidi,Keep your day.,keep your day,3.0,1.5714,0.0,3.0
+test,281474976893816_f854_chunk_0.wav,,0.6400625,Female,18-30,Bodo,large_v3_turbo,whisper_norm,gold,Forward,forward,for the world.,for the world,3.0,1.0,0.0,3.0
+test,281474976909239_f2867_chunk_1.wav,,5.020625,Female,45-60,Punjabi,large_v3_turbo,whisper_norm,gold,83354714040,83354714040,833-547-14040,833 547 14040,3.0,0.1818,0.0,3.0
+test,281474976887155_f2742_chunk_1.wav,,5.0353125,Female,18-30,Malayalam,large_v3_turbo,whisper_norm,gold,85740051518,85740051518,857 400 51518,857 400 51518,3.0,0.1818,0.0,3.0
+test,281474976884349_f1690_chunk_0.wav,,0.85275,Female,18-30,Tamil,large_v3_turbo,whisper_norm,gold,Tiruvannamalai,tiruvannamalai,You are ..,you are .,3.0,0.8571,0.0,3.0
+test,281474976887174_f3263_chunk_5.wav,,1.92,Female,18-30,Malayalam,large_v3_turbo,whisper_norm,gold,Parthasarathy Temple.,parthasarathy temple,B enthusiasts of the conquered world.,b enthusiasts of the conquered world,3.0,1.35,0.0,3.0
+test,281474976888938_f2386_chunk_2.wav,,7.4673125,Female,18-30,Konkani,large_v3_turbo,whisper_norm,gold,76899233753@upi,76899233753 upi,768 99233753 at the rate of UPI.,768 99233753 at the rate of upi,3.0,1.0667,0.5,3.5

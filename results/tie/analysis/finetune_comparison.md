@@ -21,6 +21,19 @@ reference.
 
 > **Headline (transcript_clean)**: fine-tuning does NOT improve WER 14.42% → 14.61%  (+0.20 pp, +1.4% relative).
 
+## Speaker-disjoint re-split fine-tune (multi-seed)
+
+Same recipe as the headline fine-tune, but every train clip whose speaker also appears in `test` is removed first (see `speaker_overlap.md`). Evaluated on the SAME test set as `medium_hf`, so any gain here cannot come from speaker adaptation. Run with multiple training seeds: a null claim from one seed would be indistinguishable from seed variance.
+
+| Seed | WER (`transcript_clean`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p |
+|------|:----:|:----:|:----:|:----:|
+| 43 | 14.80% | +0.38 pp | [-0.01, +0.74] | 0.058 |
+| 44 | 15.20% | +0.79 pp | [-0.18, +2.25] | 0.163 |
+
+Across 2 seeds: WER 15.00% (range 14.80–15.20%), mean Δ vs pretrained +0.58 pp; seed-to-seed spread 0.40 pp.
+
+> **Minimum detectable effect**: the paired 95% CI half-width is ≈0.79 pp, so a true fine-tuning gain of ≥0.79 pp would have been detected. The observed differences (+0.38, +0.79 pp) are within that resolution — the correct claim is *any residual gain is below ≈0.8 pp*, not merely 'not significant'.
+
 ## By Region (`transcript_clean`)
 
 | Group | Pretrained (HF) | Fine-tuned | Δ abs | Samples |

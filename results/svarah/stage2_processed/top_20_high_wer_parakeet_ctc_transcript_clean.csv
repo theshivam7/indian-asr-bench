@@ -1,0 +1,21 @@
+split,ID,Speaker_ID,Speech_Duration_seconds,Gender,Age,Native_Language,model,mode,reference_source,reference_raw,reference,hypothesis_raw,hypothesis,wer,cer,ref_recall,length_ratio
+test,281474976888936_f2388_chunk_1.wav,,2.2556875,Female,18-30,Konkani,parakeet_ctc,transcript_clean,gold,@upi,upi,at the rate of u p i,at the rate of u p i,7.0,5.6667,0.0,7.0
+test,281474976884349_f1690_chunk_0.wav,,0.85275,Female,18-30,Tamil,parakeet_ctc,transcript_clean,gold,Tiruvannamalai,tiruvannamalai,did it run on the late,did it run on the late,6.0,1.1429,0.0,6.0
+test,281474976895273_f2716_chunk_1.wav,,1.705625,Male,30-45,Kashmiri,parakeet_ctc,transcript_clean,gold,RSRTC.,rsrtc,r s r t c,r s r t c,5.0,0.8,0.0,5.0
+test,281474976884349_f1690_chunk_3.wav,,0.790625,Female,18-30,Tamil,parakeet_ctc,transcript_clean,gold,Dharmapuri,dharmapuri,and tied him up woody,and tied him up woody,5.0,1.8,0.0,5.0
+test,281474976894171_f2343_chunk_0.wav,,10.4198125,Male,45-60,Odia,parakeet_ctc,transcript_clean,gold,For registered application ID MK201839611100749221,for registered application id mk201839611100749221,for registered application i d m k two zero one eight three nine six one one one zero zero seven four nine two two one,for registered application i d m k two zero one eight three nine six one one one zero zero seven four nine two two one,4.4,1.72,0.6,5.0
+test,281474976887081_f2283_chunk_7.wav,,0.694,Female,30-45,Gujarati,parakeet_ctc,transcript_clean,gold,Halarda,halarda,i let it up,i let it up,4.0,1.4286,0.0,4.0
+test,281474976888614_f1702_chunk_3.wav,,0.7618125,Male,45-60,Kannada,parakeet_ctc,transcript_clean,gold,Jakarta,jakarta,you got it do,you got it do,4.0,1.7143,0.0,4.0
+test,281474976888231_f1490_chunk_1.wav,,1.728625,Female,60+,Tamil,parakeet_ctc,transcript_clean,gold,COVOVAX,covovax,go w wax,go w wax,3.0,0.7143,0.0,3.0
+test,281474976897459_f2145_chunk_7.wav,,1.116625,Male,45-60,Bodo,parakeet_ctc,transcript_clean,gold,Kaziranga,kaziranga,uh kzirong ah,uh kzirong ah,3.0,0.7778,0.0,3.0
+test,281474976896170_f422_chunk_0.wav,,0.7569375,Male,60+,Kannada,parakeet_ctc,transcript_clean,gold,Previous,previous,the b yes,the b yes,3.0,0.875,0.0,3.0
+test,281474976888614_f1702_chunk_5.wav,,0.7536875,Male,45-60,Kannada,parakeet_ctc,transcript_clean,gold,Rawalpindi,rawalpindi,dollar to d,dollar to d,3.0,1.0,0.0,3.0
+test,281474976898115_f1790_chunk_4.wav,,0.63075,Female,18-30,Odia,parakeet_ctc,transcript_clean,gold,Sundargarh,sundargarh,on their good,on their good,3.0,1.1,0.0,3.0
+test,281474976899571_f2000_chunk_2.wav,,0.853,Female,45-60,Bengali,parakeet_ctc,transcript_clean,gold,Istanbul,istanbul,is stand good,is stand good,3.0,1.0,0.0,3.0
+test,281474976885720_f1734_chunk_0.wav,,0.8280625,Female,18-30,Gujarati,parakeet_ctc,transcript_clean,gold,IPL,ipl,i be i,i be i,3.0,1.6667,0.0,3.0
+test,281474976884634_f2217_chunk_3.wav,,1.9201875,Female,18-30,Kannada,parakeet_ctc,transcript_clean,gold,"Veeragase, Kamsale",veeragase kamsale,uh be the gossip come silad,uh be the gossip come silad,3.0,1.1765,0.0,3.0
+test,281474976893988_f2006_chunk_4.wav,,0.5846875,Female,45-60,Telugu,parakeet_ctc,transcript_clean,gold,Vishnupriya,vishnupriya,wish to be,wish to be,3.0,0.7273,0.0,3.0
+test,281474976893988_f2006_chunk_0.wav,,0.8258125,Female,45-60,Telugu,parakeet_ctc,transcript_clean,gold,Bharti,bharti,but i did,but i did,3.0,1.1667,0.0,3.0
+test,281474976899792_f1793_chunk_3.wav,,0.849,Female,30-45,Odia,parakeet_ctc,transcript_clean,gold,Chandipur,chandipur,can the poor,can the poor,3.0,0.8889,0.0,3.0
+test,281474976895330_f1883_chunk_4.wav,,0.6163125,Male,30-45,Kashmiri,parakeet_ctc,transcript_clean,gold,achievements,achievements,that you went,that you went,3.0,0.8333,0.0,3.0
+test,281474976899578_f2277_chunk_4.wav,,0.8405,Female,45-60,Bengali,parakeet_ctc,transcript_clean,gold,method.,method,it's hard,it s hard,3.0,1.1667,0.0,3.0

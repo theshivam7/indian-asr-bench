@@ -1,0 +1,21 @@
+split,ID,Speaker_ID,Speech_Duration_seconds,Gender,Age,Native_Language,model,mode,reference_source,reference_raw,reference,hypothesis_raw,hypothesis,wer,cer,ref_recall,length_ratio
+test,281474976895273_f2716_chunk_1.wav,,1.705625,Male,30-45,Kashmiri,qwen3,whisper_norm,gold,RSRTC.,rsrtc,R S R T C.,r s r t c,5.0,0.8,0.0,5.0
+test,281474976887081_f2283_chunk_7.wav,,0.694,Female,30-45,Gujarati,qwen3,whisper_norm,gold,Halarda,halarda,हालारे डा,ह ल र ड,4.0,1.0,0.0,4.0
+test,281474976884349_f1690_chunk_2.wav,,0.6885,Female,18-30,Tamil,qwen3,whisper_norm,gold,Coimbatore,coimbatore,कोई बतौर.,क ई बत र,4.0,1.0,0.0,4.0
+test,281474976888936_f2388_chunk_1.wav,,2.2556875,Female,18-30,Konkani,qwen3,whisper_norm,gold,@upi,upi,At the rate of UPI.,at the rate of upi,4.0,5.0,1.0,5.0
+test,281474976884634_f2217_chunk_3.wav,,1.9201875,Female,18-30,Kannada,qwen3,whisper_norm,gold,"Veeragase, Kamsale",veeragase kamsale,अ बीरगासे कम साढ़े,अ ब रग स कम स ढ,3.5,0.9412,0.0,3.5
+test,281474976887122_f1775_chunk_0.wav,,0.8094375,Female,30-45,Telugu,qwen3,whisper_norm,gold,Oregano,oregano,आरी क्या ना,आर कय न,3.0,1.0,0.0,3.0
+test,281474976888231_f1490_chunk_1.wav,,1.728625,Female,60+,Tamil,qwen3,whisper_norm,gold,COVOVAX,covovax,Go bo bags.,go bo bags,3.0,1.0,0.0,3.0
+test,281474976909234_f2865_chunk_1.wav,,1.210625,Female,45-60,Punjabi,qwen3,whisper_norm,gold,PayUmoney,payumoney,Pay you money.,pay you money,3.0,0.4444,0.0,3.0
+test,281474976906775_f2449_chunk_0.wav,,0.5736875,Male,18-30,Assamese,qwen3,whisper_norm,gold,Previous,previous,P. P. S.,p p s,3.0,0.75,0.0,3.0
+test,281474976893988_f2006_chunk_4.wav,,0.5846875,Female,45-60,Telugu,qwen3,whisper_norm,gold,Vishnupriya,vishnupriya,I snubbed you.,i snubbed you,3.0,0.9091,0.0,3.0
+test,281474976885510_f2092_chunk_4.wav,,0.6919375,Male,18-30,Kannada,qwen3,whisper_norm,gold,Chitradurga,chitradurga,चित्र दुर्गा.,च तर दरग,3.0,1.0,0.0,3.0
+test,281474976909249_f2537_chunk_0.wav,,0.8928125,Female,45-60,Punjabi,qwen3,whisper_norm,gold,Disagree,disagree,Do you agree?,do you agree,3.0,0.75,0.0,3.0
+test,281474976888913_f3176_chunk_3.wav,,12.16525,Male,18-30,Nepali,qwen3,whisper_norm,gold,"Dakshineswar Kali Temple, Azadara Palace, Radha Vinod Temple,",dakshineswar kali temple azadara palace radha vinod temple,"दक्षिणी ओर काली मंदिर और काली टेम्पल, आज़र द्वारा पैलेस, राधा बिनोद टेम्पल.",दकष ण ओर क ल मद र और क ल टमपल आजर दव र पलस र ध ब न द टमपल,2.625,0.8966,0.0,2.625
+test,281474976889296_f1847_chunk_4.wav,,0.7890625,Male,18-30,Urdu,qwen3,whisper_norm,gold,Krishnakant,krishnakant,Kesha Kant.,kesha kant,2.0,0.3636,0.0,2.0
+test,281474976893404_f58_chunk_0.wav,,0.416,Female,30-45,Kannada,qwen3,whisper_norm,gold,Five,5,By you.,by you,2.0,6.0,0.0,2.0
+test,281474976897517_f2194_chunk_2.wav,,0.8575625,Male,30-45,Sindhi,qwen3,whisper_norm,gold,Chittor,chittor,Just told.,just told,2.0,0.8571,0.0,2.0
+test,281474976897662_f1995_chunk_1.wav,,0.915125,Male,30-45,Tamil,qwen3,whisper_norm,gold,sugarcane,sugarcane,sugar cane.,sugar cane,2.0,0.1111,0.0,2.0
+test,281474976888868_f2236_chunk_7.wav,,1.36675,Female,18-30,Nepali,qwen3,whisper_norm,gold,technology uh,technology,"the technology, ah.",the technology ah,2.0,0.7,1.0,3.0
+test,281474976884349_f1690_chunk_4.wav,,0.684,Female,18-30,Tamil,qwen3,whisper_norm,gold,Krishnagiri,krishnagiri,Krishna Giri.,krishna giri,2.0,0.0909,0.0,2.0
+test,281474976895401_f2795_chunk_0.wav,,0.56975,Male,18-30,Konkani,qwen3,whisper_norm,gold,House,house,How's.,how is,2.0,0.8,0.0,2.0

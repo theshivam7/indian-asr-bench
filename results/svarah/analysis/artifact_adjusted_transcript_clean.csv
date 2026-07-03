@@ -1,0 +1,8 @@
+model,display,wer_all_pct,wer_adjusted_pct,artifact_inflation_pp,n_clips_all,n_clips_adjusted
+base,Whisper Base,14.53,13.52,1.01,6656,6361
+medium,Whisper Medium,7.89,7.15,0.74,6656,6361
+large,Whisper Large,7.11,6.39,0.72,6656,6361
+large_v3_turbo,Whisper large-v3-turbo,8.1,7.36,0.74,6656,6361
+parakeet,Parakeet-TDT-0.6B,11.73,10.99,0.73,6656,6361
+parakeet_ctc,Parakeet-CTC-1.1B,15.65,14.84,0.8,6656,6361
+qwen3,Qwen3-ASR-1.7B,11.82,11.17,0.65,6656,6361

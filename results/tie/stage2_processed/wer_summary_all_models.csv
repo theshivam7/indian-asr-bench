@@ -34,3 +34,13 @@ tie,medium_ft,transcript_clean,gold,custom,14.61,10.25,14.8,10.14,27.7,27.87,36.
 tie,medium_ft,hf_raw,alt,minimal,17.7,12.29,17.8,13.21,26.65,33.33,43.21,5.39,985,52290,9253
 tie,medium_ft,hf_clean,alt,custom,15.7,11.06,15.85,11.36,27.74,29.33,38.46,5.79,985,52313,8214
 tie,medium_ft,whisper_norm,gold,whisper,14.31,9.88,15.05,10.07,29.11,27.59,36.84,5.42,986,51815,7416
+tie,medium_ft_disjoint_s43,transcript_raw,gold,minimal,15.14,10.25,15.41,10.42,22.39,30.51,42.31,5.75,985,51933,7863
+tie,medium_ft_disjoint_s43,transcript_clean,gold,custom,14.8,10.43,15.05,10.0,22.17,30.43,41.38,5.75,985,52175,7722
+tie,medium_ft_disjoint_s43,hf_raw,alt,minimal,18.01,12.5,18.07,13.21,22.88,34.55,46.81,5.76,985,52290,9416
+tie,medium_ft_disjoint_s43,hf_clean,alt,custom,15.73,11.15,15.95,11.36,22.13,31.15,42.53,5.91,985,52313,8229
+tie,medium_ft_disjoint_s43,whisper_norm,gold,whisper,14.53,10.08,15.25,9.85,25.62,29.73,40.74,5.77,986,51815,7529
+tie,medium_ft_disjoint_s44,transcript_raw,gold,minimal,15.58,10.55,15.78,10.39,28.63,30.51,42.25,6.35,985,51933,8089
+tie,medium_ft_disjoint_s44,transcript_clean,gold,custom,15.2,10.68,15.4,9.68,28.48,30.0,41.51,6.34,985,52175,7933
+tie,medium_ft_disjoint_s44,hf_raw,alt,minimal,18.52,12.79,18.51,13.11,28.8,34.48,46.67,6.37,985,52290,9682
+tie,medium_ft_disjoint_s44,hf_clean,alt,custom,16.16,11.4,16.31,11.11,28.21,31.25,43.21,6.51,985,52313,8454
+tie,medium_ft_disjoint_s44,whisper_norm,gold,whisper,15.01,10.38,15.68,9.68,31.33,30.0,41.51,6.39,986,51815,7780

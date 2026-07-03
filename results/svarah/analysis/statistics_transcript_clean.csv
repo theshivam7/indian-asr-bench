@@ -1,0 +1,8 @@
+model,display,n_clips,n_clusters,cluster_unit,corpus_wer_pct,ci_lo_pct,ci_hi_pct,ci_halfwidth_pp,ci_lo_clip_pct,ci_hi_clip_pct
+large,Whisper Large,6656,6656,clip,7.11,6.74,7.46,0.36,6.74,7.46
+medium,Whisper Medium,6656,6656,clip,7.89,7.53,8.26,0.36,7.53,8.26
+large_v3_turbo,Whisper large-v3-turbo,6656,6656,clip,8.1,7.72,8.49,0.39,7.72,8.49
+parakeet,Parakeet-TDT-0.6B,6656,6656,clip,11.73,11.25,12.21,0.48,11.25,12.21
+qwen3,Qwen3-ASR-1.7B,6656,6656,clip,11.82,11.28,12.4,0.56,11.28,12.4
+base,Whisper Base,6656,6656,clip,14.53,13.99,15.04,0.52,13.99,15.04
+parakeet_ctc,Parakeet-CTC-1.1B,6656,6656,clip,15.65,15.04,16.32,0.64,15.04,16.32
