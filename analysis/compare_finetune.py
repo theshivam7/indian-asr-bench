@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from utils.wer_compute import compute_corpus_wer
 from utils.registry import ALL_MODES as MODES, PRIMARY_MODE
 from utils.io_helpers import stage2_dir, analysis_dir
-from analysis.statistics import _clip_errors
+from analysis.statistics import _clip_errors, _holm
 
 # The fine-tuning study is TIE-only (Svarah is eval-only, not fine-tunable).
 DATASET = "tie"
@@ -187,11 +187,12 @@ if disjoint_present:
         "adaptation. Run with multiple training seeds: a null claim from one seed would "
         "be indistinguishable from seed variance.",
         "",
-        f"| Seed | WER (`{PRIMARY_MODE}`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p |",
-        "|------|:----:|:----:|:----:|:----:|",
+        f"| Seed | WER (`{PRIMARY_MODE}`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |",
+        "|------|:----:|:----:|:----:|:----:|:----:|",
     ]
     df_base_pm = load(BASELINE, PRIMARY_MODE)
-    diffs, halfwidths = [], []
+    diffs, halfwidths, pvals = [], [], []
+    seed_rows = []
     for m in disjoint_present:
         seed = DISJOINT_SEEDS[m]
         wer_m = have[m][PRIMARY_MODE]
@@ -199,9 +200,20 @@ if disjoint_present:
         d, lo, hi, p, n, g = paired_speaker_bootstrap(df_base_pm, df_m)
         diffs.append(d)
         halfwidths.append((hi - lo) / 2)
+        pvals.append(p)
+        seed_rows.append((seed, wer_m, d, lo, hi, p, n, g))
+
+    p_holm = _holm(pvals) if len(pvals) > 1 else pvals
+    n_sig_holm = 0
+    for (seed, wer_m, d, lo, hi, p, n, g), ph in zip(seed_rows, p_holm):
         sig = "" if lo <= 0 <= hi else " *"
-        lines.append(f"| {seed} | {wer_m:.2f}% | {d:+.2f} pp | [{lo:+.2f}, {hi:+.2f}]{sig} | {p:.3f} |")
-        print(f"  [disjoint s{seed}] wer={wer_m:.2f}%  diff={d:+.2f}pp  CI=[{lo:+.2f},{hi:+.2f}]  p={p:.3f}  ({n} clips, {g} speakers)")
+        if ph < 0.05:
+            n_sig_holm += 1
+        lines.append(f"| {seed} | {wer_m:.2f}% | {d:+.2f} pp | [{lo:+.2f}, {hi:+.2f}]{sig} | {p:.3f} | {ph:.3f} |")
+        print(f"  [disjoint s{seed}] wer={wer_m:.2f}%  diff={d:+.2f}pp  CI=[{lo:+.2f},{hi:+.2f}]  p={p:.3f}  p_holm={ph:.3f}  ({n} clips, {g} speakers)")
+    if len(disjoint_present) > 1:
+        lines.append("\n_\\* = uncorrected 95% CI excludes 0. Use the Holm-adjusted p (multiplicity-corrected "
+                      f"across these {len(disjoint_present)} seeds) for significance calls._")
     lines.append("")
 
     wers = [have[m][PRIMARY_MODE] for m in disjoint_present]
@@ -215,14 +227,27 @@ if disjoint_present:
             "",
         ]
     mde = float(np.mean(halfwidths))
-    lines += [
-        f"> **Minimum detectable effect**: the paired 95% CI half-width is ≈{mde:.2f} pp, "
-        f"so a true fine-tuning gain of ≥{mde:.2f} pp would have been detected. The "
-        f"observed differences ({', '.join(f'{d:+.2f}' for d in diffs)} pp) are within "
-        f"that resolution — the correct claim is *any residual gain is below "
-        f"≈{mde:.1f} pp*, not merely 'not significant'.",
-        "",
-    ]
+    if n_sig_holm == 0:
+        lines += [
+            f"> **Minimum detectable effect**: the paired 95% CI half-width is ≈{mde:.2f} pp, "
+            f"so a true fine-tuning gain of ≥{mde:.2f} pp would have been detected. The "
+            f"observed differences ({', '.join(f'{d:+.2f}' for d in diffs)} pp) are within "
+            f"that resolution — the correct claim is *any residual gain is below "
+            f"≈{mde:.1f} pp*, not merely 'not significant'.",
+            "",
+        ]
+    else:
+        lines += [
+            f"> **Mixed result, not a clean null**: {n_sig_holm}/{len(disjoint_present)} seed(s) show a "
+            f"Holm-corrected significant WORSENING relative to pretrained (fine-tuning increases WER), "
+            f"while the remaining seed(s) fall within the ≈{mde:.2f} pp minimum detectable effect. "
+            f"The seed-to-seed spread ({max(wers) - min(wers):.2f} pp) is itself larger than the per-seed "
+            f"effect being estimated, so a single-seed run — including the checkpoint published as the "
+            f"'primary' disjoint model — is not representative of the study as a whole. The safe claim is: "
+            f"under a strict speaker-disjoint split, this fine-tuning recipe shows no evidence of improving "
+            f"WER, and at least one seed shows evidence of making it worse.",
+            "",
+        ]
 else:
     print("  [SKIP] no medium_ft_disjoint results yet (run job_finetune_disjoint.pbs first)")
 

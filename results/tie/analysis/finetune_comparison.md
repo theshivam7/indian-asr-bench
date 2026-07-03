@@ -25,15 +25,17 @@ reference.
 
 Same recipe as the headline fine-tune, but every train clip whose speaker also appears in `test` is removed first (see `speaker_overlap.md`). Evaluated on the SAME test set as `medium_hf`, so any gain here cannot come from speaker adaptation. Run with multiple training seeds: a null claim from one seed would be indistinguishable from seed variance.
 
-| Seed | WER (`transcript_clean`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p |
-|------|:----:|:----:|:----:|:----:|
-| 42 | 16.17% | +1.75 pp | [+0.13, +4.17] * | 0.016 |
-| 43 | 14.80% | +0.38 pp | [-0.01, +0.74] | 0.058 |
-| 44 | 15.20% | +0.79 pp | [-0.18, +2.25] | 0.163 |
+| Seed | WER (`transcript_clean`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |
+|------|:----:|:----:|:----:|:----:|:----:|
+| 42 | 16.17% | +1.75 pp | [+0.13, +4.17] * | 0.016 | 0.048 |
+| 43 | 14.80% | +0.38 pp | [-0.01, +0.74] | 0.058 | 0.116 |
+| 44 | 15.20% | +0.79 pp | [-0.18, +2.25] | 0.163 | 0.163 |
+
+_\* = uncorrected 95% CI excludes 0. Use the Holm-adjusted p (multiplicity-corrected across these 3 seeds) for significance calls._
 
 Across 3 seeds: WER 15.39% (range 14.80–16.17%), mean Δ vs pretrained +0.97 pp; seed-to-seed spread 1.37 pp.
 
-> **Minimum detectable effect**: the paired 95% CI half-width is ≈1.20 pp, so a true fine-tuning gain of ≥1.20 pp would have been detected. The observed differences (+1.75, +0.38, +0.79 pp) are within that resolution — the correct claim is *any residual gain is below ≈1.2 pp*, not merely 'not significant'.
+> **Mixed result, not a clean null**: 1/3 seed(s) show a Holm-corrected significant WORSENING relative to pretrained (fine-tuning increases WER), while the remaining seed(s) fall within the ≈1.20 pp minimum detectable effect. The seed-to-seed spread (1.37 pp) is itself larger than the per-seed effect being estimated, so a single-seed run — including the checkpoint published as the 'primary' disjoint model — is not representative of the study as a whole. The safe claim is: under a strict speaker-disjoint split, this fine-tuning recipe shows no evidence of improving WER, and at least one seed shows evidence of making it worse.
 
 ## By Region (`transcript_clean`)
 
