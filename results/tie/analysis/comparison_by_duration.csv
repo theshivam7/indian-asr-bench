@@ -9,6 +9,9 @@ duration_bucket,model,corpus_wer_pct
 0-5s,medium_ft_disjoint,25.0
 0-5s,medium_ft_disjoint_s43,25.0
 0-5s,medium_ft_disjoint_s44,25.0
+0-5s,medium_ft_sizematch_s42,25.0
+0-5s,medium_ft_sizematch_s43,25.0
+0-5s,medium_ft_sizematch_s44,25.0
 5-15s,base,25.11
 5-15s,medium,21.61
 5-15s,large,25.28
@@ -19,6 +22,9 @@ duration_bucket,model,corpus_wer_pct
 5-15s,medium_ft_disjoint,22.63
 5-15s,medium_ft_disjoint_s43,22.54
 5-15s,medium_ft_disjoint_s44,22.63
+5-15s,medium_ft_sizematch_s42,21.18
+5-15s,medium_ft_sizematch_s43,21.35
+5-15s,medium_ft_sizematch_s44,21.26
 15-30s,base,16.97
 15-30s,medium,13.82
 15-30s,large,14.77
@@ -29,6 +35,9 @@ duration_bucket,model,corpus_wer_pct
 15-30s,medium_ft_disjoint,13.47
 15-30s,medium_ft_disjoint_s43,12.71
 15-30s,medium_ft_disjoint_s44,12.55
+15-30s,medium_ft_sizematch_s42,12.45
+15-30s,medium_ft_sizematch_s43,12.91
+15-30s,medium_ft_sizematch_s44,12.69
 30-60s,base,19.63
 30-60s,medium,19.83
 30-60s,large,22.35
@@ -39,6 +48,9 @@ duration_bucket,model,corpus_wer_pct
 30-60s,medium_ft_disjoint,31.97
 30-60s,medium_ft_disjoint_s43,24.74
 30-60s,medium_ft_disjoint_s44,30.65
+30-60s,medium_ft_sizematch_s42,22.76
+30-60s,medium_ft_sizematch_s43,24.81
+30-60s,medium_ft_sizematch_s44,26.63
 60s+,base,33.33
 60s+,medium,37.31
 60s+,large,38.23
@@ -49,3 +61,6 @@ duration_bucket,model,corpus_wer_pct
 60s+,medium_ft_disjoint,108.56
 60s+,medium_ft_disjoint_s43,114.07
 60s+,medium_ft_disjoint_s44,103.98
+60s+,medium_ft_sizematch_s42,111.62
+60s+,medium_ft_sizematch_s43,25.99
+60s+,medium_ft_sizematch_s44,26.91

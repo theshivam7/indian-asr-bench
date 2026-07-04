@@ -29,3 +29,12 @@ medium_ft_disjoint_s43,SLOW,17.85,373
 medium_ft_disjoint_s44,AVG,18.23,199
 medium_ft_disjoint_s44,FAST,12.16,413
 medium_ft_disjoint_s44,SLOW,17.52,373
+medium_ft_sizematch_s42,AVG,14.95,199
+medium_ft_sizematch_s42,FAST,12.17,413
+medium_ft_sizematch_s42,SLOW,16.89,373
+medium_ft_sizematch_s43,AVG,12.9,199
+medium_ft_sizematch_s43,FAST,12.81,413
+medium_ft_sizematch_s43,SLOW,17.48,373
+medium_ft_sizematch_s44,AVG,15.84,199
+medium_ft_sizematch_s44,FAST,12.81,413
+medium_ft_sizematch_s44,SLOW,15.68,373

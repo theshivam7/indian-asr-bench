@@ -16,14 +16,14 @@
 | medium_ft_disjoint | Whisper Medium (FT, speaker-disjoint) | 16.53 | 16.17 | 19.39 | 17.1 | 15.95 | 10.92 |
 | medium_ft_disjoint_s43 | Whisper Medium (FT, disjoint, seed 43) | 15.14 | 14.8 | 18.01 | 15.73 | 14.53 | 10.43 |
 | medium_ft_disjoint_s44 | Whisper Medium (FT, disjoint, seed 44) | 15.58 | 15.2 | 18.52 | 16.16 | 15.01 | 10.68 |
-| medium_ft_sizematch_s42 | Whisper Medium (FT, size-matched ctrl, seed 42) | N/A | N/A | N/A | N/A | N/A | N/A |
-| medium_ft_sizematch_s43 | Whisper Medium (FT, size-matched ctrl, seed 43) | N/A | N/A | N/A | N/A | N/A | N/A |
-| medium_ft_sizematch_s44 | Whisper Medium (FT, size-matched ctrl, seed 44) | N/A | N/A | N/A | N/A | N/A | N/A |
+| medium_ft_sizematch_s42 | Whisper Medium (FT, size-matched ctrl, seed 42) | 14.7 | 14.33 | 17.6 | 15.28 | 14.16 | 10.01 |
+| medium_ft_sizematch_s43 | Whisper Medium (FT, size-matched ctrl, seed 43) | 14.82 | 14.4 | 17.57 | 15.36 | 14.44 | 9.61 |
+| medium_ft_sizematch_s44 | Whisper Medium (FT, size-matched ctrl, seed 44) | 14.8 | 14.4 | 17.71 | 15.49 | 14.31 | 9.69 |
 
 ## Best model per mode
 
-- **transcript_raw**: Whisper Medium (FT) (14.71%)
-- **transcript_clean**: Whisper Medium (HF) (14.42%)
-- **hf_raw**: Whisper Medium (FT) (17.70%)
-- **hf_clean**: Whisper Medium (HF) (15.51%)
-- **whisper_norm**: Whisper Medium (HF) (14.23%)
+- **transcript_raw**: Whisper Medium (FT, size-matched ctrl, seed 42) (14.70%)
+- **transcript_clean**: Whisper Medium (FT, size-matched ctrl, seed 42) (14.33%)
+- **hf_raw**: Whisper Medium (FT, size-matched ctrl, seed 43) (17.57%)
+- **hf_clean**: Whisper Medium (FT, size-matched ctrl, seed 42) (15.28%)
+- **whisper_norm**: Whisper Medium (FT, size-matched ctrl, seed 42) (14.16%)
