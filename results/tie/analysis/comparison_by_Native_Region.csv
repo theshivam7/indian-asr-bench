@@ -39,3 +39,15 @@ medium_ft_disjoint_s44,EAST,14.56,352
 medium_ft_disjoint_s44,NORTH,14.15,202
 medium_ft_disjoint_s44,SOUTH,15.52,362
 medium_ft_disjoint_s44,WEST,19.24,69
+medium_ft_sizematch_s42,EAST,14.12,352
+medium_ft_sizematch_s42,NORTH,14.17,202
+medium_ft_sizematch_s42,SOUTH,13.62,362
+medium_ft_sizematch_s42,WEST,19.11,69
+medium_ft_sizematch_s43,EAST,12.87,352
+medium_ft_sizematch_s43,NORTH,16.56,202
+medium_ft_sizematch_s43,SOUTH,14.82,362
+medium_ft_sizematch_s43,WEST,13.26,69
+medium_ft_sizematch_s44,EAST,13.43,352
+medium_ft_sizematch_s44,NORTH,14.02,202
+medium_ft_sizematch_s44,SOUTH,15.65,362
+medium_ft_sizematch_s44,WEST,13.43,69

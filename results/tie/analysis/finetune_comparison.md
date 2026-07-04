@@ -39,7 +39,15 @@ Across 3 seeds: WER 15.39% (range 14.80–16.17%), mean Δ vs pretrained +0.97 p
 
 > **Mixed result, not a clean null**: 1/3 seed(s) show a Holm-corrected significant WORSENING relative to pretrained (fine-tuning increases WER), while the remaining seed(s) fall within the ≈1.20 pp minimum detectable effect. The seed-to-seed spread (1.37 pp) is itself larger than the per-seed effect being estimated, so a single-seed run — including the checkpoint published as the 'primary' disjoint model — is not representative of the study as a whole. The safe claim is: fine-tuning on the speaker-disjoint training subset (567 clips) shows no evidence of improving WER over pretrained, and at least one seed shows evidence of making it worse. Whether the worsening is caused by the disjointness or by the 13x-smaller training set is separated by the size-matched control below (if run).
 
-_Size-matched control runs (`medium_ft_sizematch_s*`) not yet available — submit `hpc/job_finetune_sizematch.pbs` (SEED=42/43/44) to separate the training-set-size effect from the speaker-disjointness effect._
+## Size-matched control (speaker-overlapping, multi-seed)
+
+Same recipe and clip count as the disjoint runs (567 train clips), but sampled at random from the FULL train split — speaker overlap with test is preserved. If these runs regress like the disjoint runs, the disjoint regression is a small-training-set effect; if they hold up, the disjointness itself is implicated.
+
+| Seed | WER (`transcript_clean`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |
+|------|:----:|:----:|:----:|:----:|:----:|
+| 42 | 14.33% | -0.09 pp | [-0.45, +0.23] | 0.581 | 1.000 |
+| 43 | 14.40% | -0.02 pp | [-1.78, +1.53] | 0.997 | 1.000 |
+| 44 | 14.40% | -0.02 pp | [-1.85, +1.90] | 0.985 | 1.000 |
 
 ## By Region (`transcript_clean`)
 
