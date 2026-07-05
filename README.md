@@ -119,7 +119,7 @@ All numbers are corpus/per-sample WER on the `test` split under **`transcript_cl
 1. **Whisper Medium is best overall (14.76%)** — and also the most consistent (lowest Std Dev and lowest median WER).
 2. **Parakeet-TDT-0.6B (15.60%) beats Whisper Large (15.93%)** — a 600M specialized model edges out a ~1.5B general-purpose one.
 3. **Whisper Large is the least stable** (Std Dev 19.20%) — it hallucinates on the hardest clips.
-4. **Parakeet and Qwen3 dominate long audio (60s+):** 18–21% vs 37–38% for the Whisper models.
+4. **Parakeet and Qwen3 avoid Whisper's long-audio failure mode (60s+):** 18–21% vs 33–38% for the Whisper models (small bucket, n=5 — see the duration table).
 5. **Normalization/reference choice moves WER by ~2–3 pp** — comparable to the spread between the best and worst models (see below).
 
 #### Impact of normalization
@@ -131,7 +131,7 @@ All numbers are corpus/per-sample WER on the `test` split under **`transcript_cl
 | `hf_raw` (dataset's normalization, broken) | 20.24% | 18.01% | 19.14% | 18.54% | 17.99% |
 | `hf_clean` (dataset norm + our fix) | 18.07% | 15.76% | 16.94% | 16.40% | 17.61% |
 
-The dataset's own `Normalised_Transcript` (`hf_raw`) is **2–3 pp worse** than using the gold `Transcript` with correct normalization — it splits ordinals into characters (`"1st"` → `"one s t"`). **Always use `transcript_clean`.**
+The dataset's own `Normalised_Transcript` (`hf_raw`) is **2.7–3.3 pp worse** than the gold `Transcript` with correct normalization for the four conventional systems — it splits ordinals into characters (`"1st"` → `"one s t"`). Qwen3 is the exception (+1.3 pp): its richly punctuated verbatim output already disagrees with the raw reference's formatting, so the reference bug costs it less — the bias isn't even uniform across models. **Always use `transcript_clean`.**
 
 #### Breakdown by speech rate
 
@@ -160,7 +160,7 @@ The dataset's own `Normalised_Transcript` (`hf_raw`) is **2–3 pp worse** than 
 | 30–60s | 19.63% | 19.83% | 22.35% | **18.93%** | 20.62% |
 | **60s+** | 33.33% | 37.31% | 38.23% | **18.35%** | 20.80% |
 
-Parakeet and Qwen3 are far more robust on 60s+ clips — Whisper hallucinates during long pauses; the TDT/LLM decoders do not.
+Parakeet and Qwen3 are far more robust on 60s+ clips — Whisper hallucinates during long pauses; the TDT/LLM decoders do not. (The extreme buckets are tiny — n=4 for 0–5s, n=5 for 60s+, so a single clip moves them by 20+ pp; 87% of clips sit in 15–30s. Read the extremes qualitatively.)
 
 #### Breakdown by gender
 
