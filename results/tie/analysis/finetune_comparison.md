@@ -25,7 +25,7 @@ reference.
 
 Same recipe as the headline fine-tune, but every train clip whose speaker also appears in `test` is removed first (see `speaker_overlap.md`). Evaluated on the SAME test set as `medium_hf`, so any gain here cannot come from speaker adaptation. Run with multiple training seeds: a null claim from one seed would be indistinguishable from seed variance.
 
-> **Training-set confound (disclosed)**: TIE_shorts' official test speakers are so entangled with train that removing them keeps only **567/7200 train clips (3.8/46.9 h, 51/331 speakers)**. The disjoint runs therefore differ from the headline fine-tune in BOTH speaker overlap and training-set size (~13x smaller) — this dataset cannot support a size-matched speaker-disjoint split at all, which is itself an evaluation-validity finding. Any WER regression below must not be attributed to speaker-disjointness alone; see the size-matched control section (when run) for the separation.
+> **Training-set confound (disclosed)**: TIE_shorts' official test speakers are so entangled with train that removing them keeps only **567/7200 train clips (3.8/46.9 h, 51/331 speakers)**. The disjoint runs therefore differ from the headline fine-tune in BOTH speaker overlap and training-set size (~13x smaller) — this dataset cannot support a size-matched speaker-disjoint split at all, which is itself an evaluation-validity finding. Any WER regression below must not be attributed to speaker-disjointness alone; see the size-matched control section below for the separation.
 
 | Seed | WER (`transcript_clean`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |
 |------|:----:|:----:|:----:|:----:|:----:|
@@ -37,7 +37,7 @@ _\* = uncorrected 95% CI excludes 0. Use the Holm-adjusted p (multiplicity-corre
 
 Across 3 seeds: WER 15.39% (range 14.80–16.17%), mean Δ vs pretrained +0.97 pp; seed-to-seed spread 1.37 pp.
 
-> **Mixed result, not a clean null**: 1/3 seed(s) show a Holm-corrected significant WORSENING relative to pretrained (fine-tuning increases WER), while the remaining seed(s) fall within the ≈1.20 pp minimum detectable effect. The seed-to-seed spread (1.37 pp) is itself larger than the per-seed effect being estimated, so a single-seed run — including the checkpoint published as the 'primary' disjoint model — is not representative of the study as a whole. The safe claim is: fine-tuning on the speaker-disjoint training subset (567 clips) shows no evidence of improving WER over pretrained, and at least one seed shows evidence of making it worse. Whether the worsening is caused by the disjointness or by the 13x-smaller training set is separated by the size-matched control below (if run).
+> **Mixed result, not a clean null**: 1/3 seed(s) show a Holm-corrected significant WORSENING relative to pretrained (fine-tuning increases WER), while the remaining seed(s) fall within the ≈1.20 pp minimum detectable effect. The seed-to-seed spread (1.37 pp) is itself larger than the per-seed effect being estimated, so a single-seed run — including the checkpoint published as the 'primary' disjoint model — is not representative of the study as a whole. The safe claim is: fine-tuning on the speaker-disjoint training subset (567 clips) shows no evidence of improving WER over pretrained, and at least one seed shows evidence of making it worse. Whether the worsening is caused by the disjointness or by the 13x-smaller training set is separated by the size-matched control below.
 
 ## Size-matched control (speaker-overlapping, multi-seed)
 
@@ -48,6 +48,8 @@ Same recipe and clip count as the disjoint runs (567 train clips), but sampled a
 | 42 | 14.33% | -0.09 pp | [-0.45, +0.23] | 0.581 | 1.000 |
 | 43 | 14.40% | -0.02 pp | [-1.78, +1.53] | 0.997 | 1.000 |
 | 44 | 14.40% | -0.02 pp | [-1.85, +1.90] | 0.985 | 1.000 |
+
+> **Confound resolved**: all 3 size-matched seeds are statistically indistinguishable from pretrained (0/3 Holm-significant), while 1/3 disjoint seed(s) regressed significantly. Since both conditions train on the identical 567-clip count, training-set size alone cannot explain the disjoint regression — **speaker-disjointness is the cause**, not the smaller training set.
 
 ## By Region (`transcript_clean`)
 

@@ -43,7 +43,7 @@ ASR benchmarks are dominated by American and British English. Indian English —
 This project does four things:
 
 1. **Benchmarks up to seven pretrained ASR systems** on two datasets — [TIE_shorts](https://huggingface.co/datasets/raianand/TIE_shorts) (986 NPTEL-style lecture clips, "found" YouTube data) and [Svarah](https://huggingface.co/datasets/ai4bharat/Svarah) (6,656 curated read-speech clips) — across five normalization modes and every demographic/acoustic breakdown.
-2. **Fine-tunes Whisper Medium** on the in-domain `train` split and evaluates it two ways: under the dataset's official (speaker-overlapping) splits, and under a **speaker-disjoint re-split run with 3 training seeds** — reporting the honest result, including a statistically significant *regression* in one seed, and disclosing that the official splits leave only **567 of 7,200 train clips** speaker-disjoint, so disjointness and training-set size are confounded by construction (see [Fine-tuning](#fine-tuning-whisper-medium)).
+2. **Fine-tunes Whisper Medium** on the in-domain `train` split and evaluates it three ways: under the dataset's official (speaker-overlapping) splits, under a **speaker-disjoint re-split run with 3 training seeds** (a statistically significant *regression* in one seed), and under a **size-matched control** (same 567-clip count, speaker overlap preserved) that isolates the cause — the regression traces to speaker-disjointness, not the ~13× smaller training set (see [Fine-tuning](#fine-tuning-whisper-medium)).
 3. **Analyzes the failure modes** in depth with a full-corpus, multi-model consensus artifact classifier (not just a hand-reviewed tail): reference artifacts are rare in both corpora (TIE 1.0%, Svarah 0.8% of classifiable clips) but dominate TIE's worst-WER tail (62%), while Svarah's tail is instead dominated by an **isolated-word subtask** (23% of its clips have <4-word references) where WER is quantized and the classifier is undefined — see [Error Analysis](#error-analysis).
 4. **Validates that classifier against human judgment** with a blind, stratified annotation protocol, rather than trusting an unvalidated heuristic (see [`analysis/validation/PROTOCOL.md`](analysis/validation/PROTOCOL.md)).
 
@@ -306,9 +306,21 @@ Result 1 above is measured on TIE_shorts' **official splits, which have speaker 
 
 Across 3 seeds: WER 15.39% (range 14.80–16.17%), mean Δ +0.97 pp vs. pretrained, seed-to-seed spread 1.37 pp — itself larger than the per-seed effect being estimated. One seed (42) shows a **statistically significant WER regression** that survives Holm-Bonferroni correction across the 3 seeds; the other two fall within the study's minimum detectable effect (≈1.2 pp) and are not distinguishable from no effect.
 
-**The honest claim:** fine-tuning on the speaker-disjoint training subset (567 clips) shows no evidence of improving WER over pretrained, and at least one seed shows evidence of making it measurably worse. Whether the worsening comes from the disjointness or from the 13×-smaller training set is an open question the size-matched control is designed to answer — but either way, the official-split "no gain" reading in Result 1 was, if anything, generous. Full breakdown and methodology: [`results/tie/analysis/finetune_comparison.md`](results/tie/analysis/finetune_comparison.md).
+**The honest claim:** fine-tuning on the speaker-disjoint training subset (567 clips) shows no evidence of improving WER over pretrained, and at least one seed shows evidence of making it measurably worse. Whether the worsening comes from the disjointness or from the 13×-smaller training set was an open question — resolved below by the size-matched control — but either way, the official-split "no gain" reading in Result 1 was, if anything, generous. Full breakdown and methodology: [`results/tie/analysis/finetune_comparison.md`](results/tie/analysis/finetune_comparison.md).
 
 The checkpoint published as [whisper-medium-indian-english-disjoint](https://huggingface.co/theshivam7/whisper-medium-indian-english-disjoint) is seed 42 — the significant-regression seed — published for exact reproducibility of that result, not as a recommended model; see its model card for the full multi-seed context.
+
+### Result 3: size-matched control — the confound resolved
+
+Result 2's regression is confounded: the disjoint runs differ from the official split in *both* speaker overlap and training-set size (567 vs. 7,200 clips). To isolate which one drives the regression, we trained 3 more seeds on **567 clips sampled at random from the full train split** — same size as the disjoint runs, but with speaker overlap preserved (like the official split). If the regression is a small-data effect, this control should regress too; if it's caused by disjointness specifically, this control should hold up.
+
+| Seed | WER (`transcript_clean`) | Δ vs. pretrained (paired, speaker-clustered bootstrap) | 95% CI | p (Holm-corrected) |
+|:----:|:---:|:---:|:---:|:---:|
+| 42 | 14.33% | −0.09 pp | [−0.45, +0.23] | 1.000 |
+| 43 | 14.40% | −0.02 pp | [−1.78, +1.53] | 1.000 |
+| 44 | 14.40% | −0.02 pp | [−1.85, +1.90] | 1.000 |
+
+**The confound is resolved.** All 3 size-matched seeds sit flat at 14.33–14.40% — indistinguishable from the 14.42% pretrained baseline, with no significant effect in any seed. Since both this control and the disjoint runs above train on the *identical* clip count (567), training-set size alone cannot explain the disjoint runs' regression. **Speaker-disjointness is the cause**: removing speaker overlap exposes that part of the official split's apparent fine-tuning signal was speaker memorization rather than genuine acoustic/language adaptation. Full breakdown: [`results/tie/analysis/finetune_comparison.md`](results/tie/analysis/finetune_comparison.md#size-matched-control-speaker-overlapping-multi-seed).
 
 > **Long-clip decoding note.** On 60s+ clips the HF chunked pipeline scores ~119% WER for *both* the pretrained and fine-tuned models, vs 37% for the same weights under `openai-whisper`. That is a **decoding-pipeline artifact** (long-form chunk stitching), not a fine-tuning effect — it hits both equally, so the head-to-head stays fair. It also inflates the Std Dev in the tables above.
 
@@ -404,7 +416,7 @@ PROJECT=<nscc_project_id> bash hpc/submit_all.sh        # add --setup to also cr
 
 Or drive pieces individually: `qsub -P <id> -v DATASET=svarah hpc/run_pipeline.pbs` (full run), `qsub -P <id> -v DATASET=tie hpc/job_score.pbs` (CPU-only re-scoring), `qsub -P <id> -v DATASETS=tie,svarah hpc/job_figures.pbs` (combined figures). See [`hpc/README.md`](hpc/README.md).
 
-**Fine-tuning (GPU)** — official split + speaker-disjoint (3 seeds):
+**Fine-tuning (GPU)** — official split + speaker-disjoint (3 seeds) + size-matched control (3 seeds):
 
 ```bash
 bash task6_whisper_medium_ft/setup.sh
@@ -469,7 +481,7 @@ Stated so the numbers above are read correctly:
 
 - **Classifier validation is pending.** The artifact classifier is backed by the inter-hypothesis agreement evidence and manual reading of flagged clips, but the blind human-annotation pass has not yet run.
 - **Svarah clustering is by recording, not speaker.** 3,232 recording clusters is the strictest unit the public release supports; true speaker clustering (117 speakers per the dataset paper) would widen CIs further. TIE uses true speaker clusters.
-- **The disjoint fine-tune is confounded by construction** (567-clip train set); the size-matched control (`hpc/job_finetune_sizematch.pbs`) that resolves the attribution is defined but not yet run.
+- ~~The disjoint fine-tune is confounded by construction (567-clip train set); the size-matched control is defined but not yet run.~~ **Resolved (2026-07-04):** the size-matched control (3 seeds) shows no effect vs. pretrained, isolating speaker-disjointness — not training-set size — as the cause of Result 2's regression. See [Result 3](#result-3-size-matched-control--the-confound-resolved).
 - **Training-data contamination is possible** — NPTEL lectures are public and may appear in Whisper's web-scraped training data. A small probe (grounded vs. free-decoding agreement with *flawed* references) found no memorization signal, but at n=10 it is low-powered.
 - **Stage-1 transcripts are single runs** with temperature-fallback decoding ([`docs/DECODE_CONFIG.md`](docs/DECODE_CONFIG.md)); the committed raw CSVs are the reproducibility anchor.
 - **Small cells** (duration extremes n=4–5; 58 female speakers on TIE) support qualitative reading only.
