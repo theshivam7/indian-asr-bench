@@ -192,6 +192,7 @@ if PRIMARY_MODE in have[BASELINE] and PRIMARY_MODE in have[FINETUNED]:
 
 # --------------- 1b. Speaker-disjoint re-split fine-tune (multi-seed; hardens the null) ---------------
 disjoint_present = [m for m in DISJOINT_SEEDS if have[m].get(PRIMARY_MODE) is not None]
+sm_present = [m for m in SIZEMATCH_SEEDS if have[m].get(PRIMARY_MODE) is not None]
 if disjoint_present:
     dt = DISJOINT_TRAIN
     lines += [
@@ -210,7 +211,8 @@ if disjoint_present:
         f"speaker overlap and training-set size (~13x smaller) — this dataset cannot support a "
         f"size-matched speaker-disjoint split at all, which is itself an evaluation-validity "
         f"finding. Any WER regression below must not be attributed to speaker-disjointness "
-        f"alone; see the size-matched control section (when run) for the separation.",
+        f"alone; see the size-matched control section "
+        + ("below for the separation." if sm_present else "(when run) for the separation."),
         "",
         f"| Seed | WER (`{PRIMARY_MODE}`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |",
         "|------|:----:|:----:|:----:|:----:|:----:|",
@@ -302,12 +304,12 @@ if disjoint_present:
             f"fine-tuning on the speaker-disjoint training subset ({DISJOINT_TRAIN['clips']} clips) shows "
             f"no evidence of improving WER over pretrained, and at least one seed shows evidence of making "
             f"it worse. Whether the worsening is caused by the disjointness or by the 13x-smaller training "
-            f"set is separated by the size-matched control below (if run).",
+            f"set is separated by the size-matched control below"
+            + ("." if sm_present else " (if run)."),
             "",
         ]
 
     # ---- Size-matched speaker-overlapping control (separates size from disjointness) ----
-    sm_present = [m for m in SIZEMATCH_SEEDS if have[m].get(PRIMARY_MODE) is not None]
     if sm_present:
         lines += [
             "## Size-matched control (speaker-overlapping, multi-seed)",
@@ -331,6 +333,39 @@ if disjoint_present:
             lines.append(f"| {seed} | {wer_m:.2f}% | {d:+.2f} pp | [{lo:+.2f}, {hi:+.2f}]{sig} | {p:.3f} | {ph:.3f} |")
             print(f"  [sizematch s{seed}] wer={wer_m:.2f}%  diff={d:+.2f}pp  CI=[{lo:+.2f},{hi:+.2f}]  p={p:.3f}  p_holm={ph:.3f}")
         lines.append("")
+
+        n_sig_sm = sum(1 for ph in sm_holm if ph < 0.05)
+        if n_sig_sm == 0 and n_sig_holm > 0:
+            lines += [
+                f"> **Confound resolved**: all {len(sm_present)} size-matched seeds are statistically "
+                f"indistinguishable from pretrained (0/{len(sm_present)} Holm-significant), while "
+                f"{n_sig_holm}/{len(disjoint_present)} disjoint seed(s) regressed significantly. Since "
+                f"both conditions train on the identical {DISJOINT_TRAIN['clips']}-clip count, training-set "
+                f"size alone cannot explain the disjoint regression — **speaker-disjointness is the cause**, "
+                f"not the smaller training set.",
+                "",
+            ]
+        elif n_sig_sm > 0 and n_sig_holm > 0:
+            lines += [
+                f"> **Size effect implicated**: {n_sig_sm}/{len(sm_present)} size-matched seed(s) also "
+                f"regressed significantly despite preserving speaker overlap, so the small training-set "
+                f"size (not disjointness alone) contributes to the disjoint-run regression.",
+                "",
+            ]
+        elif n_sig_sm == 0 and n_sig_holm == 0:
+            lines += [
+                "> **Inconclusive**: neither the disjoint nor the size-matched seeds show a "
+                "Holm-significant effect vs pretrained — the study is underpowered to separate the "
+                "two confounds at this seed count.",
+                "",
+            ]
+        else:
+            lines += [
+                f"> **Unexpected pattern**: {n_sig_sm}/{len(sm_present)} size-matched seed(s) regressed "
+                f"significantly but no disjoint seed did — re-check the runs before drawing a causal "
+                f"conclusion.",
+                "",
+            ]
     else:
         lines += [
             "_Size-matched control runs (`medium_ft_sizematch_s*`) not yet available — "
