@@ -137,16 +137,30 @@ def main() -> None:
     model.generation_config.language = "english"
     model.generation_config.task = "transcribe"
 
-    print("Loading + filtering TIE_shorts train/validation splits ...")
+    print("Loading TIE_shorts train/validation splits ...")
     train_hf = load_dataset("raianand/TIE_shorts", split="train", cache_dir=HF_CACHE)
     eval_hf = load_dataset("raianand/TIE_shorts", split="validation", cache_dir=HF_CACHE)
+
+    if args.max_train_samples:
+        # Smoke-test path: subset the RAW dataset BEFORE filtering. filter_tie_split()
+        # internally calls flatten_indices() twice, which materializes every surviving
+        # clip's full audio array into a new arrow table -- for TIE's ~7.2k-clip filtered
+        # train split that's expensive enough to OOM-kill a memory-constrained login node
+        # (observed 2026-07-09), and it happens regardless of --max-train-samples if the
+        # cap is only applied afterward. 3x headroom on the raw slice comfortably survives
+        # TIE's ~91% filter pass-rate for any reasonable smoke-test sample size.
+        train_hf = train_hf.select(range(min(args.max_train_samples * 3, len(train_hf))))
+        eval_hf = eval_hf.select(range(min(24, len(eval_hf))))
+        print(f"  SMOKE TEST: pre-capped raw train to {len(train_hf)} rows before filtering")
+
+    print("Filtering ...")
     train_hf = filter_tie_split(train_hf, has_duration_col=True, label="train")
     eval_hf = filter_tie_split(eval_hf, has_duration_col=False, label="validation")
 
     if args.max_train_samples:
         train_hf = train_hf.select(range(min(args.max_train_samples, len(train_hf)))).flatten_indices()
         eval_hf = eval_hf.select(range(min(8, len(eval_hf)))).flatten_indices()
-        print(f"  SMOKE TEST: capped train to {len(train_hf)} samples")
+        print(f"  SMOKE TEST: capped filtered train to {len(train_hf)} samples")
 
     train_ds = TIEWhisperDataset(train_hf, processor)
     eval_ds = TIEWhisperDataset(eval_hf, processor)
