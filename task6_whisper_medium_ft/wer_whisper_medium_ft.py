@@ -40,6 +40,7 @@ from utils.io_helpers import (
     raw_audio_column,
     write_run_manifest,
 )
+from utils.registry import MODEL_BY_KEY
 
 warnings.filterwarnings("ignore")
 
@@ -59,12 +60,24 @@ elif MODEL_NAME == "medium_ft":
     model_path = os.environ.get("FT_OUTPUT_DIR", DEFAULT_FT_DIR)
 elif MODEL_NAME == "medium_hf":
     model_path = os.environ.get("FT_BASE_MODEL", "openai/whisper-medium")
+elif MODEL_NAME in MODEL_BY_KEY and MODEL_BY_KEY[MODEL_NAME].engine == "hf_whisper":
+    # Any other registry hf_whisper entry (e.g. tiny_hf/tiny_ft/small_hf/small_ft)
+    # resolves via its registry model_id — an HF id used as-is, or a "models/..."
+    # local path made relative to the repo root (weights on this cluster live
+    # under $SCRATCH, not in the repo, so MODEL_SOURCE remains the usual override).
+    _mid = MODEL_BY_KEY[MODEL_NAME].model_id
+    model_path = _mid if "/" in _mid and not _mid.startswith("models") else os.path.join(REPO_ROOT, _mid)
 else:
     sys.exit(f"[ERROR] MODEL_NAME='{MODEL_NAME}' needs an explicit MODEL_SOURCE "
              f"(path or HF id), or use 'medium_ft' / 'medium_hf'.")
 
-# Local model dirs must exist; HF ids (contain no path separator) are downloaded.
-if os.sep in model_path and not os.path.isdir(model_path):
+# Local model dirs must exist; HF ids are downloaded. Distinguish by the project's own
+# convention (every local weight path in the registry starts with "models/" — see
+# utils/registry.py) rather than by presence of a path separator: HF namespaced ids like
+# "openai/whisper-medium" also contain "/", so that check alone misfires on every HF-hosted
+# pretrained baseline (medium_hf, tiny_hf, small_hf, ...) and would incorrectly exit before
+# ever calling build_asr_pipeline. Fixed 2026-07-08 during the tiny/small capacity-study audit.
+if model_path.startswith(("models/", "models" + os.sep)) and not os.path.isdir(model_path):
     sys.exit(f"[ERROR] model weights not found at {model_path}. Run finetune.py first.")
 
 print(f"=== Stage 1 transcription: {MODEL_NAME}  (weights: {model_path}) ===\n")

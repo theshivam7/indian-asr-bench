@@ -94,7 +94,9 @@ class ModelSpec:
 #   blue #0072B2 · orange #E69F00 · green #009E73 · vermillion #D55E00 ·
 #   reddish-purple #CC79A7 · sky-blue #56B4E9 · black #000000
 MODEL_SPECS = (
+    ModelSpec("tiny",   "Whisper Tiny",   "openai_whisper", "tiny",   "whisper", "enc_dec",    "39M",   "#000000", 5),
     ModelSpec("base",   "Whisper Base",   "openai_whisper", "base",   "whisper", "enc_dec",    "74M",   "#0072B2", 10),
+    ModelSpec("small",  "Whisper Small",  "openai_whisper", "small",  "whisper", "enc_dec",    "244M",  "#F0E442", 15),
     ModelSpec("medium", "Whisper Medium", "openai_whisper", "medium", "whisper", "enc_dec",    "769M",  "#E69F00", 20),
     ModelSpec("large",  "Whisper Large",  "openai_whisper", "large",  "whisper", "enc_dec",    "1.5B",  "#009E73", 30),
     ModelSpec("large_v3_turbo", "Whisper large-v3-turbo", "openai_whisper", "turbo", "whisper", "enc_dec", "809M", "#56B4E9", 35),
@@ -121,6 +123,13 @@ MODEL_SPECS = (
     ModelSpec("medium_ft_sizematch_s42", "Whisper Medium (FT, size-matched ctrl, seed 42)", "hf_whisper", "models/whisper_medium_ft_sizematch_s42", "whisper_medium_ft", "enc_dec", "769M", "#4D3000", 83, chart=False, tie_only=True),
     ModelSpec("medium_ft_sizematch_s43", "Whisper Medium (FT, size-matched ctrl, seed 43)", "hf_whisper", "models/whisper_medium_ft_sizematch_s43", "whisper_medium_ft", "enc_dec", "769M", "#3E2700", 84, chart=False, tie_only=True),
     ModelSpec("medium_ft_sizematch_s44", "Whisper Medium (FT, size-matched ctrl, seed 44)", "hf_whisper", "models/whisper_medium_ft_sizematch_s44", "whisper_medium_ft", "enc_dec", "769M", "#2F1E00", 85, chart=False, tie_only=True),
+    # --- Capacity study: Tiny/Small fine-tuning (professor's follow-up; see
+    # results/tie/analysis/findings_tiny_small_ft.md). Official-split only, no
+    # disjoint/size-matched seeds (out of scope for this minimal protocol). ---
+    ModelSpec("tiny_hf",  "Whisper Tiny (HF)",  "hf_whisper", "openai/whisper-tiny",     "whisper_medium_ft", "enc_dec", "39M",  "#4D4D4D", 90, chart=False, tie_only=True),
+    ModelSpec("tiny_ft",  "Whisper Tiny (FT)",  "hf_whisper", "models/whisper_tiny_ft",  "whisper_medium_ft", "enc_dec", "39M",  "#7F7F7F", 91, chart=False, tie_only=True),
+    ModelSpec("small_hf", "Whisper Small (HF)", "hf_whisper", "openai/whisper-small",    "whisper_medium_ft", "enc_dec", "244M", "#B8A73A", 92, chart=False, tie_only=True),
+    ModelSpec("small_ft", "Whisper Small (FT)", "hf_whisper", "models/whisper_small_ft", "whisper_medium_ft", "enc_dec", "244M", "#8A7B1F", 93, chart=False, tie_only=True),
 )
 MODEL_BY_KEY = {m.key: m for m in MODEL_SPECS}
 ALL_MODELS = tuple(m.key for m in MODEL_SPECS)

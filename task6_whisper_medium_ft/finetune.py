@@ -59,6 +59,7 @@ from utils.normalize import normalize_text
 from utils.finetune_data import (
     DataCollatorSpeechSeq2SeqWithPadding,
     make_prepare_dataset,
+    filter_tie_split,
 )
 
 warnings.filterwarnings("ignore")
@@ -75,7 +76,6 @@ GRAD_ACCUM = int(os.environ.get("FT_GRAD_ACCUM", "2"))
 LR = float(os.environ.get("FT_LR", "1e-5"))
 PATIENCE = int(os.environ.get("FT_PATIENCE", "2"))
 MAX_TRAIN_SAMPLES = os.environ.get("MAX_TRAIN_SAMPLES")
-MAX_AUDIO_SECONDS = 30
 SEED = int(os.environ.get("FT_SEED", "42"))
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -83,7 +83,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 use_bf16 = device == "cuda" and torch.cuda.is_bf16_supported()
 
 print("=" * 70)
-print("STAGE 0: Fine-tuning Whisper Medium on TIE_shorts")
+print(f"STAGE 0: Fine-tuning {BASE_MODEL} on TIE_shorts")
 print("=" * 70)
 print(f"  base model : {BASE_MODEL}")
 print(f"  output dir : {OUTPUT_DIR}")
@@ -121,29 +121,11 @@ print("Loading train + validation splits ...")
 train_ds = load_dataset("raianand/TIE_shorts", split="train", cache_dir=HF_CACHE)
 eval_ds = load_dataset("raianand/TIE_shorts", split="validation", cache_dir=HF_CACHE)
 
-
-def has_usable_text(transcript) -> bool:
-    return bool((transcript or "").strip())
-
-
-def within_duration(dur) -> bool:
-    try:
-        return dur is None or float(dur) <= MAX_AUDIO_SECONDS
-    except (TypeError, ValueError):
-        return True
-
-
-# Filter on the metadata columns only (input_columns) so the Audio column is NOT decoded
-# here — decoding happens once, later, in .map(). Without input_columns, .filter() would
-# decode every clip just to read text/duration and then discard it.
-n_before = len(train_ds)
-train_ds = train_ds.filter(
-    lambda transcript, dur: has_usable_text(transcript) and within_duration(dur),
-    input_columns=["Transcript", "Speech_Duration_seconds"],
-)
-print(f"  train: {n_before} -> {len(train_ds)} after dropping empty / >{MAX_AUDIO_SECONDS}s clips")
-eval_ds = eval_ds.filter(has_usable_text, input_columns=["Transcript"])
-print(f"  validation: {len(eval_ds)} samples")
+# Text/duration/no-audio filtering, in the order that keeps subset selection below exact
+# (see utils.finetune_data.filter_tie_split). Shared with task6_whisper_medium_ft/finetune_stepwise.py
+# so both entrypoints drop exactly the same clips for the same reasons.
+train_ds = filter_tie_split(train_ds, has_duration_col=True, label="train")
+eval_ds = filter_tie_split(eval_ds, has_duration_col=False, label="validation")
 
 # Speaker-disjoint fine-tuning (FT_SPEAKER_DISJOINT=1): remove from train every clip
 # whose speaker also appears in the test split, so no test speaker is ever seen in
@@ -184,39 +166,10 @@ if MAX_TRAIN_SAMPLES:
     train_ds = train_ds.select(range(min(int(MAX_TRAIN_SAMPLES), len(train_ds))))
     eval_ds = eval_ds.select(range(min(8, len(eval_ds))))
 
-# filter()/select() may apply a lazy indices overlay instead of physically reordering the
-# underlying arrow table. flatten_indices() materializes a fresh, physically-ordered table
-# so the raw arrow "audio" access below (by row index) is guaranteed to line up correctly.
-train_ds = train_ds.flatten_indices()
-eval_ds = eval_ds.flatten_indices()
-
-
-def has_audio_array(raw_col):
-    # Check validity at the pyarrow level (raw_col[idx]["array"].is_valid) rather than
-    # raw_col[idx].as_py() — .as_py() would fully materialize every row's audio samples
-    # into Python objects just to immediately discard them, roughly doubling this pass's
-    # cost on top of the identical work .map() does right after for the surviving rows.
-    def _check(_transcript, idx):
-        return raw_col[idx]["array"].is_valid
-
-    return _check
-
-
-# Some TIE_shorts rows have no embedded audio array — only a stale local path from the
-# original dataset upload (e.g. "E:\TIE_shorts\...") that isn't reachable here. Drop those
-# rather than crashing the whole run; there is no way to recover that audio on this machine.
-n_before = len(train_ds)
-train_ds = train_ds.filter(
-    has_audio_array(raw_audio_column(train_ds)), input_columns=["Transcript"], with_indices=True,
-)
-print(f"  train: {n_before} -> {len(train_ds)} after dropping clips with no embedded audio")
-n_before = len(eval_ds)
-eval_ds = eval_ds.filter(
-    has_audio_array(raw_audio_column(eval_ds)), input_columns=["Transcript"], with_indices=True,
-)
-print(f"  validation: {n_before} -> {len(eval_ds)} after dropping clips with no embedded audio")
-
-# filter() above changes indices again — re-materialize before capturing raw audio columns.
+# filter()/select() above may apply a lazy indices overlay instead of physically reordering
+# the underlying arrow table. flatten_indices() materializes a fresh, physically-ordered
+# table so the raw arrow "audio" access below (by row index) is guaranteed to line up
+# correctly. (The no-audio filter already ran earlier, before subset selection — see above.)
 train_ds = train_ds.flatten_indices()
 eval_ds = eval_ds.flatten_indices()
 
