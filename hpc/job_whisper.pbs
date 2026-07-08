@@ -7,13 +7,17 @@
 #PBS -e logs/whisper.log
 #PBS -j oe
 #PBS -k oed
+#PBS -V
 
 # One openai-whisper model on one dataset (replaces the old job_base/medium/large).
 #   qsub -v MODEL=large,DATASET=tie      hpc/job_whisper.pbs
 #   qsub -v MODEL=large_v3_turbo,DATASET=svarah hpc/job_whisper.pbs
-# MODEL in {base, medium, large, large_v3_turbo}; DATASET in {tie, svarah}.
+# MODEL in {tiny, base, small, medium, large, large_v3_turbo}; DATASET in {tie, svarah}.
 
-WORKDIR=${WORKDIR:-$(pwd)}
+# Fixed 2026-07-08: $(pwd) in a PBS batch shell defaults to $HOME (quota-limited, and the
+# wrong directory) unless WORKDIR is passed explicitly via -v or PBS_O_WORKDIR survives
+# (it does with #PBS -V, added above). Fall back through both before $(pwd).
+WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
 WHISPER_ENV=${WHISPER_ENV:-whisper}
 HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
@@ -27,6 +31,15 @@ export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}" XDG_CACHE_HOME="${H
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 cd "${WORKDIR}"
 conda activate "${WHISPER_ENV}"
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+
+# Fixed 2026-07-08: a broken/CPU-fallback env never crashes the job — it silently produces
+# an all-empty-hypothesis, near-100%-WER transcript CSV that "completes successfully". Fail
+# fast instead (same guard as hpc/job_finetune_sizematch.pbs).
+echo "--- GPU / CUDA diagnostics (${MODEL} on ${DATASET}) ---"
+nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
+python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok); sys.exit(0 if ok else 1)" \
+    || { echo "[FATAL] CUDA not available in ${WHISPER_ENV} - aborting"; exit 1; }
 
 echo "=== whisper ${MODEL} on ${DATASET} $(date) ==="
 python task_whisper/run_whisper.py --model "${MODEL}" --dataset "${DATASET}"
