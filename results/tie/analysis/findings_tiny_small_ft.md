@@ -187,7 +187,7 @@ sizes.
 The 3-test family in §3 (tiny-FT-vs-HF, small-FT-vs-HF, medium-FT-vs-HF) is **separate** from
 the project's cross-model pairwise-comparison family
 (`statistics_pairwise_transcript_clean.csv`) — that family covers PRETRAINED models only
-(now 7 chart models / 21 pairs, including Tiny and Small). The fine-tuned variants run
+(now 9 chart models / 36 pairs, including Tiny and Small). The fine-tuned variants run
 through a different decoding engine than the pretrained ladder, so mixing them into that
 family would confound fine-tuning with an engine change; the two Holm families are computed
 independently by design, not as a temporary gap.
