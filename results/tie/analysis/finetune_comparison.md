@@ -1,13 +1,15 @@
 # Whisper Medium — Pretrained vs Fine-tuned
 
-Fine-tuned on the `raianand/TIE_shorts` **train** split (7884 clips, clips >30s filtered),
-best checkpoint selected on the **validation** split, evaluated on the **test** split (986 clips) —
-the same test set used for every pretrained model in this benchmark.
+Fine-tuned on the `raianand/TIE_shorts` **train** split (7,884 raw clips; ~7,200 remain
+after dropping empty transcripts, clips >30s, and clips with no embedded audio — see the
+run log for the exact realized count), best checkpoint selected on the **validation**
+split, evaluated on the **test** split (986 clips) — the same test set used for every
+pretrained model in this benchmark.
 
-**Headline comparison** is against `medium_hf` — the *pretrained* Whisper Medium run through the
-**same** HuggingFace chunked pipeline as the fine-tuned model. This isolates the fine-tuning gain
-from any decoding/engine differences. The original `openai-whisper` number is shown as a secondary
-reference.
+**Headline comparison** is against `medium_hf` — the *pretrained* Whisper Medium run
+through the **same** HuggingFace chunked pipeline as the fine-tuned model. This isolates
+the fine-tuning gain from any decoding/engine differences. The original `openai-whisper`
+number is shown as a secondary reference.
 
 ## Corpus WER (%) by evaluation mode
 
@@ -20,36 +22,6 @@ reference.
 | `whisper_norm` | 14.23% | 14.31% | +0.08 pp | +0.6% | 14.48% |
 
 > **Headline (transcript_clean)**: fine-tuning does NOT improve WER 14.42% → 14.61%  (+0.20 pp, +1.4% relative).
-
-## Speaker-disjoint re-split fine-tune (multi-seed)
-
-Same recipe as the headline fine-tune, but every train clip whose speaker also appears in `test` is removed first (see `speaker_overlap.md`). Evaluated on the SAME test set as `medium_hf`, so any gain here cannot come from speaker adaptation. Run with multiple training seeds: a null claim from one seed would be indistinguishable from seed variance.
-
-> **Training-set confound (disclosed)**: TIE_shorts' official test speakers are so entangled with train that removing them keeps only **567/7200 train clips (3.8/46.9 h, 51/331 speakers)**. The disjoint runs therefore differ from the headline fine-tune in BOTH speaker overlap and training-set size (~13x smaller) — this dataset cannot support a size-matched speaker-disjoint split at all, which is itself an evaluation-validity finding. Any WER regression below must not be attributed to speaker-disjointness alone; see the size-matched control section below for the separation.
-
-| Seed | WER (`transcript_clean`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |
-|------|:----:|:----:|:----:|:----:|:----:|
-| 42 | 16.17% | +1.75 pp | [+0.13, +4.17] * | 0.016 | 0.048 |
-| 43 | 14.80% | +0.38 pp | [-0.01, +0.74] | 0.058 | 0.116 |
-| 44 | 15.20% | +0.79 pp | [-0.18, +2.25] | 0.163 | 0.163 |
-
-_\* = uncorrected 95% CI excludes 0. Use the Holm-adjusted p (multiplicity-corrected across these 3 seeds) for significance calls._
-
-Across 3 seeds: WER 15.39% (range 14.80–16.17%), mean Δ vs pretrained +0.97 pp; seed-to-seed spread 1.37 pp.
-
-> **Mixed result, not a clean null**: 1/3 seed(s) show a Holm-corrected significant WORSENING relative to pretrained (fine-tuning increases WER), while the remaining seed(s) fall within the ≈1.20 pp minimum detectable effect. The seed-to-seed spread (1.37 pp) is itself larger than the per-seed effect being estimated, so a single-seed run — including the checkpoint published as the 'primary' disjoint model — is not representative of the study as a whole. The safe claim is: fine-tuning on the speaker-disjoint training subset (567 clips) shows no evidence of improving WER over pretrained, and at least one seed shows evidence of making it worse. Whether the worsening is caused by the disjointness or by the 13x-smaller training set is separated by the size-matched control below.
-
-## Size-matched control (speaker-overlapping, multi-seed)
-
-Same recipe and clip count as the disjoint runs (567 train clips), but sampled at random from the FULL train split — speaker overlap with test is preserved. If these runs regress like the disjoint runs, the disjoint regression is a small-training-set effect; if they hold up, the disjointness itself is implicated.
-
-| Seed | WER (`transcript_clean`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |
-|------|:----:|:----:|:----:|:----:|:----:|
-| 42 | 14.33% | -0.09 pp | [-0.45, +0.23] | 0.581 | 1.000 |
-| 43 | 14.40% | -0.02 pp | [-1.78, +1.53] | 0.997 | 1.000 |
-| 44 | 14.40% | -0.02 pp | [-1.85, +1.90] | 0.985 | 1.000 |
-
-> **Confound resolved**: all 3 size-matched seeds are statistically indistinguishable from pretrained (0/3 Holm-significant), while 1/3 disjoint seed(s) regressed significantly. Since both conditions train on the identical 567-clip count, training-set size alone cannot explain the disjoint regression — **speaker-disjointness is the cause**, not the smaller training set.
 
 ## By Region (`transcript_clean`)
 
@@ -136,6 +108,3 @@ Same recipe and clip count as the disjoint runs (567 train clips), but sampled a
   `openai-whisper` number is shown only as a continuity reference.
 - **Speaker overlap**: see `speaker_overlap.md`. If test speakers also appear in train, part of the
   gain reflects speaker adaptation (disclosed, per the dataset's official splits).
-- **Disjoint train-set size**: the speaker-disjoint runs train on 567 clips (3.8 h) vs the official
-  split's 7200 (46.9 h, after the same duration/text filters) — speaker-disjointness and training-set
-  size are confounded on this dataset by construction. The size-matched control isolates the size effect.

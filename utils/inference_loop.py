@@ -6,9 +6,17 @@ kwargs); this module handles everything dataset-related: loading the eval split
 via the adapter, reading the reference/id through the DatasetSpec, checkpoint /
 resume, building the canonical raw-CSV row, and writing the output.
 
+Engines that must avoid datasets' Audio-feature decode (e.g. a conda env whose
+pinned `datasets` version needs torchcodec for that path) can instead supply a
+two-argument ``transcribe_one(sample, raw_audio_value) -> str``. The loop detects
+this via the callable's arity: "audio" is removed from the per-row dict and the
+matching raw arrow value is passed as the second argument instead. Existing
+single-argument callbacks are unaffected either way.
+
 Output: results/<dataset>/stage1_raw_transcripts/wer_<model>_raw.csv
 """
 
+import inspect
 import os
 import signal
 import sys
@@ -25,6 +33,7 @@ from utils.io_helpers import (
     save_checkpoint,
     remove_checkpoint,
     write_run_manifest,
+    raw_audio_column,
 )
 
 
@@ -46,6 +55,13 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
     split = spec.splits["eval"]
     out_dir = stage1_raw_dir(dataset_key)
 
+    # A 2-arg transcribe_one opts into raw (undecoded) audio: strip "audio" from the row
+    # dict so plain iteration never triggers datasets' Audio-feature decode, and pass the
+    # matching raw arrow value as the second argument instead (see module docstring).
+    callback_takes_raw_audio = len(inspect.signature(transcribe_one).parameters) >= 2
+    raw_audio = raw_audio_column(ds) if callback_takes_raw_audio else None
+    ds_iter = ds.remove_columns(["audio"]) if callback_takes_raw_audio else ds
+
     checkpoint_path = os.path.join(results_dir(dataset_key), f"wer_{model_key}_partial.csv")
     completed: set[str] = set()
     ckpt_map: dict[str, dict] = {}
@@ -61,13 +77,15 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
     rows = state["rows"]
 
     print(f"--- {spec.display} [{split}] : {len(ds)} samples, model={model_key} ---")
-    for sample in tqdm(ds, desc=f"{dataset_key}:{model_key}"):
+    for idx, sample in enumerate(tqdm(ds_iter, desc=f"{dataset_key}:{model_key}")):
         transcript = str(sample.get(spec.gold_ref_col) or "").strip()
         if not transcript:
             continue
         sid = sample_id(sample, spec)
         if sid in completed:
             hyp_raw = str(ckpt_map.get(sid, {}).get("hypothesis_raw") or "")
+        elif callback_takes_raw_audio:
+            hyp_raw = transcribe_one(sample, raw_audio[idx].as_py())
         else:
             hyp_raw = transcribe_one(sample)
         rows.append(build_sample_row(sample, sid, transcript, hyp_raw, spec=spec, split=split))

@@ -50,10 +50,10 @@ mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 cd "${WORKDIR}"
 
 echo "=== STAGE 1: pretrained Whisper Medium via HF (apples-to-apples baseline) ==="
-MODEL_NAME=medium_hf python task6_whisper_medium_ft/wer_whisper_medium_ft.py
+MODEL_NAME=medium_hf python finetune/evaluate_finetuned.py
 
 echo "=== STAGE 1: fine-tuned Whisper Medium ==="
-MODEL_NAME=medium_ft python task6_whisper_medium_ft/wer_whisper_medium_ft.py
+MODEL_NAME=medium_ft python finetune/evaluate_finetuned.py
 
 echo "=== STAGE 2: Normalization + WER (all models, all 4 modes) ==="
 python normalize_and_score.py

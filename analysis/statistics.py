@@ -140,7 +140,7 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
     # --- Cluster structure: speakers if available, else recording tag from the
     # clip ID (spec.cluster_id_regex), else clips ---
     speakers = tables[models[0]].loc[common, "speaker"].to_numpy()
-    have_speakers = pd.Series(speakers).replace("", np.nan).notna().sum() > 0 and \
+    have_speakers = pd.Series(speakers).mask(pd.Series(speakers) == "").notna().sum() > 0 and \
         len(set(s for s in speakers if s)) > 1
     if have_speakers:
         # clips with a missing speaker id become their own singleton cluster

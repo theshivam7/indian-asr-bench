@@ -37,20 +37,20 @@ echo "================================================================"
 conda activate "${WHISPER_ENV}"
 for M in base medium large large_v3_turbo; do
   echo -e "\n=== Stage 1: whisper ${M} ==="
-  python task_whisper/run_whisper.py --model "${M}" --dataset "${DATASET}"
+  python whisper_asr/run_whisper.py --model "${M}" --dataset "${DATASET}"
 done
 
 # Stage 1 — Parakeet TDT + CTC
 conda activate "${PARAKEET_ENV}"
 for M in parakeet parakeet_ctc; do
   echo -e "\n=== Stage 1: ${M} ==="
-  python task4_parakeet/wer_parakeet.py --model "${M}" --dataset "${DATASET}"
+  python parakeet/wer_parakeet.py --model "${M}" --dataset "${DATASET}"
 done
 
 # Stage 1 — Qwen3-ASR
 conda activate "${QWEN3_ENV}"
 echo -e "\n=== Stage 1: qwen3 ==="
-python task5_qwen3_asr/wer_qwen3.py --dataset "${DATASET}"
+python qwen3/wer_qwen3.py --dataset "${DATASET}"
 
 # Stage 2 + 3 (CPU)
 conda activate "${WHISPER_ENV}"

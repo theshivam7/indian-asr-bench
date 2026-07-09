@@ -24,8 +24,8 @@ Stage 3 `analysis/*` + `paper/figures/` → `results/<dataset>/analysis/`.
    engine, `model_id`, conda env, `arch_class`, params, a colourblind-safe colour
    validated with the dataviz palette checker, and sort order).
 2. Add its inference path:
-   - reuse an existing engine driver if the engine matches (`task_whisper/run_whisper.py`,
-     `task4_parakeet/wer_parakeet.py`, `task5_qwen3_asr/wer_qwen3.py` — all take `--model`/`--dataset`), **or**
+   - reuse an existing engine driver if the engine matches (`whisper_asr/run_whisper.py`,
+     `parakeet/wer_parakeet.py`, `qwen3/wer_qwen3.py` — all take `--model`/`--dataset`), **or**
    - add a new `taskN_yourmodel/` (driver + `requirements.txt` + `setup.sh`) that calls
      `utils.inference_loop.run_transcription(model_key, dataset_key, transcribe_one)`.
 3. Run inference, then `python normalize_and_score.py --dataset <ds>` and the
@@ -57,7 +57,7 @@ dataset-agnostic.
 2. Make changes, verify with `python normalize_and_score.py --dataset tie` (should reproduce committed numbers)
 3. Run the tests: `python tests/test_pipeline.py` (or `python -m pytest tests/ -q`) — pins the
    normalization/WER contracts, registry integrity, and the committed headline numbers
-4. Run a quick syntax check: `python -m py_compile utils/*.py analysis/*.py task_whisper/*.py task*/wer_*.py`
+4. Run a quick syntax check: `python -m py_compile utils/*.py analysis/*.py whisper_asr/*.py task*/wer_*.py`
 4. Open a PR with a clear description of what changed and why
 
 ## Reporting Issues

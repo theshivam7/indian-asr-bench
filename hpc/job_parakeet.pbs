@@ -32,4 +32,4 @@ python -c "import torch; print('torch:', torch.__version__, '| cuda:', torch.ver
 python -c "import nemo.collections.asr; print('nemo: OK')"
 echo "=== END ENV CHECK ==="
 
-python task4_parakeet/wer_parakeet.py --model "${MODEL}" --dataset "${DATASET}"
+python parakeet/wer_parakeet.py --model "${MODEL}" --dataset "${DATASET}"

@@ -31,4 +31,4 @@ python -c "import torch; print('torch:', torch.__version__, '| cuda:', torch.ver
 python -c "from qwen_asr import Qwen3ASRModel; print('qwen_asr: OK')"
 echo "=== END ENV CHECK ==="
 
-python task5_qwen3_asr/wer_qwen3.py --dataset "${DATASET}"
+python qwen3/wer_qwen3.py --dataset "${DATASET}"

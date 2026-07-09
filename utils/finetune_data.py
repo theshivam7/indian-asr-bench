@@ -4,7 +4,7 @@ Standard HuggingFace "Fine-Tune Whisper" recipe:
     - prepare_dataset: audio array -> log-mel input_features, Transcript -> label ids
     - DataCollatorSpeechSeq2SeqWithPadding: pad features + labels, mask pad tokens with -100
 
-Used by task6_whisper_medium_ft/finetune.py. Kept here so the training script stays thin,
+Used by finetune/finetune_medium.py. Kept here so the training script stays thin,
 matching the project's "logic lives in utils/" structure.
 """
 
@@ -63,7 +63,7 @@ def filter_tie_split(ds, has_duration_col: bool = True,
     are dropped rather than crashing the run.
 
     Returns a flatten_indices()-materialized dataset, ready for raw arrow audio access.
-    Shared by finetune.py and finetune_stepwise.py so both drop exactly the same clips.
+    Shared by finetune_medium.py and finetune_stepwise.py so both drop exactly the same clips.
     """
     n_before = len(ds)
     if has_duration_col:

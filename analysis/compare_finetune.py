@@ -6,16 +6,14 @@ One report per size (Tiny / Small / Medium), each comparing:
                  pipeline). Same engine, same decoding => the delta is the true FT gain.
     Secondary  : <size>_ft  vs  <size>       (the original openai-whisper number, for continuity).
 
-Medium additionally carries the multi-seed speaker-disjoint / size-matched-control study
-(Tiny/Small use the minimal protocol only — one official-split fine-tune each; see
-results/tie/analysis/findings_tiny_small_ft.md for why).
+Each size runs the same minimal protocol: one official-split fine-tune vs its own
+HF-pipeline pretrained baseline (see results/tie/analysis/findings_tiny_small_ft.md).
 
 Reads results/tie/stage2_processed/{mode}/wer_{model}_{mode}.csv
 (produced by normalize_and_score.py --dataset tie). Writes, per size:
     results/tie/analysis/finetune_comparison[_<size>].md
     results/tie/analysis/finetune_comparison[_<size>].png
     results/tie/analysis/finetune_wer_distribution[_<size>].png
-    results/tie/analysis/finetune_disjoint_forest[_<size>].png   (medium only, this phase)
 and once across all sizes:
     results/tie/analysis/finetune_capacity_summary.md / .csv
 
@@ -41,46 +39,20 @@ from analysis.statistics import _clip_errors, _holm, analyze
 # The fine-tuning study is TIE-only (Svarah is eval-only, not fine-tunable).
 DATASET = "tie"
 
-# Speaker-disjoint re-split FT, one entry per training seed (medium only this phase). A null
-# result from a single seed is not credible (FT seed variance ~ the effect size being denied),
-# so the study runs 3 seeds and reports the spread + a paired bootstrap CI.
-DISJOINT_SEEDS = {
-    "medium_ft_disjoint": 42,
-    "medium_ft_disjoint_s43": 43,
-    "medium_ft_disjoint_s44": 44,
-}
-# Size-matched (speaker-OVERLAPPING) control runs (medium only this phase): same clip count
-# as the disjoint train set, sampled at random from the full train split. Separates the
-# effect of the ~13x training-set shrinkage from the effect of speaker-disjointness itself.
-SIZEMATCH_SEEDS = {
-    "medium_ft_sizematch_s42": 42,
-    "medium_ft_sizematch_s43": 43,
-    "medium_ft_sizematch_s44": 44,
-}
-# Disjoint train-set size, printed by finetune.py's "[speaker-disjoint]" log
-# line and independently recomputed from the dataset's Metadata.csv
-# (2026-07-03), applying the same filters finetune.py applies (non-empty
-# transcript, <=30 s) BEFORE the speaker filter: removing the 280 test speakers
-# keeps 51/331 speakers, 567/7200 clips, 3.8/46.9 hours.
-DISJOINT_TRAIN = {"clips": 567, "clips_total": 7200, "speakers": 51,
-                  "speakers_total": 331, "hours": 3.8, "hours_total": 46.9}
-
-# One entry per model size. Tiny/Small run the minimal protocol (official-split FT vs its
-# own HF-pipeline pretrained baseline only); Medium keeps the full disjoint/size-matched
-# seed study. out_stem="finetune_comparison" for medium preserves the exact historical
-# filenames (finetune_comparison.md/.png, finetune_wer_distribution.png,
-# finetune_disjoint_forest.png) so this refactor reproduces medium's committed outputs
-# byte-for-byte (verify with `git diff` after regenerating).
+# One entry per model size, each running the same minimal protocol: one official-split
+# fine-tune vs its own HF-pipeline pretrained baseline. out_stem="finetune_comparison"
+# for medium preserves the historical filename (finetune_comparison.md/.png,
+# finetune_wer_distribution.png).
 FT_PAIRS = (
     dict(key="tiny", display_name="Whisper Tiny", params="39M",
          secondary="tiny", baseline="tiny_hf", finetuned="tiny_ft",
-         out_stem="finetune_comparison_tiny", disjoint={}, sizematch={}),
+         out_stem="finetune_comparison_tiny"),
     dict(key="small", display_name="Whisper Small", params="244M",
          secondary="small", baseline="small_hf", finetuned="small_ft",
-         out_stem="finetune_comparison_small", disjoint={}, sizematch={}),
+         out_stem="finetune_comparison_small"),
     dict(key="medium", display_name="Whisper Medium", params="769M",
          secondary="medium", baseline="medium_hf", finetuned="medium_ft",
-         out_stem="finetune_comparison", disjoint=DISJOINT_SEEDS, sizematch=SIZEMATCH_SEEDS),
+         out_stem="finetune_comparison"),
 )
 
 STAGE2_DIR = stage2_dir(DATASET)
@@ -163,8 +135,6 @@ def run_pair(pair: dict) -> dict:
     secondary = pair["secondary"]
     baseline = pair["baseline"]
     finetuned = pair["finetuned"]
-    disjoint_seeds = pair["disjoint"]
-    sizematch_seeds = pair["sizematch"]
     out_stem = pair["out_stem"]
     suffix = out_stem[len("finetune_comparison"):]   # "" for medium, "_tiny"/"_small" otherwise
 
@@ -190,7 +160,7 @@ def run_pair(pair: dict) -> dict:
 
     # --------------- 1. Corpus WER across all modes ---------------
     print("\n--- Corpus WER by mode ---")
-    all_ft_models = (secondary, baseline, finetuned, *disjoint_seeds, *sizematch_seeds)
+    all_ft_models = (secondary, baseline, finetuned)
     have = {m: {} for m in all_ft_models}
     for mode in MODES:
         for model in all_ft_models:
@@ -241,192 +211,6 @@ def run_pair(pair: dict) -> dict:
                 hf_baseline_wer=b, ft_wer=f, delta_pp=d, ci_lo_pp=lo, ci_hi_pp=hi,
                 p=p, n_clips=n, n_speakers=g,
             )
-
-    # --------------- 1b. Speaker-disjoint re-split fine-tune (multi-seed; medium only) ---------------
-    disjoint_present = [m for m in disjoint_seeds if have[m].get(PRIMARY_MODE) is not None]
-    sm_present = [m for m in sizematch_seeds if have[m].get(PRIMARY_MODE) is not None]
-    if disjoint_present:
-        dt = DISJOINT_TRAIN
-        lines += [
-            "## Speaker-disjoint re-split fine-tune (multi-seed)",
-            "",
-            "Same recipe as the headline fine-tune, but every train clip whose speaker also "
-            "appears in `test` is removed first (see `speaker_overlap.md`). Evaluated on the "
-            f"SAME test set as `{baseline}`, so any gain here cannot come from speaker "
-            "adaptation. Run with multiple training seeds: a null claim from one seed would "
-            "be indistinguishable from seed variance.",
-            "",
-            f"> **Training-set confound (disclosed)**: TIE_shorts' official test speakers are so "
-            f"entangled with train that removing them keeps only **{dt['clips']}/{dt['clips_total']} "
-            f"train clips ({dt['hours']}/{dt['hours_total']} h, {dt['speakers']}/{dt['speakers_total']} "
-            f"speakers)**. The disjoint runs therefore differ from the headline fine-tune in BOTH "
-            f"speaker overlap and training-set size (~13x smaller) — this dataset cannot support a "
-            f"size-matched speaker-disjoint split at all, which is itself an evaluation-validity "
-            f"finding. Any WER regression below must not be attributed to speaker-disjointness "
-            f"alone; see the size-matched control section "
-            + ("below for the separation." if sm_present else "(when run) for the separation."),
-            "",
-            f"| Seed | WER (`{PRIMARY_MODE}`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |",
-            "|------|:----:|:----:|:----:|:----:|:----:|",
-        ]
-        df_base_pm = load(baseline, PRIMARY_MODE)
-        diffs, halfwidths, pvals = [], [], []
-        seed_rows = []
-        for m in disjoint_present:
-            seed = disjoint_seeds[m]
-            wer_m = have[m][PRIMARY_MODE]
-            df_m = load(m, PRIMARY_MODE)
-            d, lo, hi, p, n, g = paired_speaker_bootstrap(df_base_pm, df_m)
-            diffs.append(d)
-            halfwidths.append((hi - lo) / 2)
-            pvals.append(p)
-            seed_rows.append((seed, wer_m, d, lo, hi, p, n, g))
-
-        p_holm = _holm(pvals) if len(pvals) > 1 else pvals
-        n_sig_holm = 0
-        for (seed, wer_m, d, lo, hi, p, n, g), ph in zip(seed_rows, p_holm):
-            sig = "" if lo <= 0 <= hi else " *"
-            if ph < 0.05:
-                n_sig_holm += 1
-            lines.append(f"| {seed} | {wer_m:.2f}% | {d:+.2f} pp | [{lo:+.2f}, {hi:+.2f}]{sig} | {p:.3f} | {ph:.3f} |")
-            print(f"  [disjoint s{seed}] wer={wer_m:.2f}%  diff={d:+.2f}pp  CI=[{lo:+.2f},{hi:+.2f}]  p={p:.3f}  p_holm={ph:.3f}  ({n} clips, {g} speakers)")
-        if len(disjoint_present) > 1:
-            lines.append("\n_\\* = uncorrected 95% CI excludes 0. Use the Holm-adjusted p (multiplicity-corrected "
-                          f"across these {len(disjoint_present)} seeds) for significance calls._")
-        lines.append("")
-
-        # Forest plot: per-seed delta vs pretrained with 95% speaker-clustered CIs,
-        # Holm-marked, with the minimum-detectable-effect band. The figure version of
-        # the seed table above (committed so the README can embed it).
-        mde_fig = float(np.mean(halfwidths))
-        fig, ax = plt.subplots(figsize=(6.4, 0.55 * len(seed_rows) + 1.6))
-        ys = np.arange(len(seed_rows))[::-1]
-        ax.axvspan(-mde_fig, mde_fig, color="#EEEEEE", zorder=0)
-        ax.axvline(0, color="#555555", linewidth=1.0, zorder=1)
-        for yi, (seed, wer_m, d, lo, hi, p, n, g), ph in zip(ys, seed_rows, p_holm):
-            sig = ph < 0.05
-            c = "#D55E00" if sig else "#0072B2"
-            ax.errorbar(d, yi, xerr=[[d - lo], [hi - d]], fmt="o", ms=7, color=c,
-                        ecolor=c, elinewidth=1.6, capsize=3.5, zorder=2)
-            ax.text(hi + 0.12, yi, f"p={ph:.3f}" + ("*" if sig else ""),
-                    fontsize=9, va="center", color=c)
-        ax.set_yticks(ys)
-        ax.set_yticklabels([f"seed {s}" for s, *_ in seed_rows])
-        ax.set_xlabel("Δ corpus WER vs. pretrained (pp) — 95% speaker-clustered bootstrap CI")
-        ax.text(-mde_fig + 0.06, ys[0] - 0.42, f"shaded: MDE ≈ {mde_fig:.1f} pp",
-                fontsize=8.5, ha="left", va="top", color="#666666")
-        ax.set_title(f"{display_name}: speaker-disjoint fine-tune per-seed effect (Holm-corrected)")
-        ax.grid(axis="x", alpha=0.3)
-        ax.set_xlim(left=min(-mde_fig - 0.4, min(r[3] for r in seed_rows) - 0.3),
-                    right=max(r[4] for r in seed_rows) + 1.2)
-        fig.tight_layout()
-        forest_path = os.path.join(ANALYSIS_DIR, f"finetune_disjoint_forest{suffix}.png")
-        fig.savefig(forest_path, dpi=150)
-        plt.close(fig)
-        print(f"  Saved chart: {forest_path}")
-
-        wers = [have[m][PRIMARY_MODE] for m in disjoint_present]
-        b = have[baseline][PRIMARY_MODE]
-        if len(disjoint_present) > 1:
-            lines += [
-                f"Across {len(disjoint_present)} seeds: WER {np.mean(wers):.2f}% "
-                f"(range {min(wers):.2f}–{max(wers):.2f}%), mean Δ vs pretrained "
-                f"{np.mean(diffs):+.2f} pp; seed-to-seed spread "
-                f"{max(wers) - min(wers):.2f} pp.",
-                "",
-            ]
-        mde = float(np.mean(halfwidths))
-        if n_sig_holm == 0:
-            lines += [
-                f"> **Minimum detectable effect**: the paired 95% CI half-width is ≈{mde:.2f} pp, "
-                f"so a true fine-tuning gain of ≥{mde:.2f} pp would have been detected. The "
-                f"observed differences ({', '.join(f'{d:+.2f}' for d in diffs)} pp) are within "
-                f"that resolution — the correct claim is *any residual gain is below "
-                f"≈{mde:.1f} pp*, not merely 'not significant'.",
-                "",
-            ]
-        else:
-            lines += [
-                f"> **Mixed result, not a clean null**: {n_sig_holm}/{len(disjoint_present)} seed(s) show a "
-                f"Holm-corrected significant WORSENING relative to pretrained (fine-tuning increases WER), "
-                f"while the remaining seed(s) fall within the ≈{mde:.2f} pp minimum detectable effect. "
-                f"The seed-to-seed spread ({max(wers) - min(wers):.2f} pp) is itself larger than the per-seed "
-                f"effect being estimated, so a single-seed run — including the checkpoint published as the "
-                f"'primary' disjoint model — is not representative of the study as a whole. The safe claim is: "
-                f"fine-tuning on the speaker-disjoint training subset ({DISJOINT_TRAIN['clips']} clips) shows "
-                f"no evidence of improving WER over pretrained, and at least one seed shows evidence of making "
-                f"it worse. Whether the worsening is caused by the disjointness or by the 13x-smaller training "
-                f"set is separated by the size-matched control below"
-                + ("." if sm_present else " (if run)."),
-                "",
-            ]
-
-        # ---- Size-matched speaker-overlapping control (separates size from disjointness) ----
-        if sm_present:
-            lines += [
-                "## Size-matched control (speaker-overlapping, multi-seed)",
-                "",
-                f"Same recipe and clip count as the disjoint runs ({DISJOINT_TRAIN['clips']} train clips), "
-                "but sampled at random from the FULL train split — speaker overlap with test is preserved. "
-                "If these runs regress like the disjoint runs, the disjoint regression is a small-training-set "
-                "effect; if they hold up, the disjointness itself is implicated.",
-                "",
-                f"| Seed | WER (`{PRIMARY_MODE}`) | Δ vs pretrained (paired, speaker-resampled) | 95% CI | p | p (Holm) |",
-                "|------|:----:|:----:|:----:|:----:|:----:|",
-            ]
-            sm_pvals, sm_rows = [], []
-            for m in sm_present:
-                d, lo, hi, p, n, g = paired_speaker_bootstrap(df_base_pm, load(m, PRIMARY_MODE))
-                sm_pvals.append(p)
-                sm_rows.append((sizematch_seeds[m], have[m][PRIMARY_MODE], d, lo, hi, p))
-            sm_holm = _holm(sm_pvals) if len(sm_pvals) > 1 else sm_pvals
-            for (seed, wer_m, d, lo, hi, p), ph in zip(sm_rows, sm_holm):
-                sig = "" if lo <= 0 <= hi else " *"
-                lines.append(f"| {seed} | {wer_m:.2f}% | {d:+.2f} pp | [{lo:+.2f}, {hi:+.2f}]{sig} | {p:.3f} | {ph:.3f} |")
-                print(f"  [sizematch s{seed}] wer={wer_m:.2f}%  diff={d:+.2f}pp  CI=[{lo:+.2f},{hi:+.2f}]  p={p:.3f}  p_holm={ph:.3f}")
-            lines.append("")
-
-            n_sig_sm = sum(1 for ph in sm_holm if ph < 0.05)
-            if n_sig_sm == 0 and n_sig_holm > 0:
-                lines += [
-                    f"> **Confound resolved**: all {len(sm_present)} size-matched seeds are statistically "
-                    f"indistinguishable from pretrained (0/{len(sm_present)} Holm-significant), while "
-                    f"{n_sig_holm}/{len(disjoint_present)} disjoint seed(s) regressed significantly. Since "
-                    f"both conditions train on the identical {DISJOINT_TRAIN['clips']}-clip count, training-set "
-                    f"size alone cannot explain the disjoint regression — **speaker-disjointness is the cause**, "
-                    f"not the smaller training set.",
-                    "",
-                ]
-            elif n_sig_sm > 0 and n_sig_holm > 0:
-                lines += [
-                    f"> **Size effect implicated**: {n_sig_sm}/{len(sm_present)} size-matched seed(s) also "
-                    f"regressed significantly despite preserving speaker overlap, so the small training-set "
-                    f"size (not disjointness alone) contributes to the disjoint-run regression.",
-                    "",
-                ]
-            elif n_sig_sm == 0 and n_sig_holm == 0:
-                lines += [
-                    "> **Inconclusive**: neither the disjoint nor the size-matched seeds show a "
-                    "Holm-significant effect vs pretrained — the study is underpowered to separate the "
-                    "two confounds at this seed count.",
-                    "",
-                ]
-            else:
-                lines += [
-                    f"> **Unexpected pattern**: {n_sig_sm}/{len(sm_present)} size-matched seed(s) regressed "
-                    f"significantly but no disjoint seed did — re-check the runs before drawing a causal "
-                    f"conclusion.",
-                    "",
-                ]
-        else:
-            lines += [
-                "_Size-matched control runs (`medium_ft_sizematch_s*`) not yet available — "
-                "submit `hpc/job_finetune_sizematch.pbs` (SEED=42/43/44) to separate the "
-                "training-set-size effect from the speaker-disjointness effect._",
-                "",
-            ]
-    elif disjoint_seeds:
-        print(f"  [SKIP] no {finetuned.rsplit('_ft', 1)[0]}_ft_disjoint results yet")
 
     # --------------- 2. Breakdowns (primary mode) ---------------
     df_base = load(baseline, PRIMARY_MODE)
@@ -539,7 +323,7 @@ def run_pair(pair: dict) -> dict:
         print(f"\n  Saved chart: {chart_path}")
 
         # --------------- 4b. WER distribution overlay (pretrained vs fine-tuned) ---------------
-        # Same idea as the professor's slide: % of utterances vs per-sample WER in 5% bins.
+        # % of utterances vs per-sample WER in 5% bins.
         # A leftward shift (more mass near 0%) = fine-tuning helps. WER>100% clipped to last bin.
         dist_bins = [i * 5 for i in range(21)]  # 0, 5, ..., 100
         fig, ax = plt.subplots(figsize=(9, 5))
@@ -570,14 +354,8 @@ def run_pair(pair: dict) -> dict:
         "  `openai-whisper` number is shown only as a continuity reference.",
         "- **Speaker overlap**: see `speaker_overlap.md`. If test speakers also appear in train, part of the",
         "  gain reflects speaker adaptation (disclosed, per the dataset's official splits).",
+        "",
     ]
-    if disjoint_seeds:
-        caveats += [
-            "- **Disjoint train-set size**: the speaker-disjoint runs train on 567 clips (3.8 h) vs the official",
-            "  split's 7200 (46.9 h, after the same duration/text filters) — speaker-disjointness and training-set",
-            "  size are confounded on this dataset by construction. The size-matched control isolates the size effect.",
-        ]
-    caveats.append("")
     lines += caveats
 
     report_path = os.path.join(ANALYSIS_DIR, f"{out_stem}.md")
@@ -598,16 +376,14 @@ if capacity_rows:
     cap_lines = [
         "# Fine-tuning capacity summary — Tiny / Small / Medium (official split)",
         "",
-        "One official-split fine-tune per model size (no disjoint/size-matched seeds — out of",
-        "scope for this minimal protocol; see the Medium-only sections in `finetune_comparison.md`",
-        "for that fuller study).",
+        "One official-split fine-tune per model size, each compared against its own",
+        "HF-pipeline pretrained baseline.",
         "",
         f"Holm-Bonferroni family = exactly these **{len(capacity_rows)} official-split FT-vs-HF",
-        "tests** (one per size) — deliberately kept separate from the headline cross-model pairwise",
-        "family in `statistics_pairwise_transcript_clean.csv` (that file is NOT regenerated by this",
-        "study; tiny/small joining the chart-model set would shift every existing pair's Holm p-value,",
-        "so regeneration is deferred to the README/paper-update phase — see the findings report) and",
-        "separate from Medium's own disjoint/size-matched seed families above.",
+        "tests** (one per size) — kept separate from the headline cross-model pairwise family in",
+        "`statistics_pairwise_transcript_clean.csv` (that family covers PRETRAINED models only;",
+        "the fine-tuned variants run through a different decoding engine, so mixing them in would",
+        "confound fine-tuning with an engine change — see `analysis/statistics.py`).",
         "",
         "| Size | Params | Pretrained (openai) | HF baseline | Fine-tuned | Δ (paired, speaker-clustered) | 95% CI | p | p (Holm) | n clips | n speakers |",
         "|------|:------:|:--------------------:|:-----------:|:----------:|:-----------------------------:|:------:|:-:|:--------:|:-------:|:----------:|",

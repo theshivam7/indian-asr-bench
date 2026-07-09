@@ -31,38 +31,20 @@ PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup       # also create mis
 ```
 
 Without `--phase`, the submitter only submits **phase 1** (see `hpc/NSCC_RUNBOOK.md` for the
-phased 1/2/3 submission flow, and the `--after <job_id>` flag for chaining phases you submit
-separately). Two additional phases cover the fine-tuning replicates:
-
-- `--phase seeds` — disjoint-FT seed replicates 43/44 (`job_finetune_disjoint_seed.pbs` ×2)
-  plus ONE chained `job_score.pbs` rescore after both (avoids racing on shared Stage-2/3 files).
-- `--phase sizematch` — the **size-matched speaker-overlapping control** (`job_finetune_sizematch.pbs`
-  ×3, seeds 42/43/44, 567 random train clips each) plus one chained rescore. This is the control
-  that separates the training-set-size effect from the speaker-disjointness effect (the disjoint
-  filter leaves only 567/7200 clips, so the two are confounded in the disjoint runs).
+phased 1/2 submission flow, and the `--after <job_id>` flag for chaining phases you submit
+separately).
 
 Dependency graph (`-->` = PBS `afterok`):
 
 ```
 job_new_models_tie ──┐              (GPU ~5h)   writes results/tie
                      ├─> job_figures (CPU)      writes paper/figures
-job_svarah ──────────┘   ^          (GPU ~10h)  writes results/svarah
-     │                   │
-job_finetune_disjoint ───┘          (GPU ~10h)  writes results/tie (rescore)
-     (afterok job_new_models_tie)
-
-job_finetune_disjoint_seed (SEED=43) ─┐
-job_finetune_disjoint_seed (SEED=44) ─┴─> job_score (CPU rescore, afterok both)
-
-job_finetune_sizematch (SEED=42) ─┐
-job_finetune_sizematch (SEED=43) ─┼─> job_score (CPU rescore, afterok all three)
-job_finetune_sizematch (SEED=44) ─┘
+job_svarah ──────────┘              (GPU ~10h)  writes results/svarah
 ```
 
-TIE-new-models and Svarah run **in parallel** (disjoint result dirs); the disjoint
-fine-tune is serialized after the TIE job (both rescore `results/tie`); a final CPU
-figures job rebuilds the cross-dataset plots once everything is done. To submit a
-single phase on its own (e.g. only Svarah), use `--phase 1|2|3` instead of `all`.
+TIE-new-models and Svarah run **in parallel** (separate result dirs); a final CPU
+figures job rebuilds the cross-dataset plots once both are done. To submit a
+single phase on its own, use `--phase 1|2` instead of `all`.
 
 ## Environments
 
@@ -71,7 +53,7 @@ single phase on its own (e.g. only Svarah), use `--phase 1|2|3` instead of `all`
 | `whisper` | `environments/whisper.yaml` | Whisper inference **+ all CPU scoring/analysis/figures** (has `whisper_normalizer`) |
 | `parakeet` | `environments/parakeet.yaml` | Parakeet-TDT / Parakeet-CTC (NeMo) |
 | `qwen3` | `environments/qwen3.yaml` | Qwen3-ASR |
-| `whisper_medium_ft` | `bash task6_whisper_medium_ft/setup.sh` | fine-tuning (HF `transformers`, `datasets==4.8.5`) |
+| `whisper_medium_ft` | `bash finetune/setup.sh` | fine-tuning (HF `transformers`, `datasets==4.8.5`) |
 
 ## Individual jobs
 
@@ -86,12 +68,7 @@ qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full f
 
 Bundled multi-step jobs: `job_new_models_tie.pbs` (turbo + parakeet_ctc on TIE,
 then rescore + analyse), `job_svarah.pbs` (all 7 models on Svarah → Stage 2/3 +
-NEER), `job_finetune_disjoint.pbs` (speaker-disjoint fine-tune → transcribe →
-rescore → FT report), `job_finetune_disjoint_seed.pbs` (one extra disjoint seed,
-`-v SEED=43|44`; scoring deferred), `job_finetune_sizematch.pbs` (size-matched
-control, `-v SEED=42|43|44`; scoring deferred), `job_score_disjoint_seed42.pbs`
-(one-off: transcribe + score an existing seed-42 disjoint checkpoint without
-retraining).
+NEER), `job_finetune_size.pbs` (Tiny/Small capacity-study fine-tune, `-v SIZE=tiny|small`).
 
 ## Fine-tuning (standalone)
 
@@ -100,15 +77,13 @@ JOBID=$(qsub -P <id> hpc/job_finetune.pbs)                  # Stage 0: train →
 qsub -P <id> -W depend=afterok:$JOBID hpc/job_medium_ft.pbs # Stage 1+2+3: transcribe test, WER, analysis
 ```
 
-Overridable training knobs: `FT_EPOCHS`, `FT_BATCH`, `FT_GRAD_ACCUM`, `FT_LR`,
-`FT_PATIENCE`; `FT_SPEAKER_DISJOINT=1` + `FT_OUTPUT_DIR=...` for the disjoint variant;
-`FT_SIZE_MATCHED=567` + `FT_SEED=<s>` for the size-matched control.
+Overridable training knobs: `FT_EPOCHS`, `FT_BATCH`, `FT_GRAD_ACCUM`, `FT_LR`, `FT_PATIENCE`.
 
 ## Notes
 
-- **Reuse over recompute:** the 7 original TIE raw transcripts are committed, so you
-  normally only need `job_new_models_tie` (2 new models) + `job_svarah` + the disjoint
-  FT — not a full re-run. After a pure normalization/metric change, `job_score.pbs`
+- **Reuse over recompute:** the raw TIE/Svarah transcripts are committed, so you
+  normally only need `job_new_models_tie` (2 new models) + `job_svarah` — not a
+  full re-run. After a pure normalization/metric change, `job_score.pbs`
   (CPU) recomputes everything from the committed transcripts with no GPU.
 - Scripts are resumable — re-submitting picks up from the last checkpoint.
 
