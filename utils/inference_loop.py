@@ -20,6 +20,7 @@ import inspect
 import os
 import signal
 import sys
+import time
 
 import pandas as pd
 from tqdm import tqdm
@@ -77,6 +78,9 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
     rows = state["rows"]
 
     print(f"--- {spec.display} [{split}] : {len(ds)} samples, model={model_key} ---")
+    t_start = time.monotonic()
+    n_fresh = 0
+    fresh_audio_seconds = 0.0
     for idx, sample in enumerate(tqdm(ds_iter, desc=f"{dataset_key}:{model_key}")):
         transcript = str(sample.get(spec.gold_ref_col) or "").strip()
         if not transcript:
@@ -84,17 +88,32 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
         sid = sample_id(sample, spec)
         if sid in completed:
             hyp_raw = str(ckpt_map.get(sid, {}).get("hypothesis_raw") or "")
-        elif callback_takes_raw_audio:
-            hyp_raw = transcribe_one(sample, raw_audio[idx].as_py())
         else:
-            hyp_raw = transcribe_one(sample)
+            if callback_takes_raw_audio:
+                hyp_raw = transcribe_one(sample, raw_audio[idx].as_py())
+            else:
+                hyp_raw = transcribe_one(sample)
+            n_fresh += 1
+            if spec.duration_col:
+                fresh_audio_seconds += float(sample.get(spec.duration_col) or 0.0)
         rows.append(build_sample_row(sample, sid, transcript, hyp_raw, spec=spec, split=split))
         if len(rows) % checkpoint_every == 0:
             save_checkpoint(rows, model_key, dataset_key)
 
+    # Wall-time over freshly transcribed clips only (resumed clips cost ~nothing), so
+    # elapsed/audio gives a meaningful inverse real-time factor for this run's hardware.
+    elapsed = time.monotonic() - t_start
+    timing = {
+        "elapsed_seconds": round(elapsed, 1),
+        "clips_transcribed_this_run": n_fresh,
+        "audio_seconds_this_run": round(fresh_audio_seconds, 1),
+    }
+    if n_fresh and fresh_audio_seconds:
+        timing["seconds_per_audio_second"] = round(elapsed / fresh_audio_seconds, 4)
+
     out_path = os.path.join(out_dir, f"wer_{model_key}_raw.csv")
     pd.DataFrame(rows).to_csv(out_path, index=False)
-    manifest = write_run_manifest(model_key, dataset_key, spec, extra=manifest_extra)
+    manifest = write_run_manifest(model_key, dataset_key, spec, extra={**timing, **(manifest_extra or {})})
     print(f"\nSaved: {out_path}  ({len(rows)} samples)")
     print(f"Manifest: {manifest}")
     print("Run 'python normalize_and_score.py --dataset %s' for scoring." % dataset_key)

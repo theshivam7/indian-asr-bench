@@ -122,7 +122,7 @@ def main() -> None:
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[finetune_stepwise] base_model={args.base_model} out={args.output_dir} device={device}")
+    print(f"[finetune_tiny_small] base_model={args.base_model} out={args.output_dir} device={device}")
 
     processor = WhisperProcessor.from_pretrained(
         args.base_model, language="English", task="transcribe"

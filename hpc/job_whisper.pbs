@@ -35,7 +35,7 @@ export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 
 # Fixed 2026-07-08: a broken/CPU-fallback env never crashes the job — it silently produces
 # an all-empty-hypothesis, near-100%-WER transcript CSV that "completes successfully". Fail
-# fast instead (same guard as hpc/job_finetune_sizematch.pbs).
+# fast instead (same guard as hpc/job_finetune_size.pbs).
 echo "--- GPU / CUDA diagnostics (${MODEL} on ${DATASET}) ---"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
 python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok); sys.exit(0 if ok else 1)" \
