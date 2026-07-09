@@ -21,9 +21,9 @@ Corpus WER on all common clips vs. excluding consensus-artifact clips (`wer_adju
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | base | Whisper Base | 14.53 | 14.19 | 0.34 | 13.32 | 6656 | 6617 |
 | medium | Whisper Medium | 7.89 | 7.61 | 0.29 | 7.27 | 6656 | 6617 |
-| large | Whisper Large | 7.11 | 6.79 | 0.32 | 6.59 | 6656 | 6617 |
+| large | Whisper Large-v3 | 7.11 | 6.79 | 0.32 | 6.59 | 6656 | 6617 |
 | large_v3_turbo | Whisper large-v3-turbo | 8.1 | 7.77 | 0.33 | 7.5 | 6656 | 6617 |
-| parakeet | Parakeet-TDT-0.6B | 11.73 | 11.38 | 0.35 | 11.11 | 6656 | 6617 |
+| parakeet | Parakeet-TDT-0.6B-v2 | 11.73 | 11.38 | 0.35 | 11.11 | 6656 | 6617 |
 | parakeet_ctc | Parakeet-CTC-1.1B | 15.65 | 15.29 | 0.36 | 14.84 | 6656 | 6617 |
 | qwen3 | Qwen3-ASR-1.7B | 11.82 | 11.47 | 0.34 | 11.54 | 6656 | 6617 |
 

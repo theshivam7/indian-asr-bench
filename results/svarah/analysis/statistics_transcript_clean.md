@@ -4,10 +4,10 @@ Corpus WER with 95% bootstrap CI: 2000 resamples, seed 42, N=6656 clips, resampl
 
 | Model | Corpus WER % | CI low | CI high | ±pp |
 | --- | --- | --- | --- | --- |
-| Whisper Large | 7.11 | 6.63 | 7.59 | 0.48 |
+| Whisper Large-v3 | 7.11 | 6.63 | 7.59 | 0.48 |
 | Whisper Medium | 7.89 | 7.45 | 8.39 | 0.47 |
 | Whisper large-v3-turbo | 8.1 | 7.59 | 8.67 | 0.54 |
-| Parakeet-TDT-0.6B | 11.73 | 11.1 | 12.39 | 0.65 |
+| Parakeet-TDT-0.6B-v2 | 11.73 | 11.1 | 12.39 | 0.65 |
 | Qwen3-ASR-1.7B | 11.82 | 11.11 | 12.53 | 0.71 |
 | Whisper Base | 14.53 | 13.81 | 15.29 | 0.74 |
 | Parakeet-CTC-1.1B | 15.65 | 14.86 | 16.46 | 0.8 |

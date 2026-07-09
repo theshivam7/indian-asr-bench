@@ -98,32 +98,18 @@ MODEL_SPECS = (
     ModelSpec("base",   "Whisper Base",   "openai_whisper", "base",   "whisper", "enc_dec",    "74M",   "#0072B2", 10),
     ModelSpec("small",  "Whisper Small",  "openai_whisper", "small",  "whisper", "enc_dec",    "244M",  "#F0E442", 15),
     ModelSpec("medium", "Whisper Medium", "openai_whisper", "medium", "whisper", "enc_dec",    "769M",  "#E69F00", 20),
-    ModelSpec("large",  "Whisper Large",  "openai_whisper", "large",  "whisper", "enc_dec",    "1.5B",  "#009E73", 30),
+    # model_id is explicit "large-v3" rather than the "large" alias: functionally identical
+    # (openai-whisper's "large" alias resolves to large-v3 as of the pinned package version),
+    # but explicit is more robust against the alias target changing in a future release.
+    ModelSpec("large",  "Whisper Large-v3",  "openai_whisper", "large-v3",  "whisper", "enc_dec",    "1.5B",  "#009E73", 30),
     ModelSpec("large_v3_turbo", "Whisper large-v3-turbo", "openai_whisper", "turbo", "whisper", "enc_dec", "809M", "#56B4E9", 35),
-    ModelSpec("parakeet",     "Parakeet-TDT-0.6B", "nemo_tdt", "nvidia/parakeet-tdt-0.6b-v2", "parakeet", "transducer", "600M",  "#D55E00", 40),
+    ModelSpec("parakeet",     "Parakeet-TDT-0.6B-v2", "nemo_tdt", "nvidia/parakeet-tdt-0.6b-v2", "parakeet", "transducer", "600M",  "#D55E00", 40),
     ModelSpec("parakeet_ctc", "Parakeet-CTC-1.1B", "nemo_ctc", "nvidia/parakeet-ctc-1.1b",    "parakeet", "ctc",        "1.1B",  "#882255", 45),
     ModelSpec("qwen3",  "Qwen3-ASR-1.7B", "qwen", "Qwen/Qwen3-ASR-1.7B", "qwen3", "llm", "1.7B", "#CC79A7", 50),
     # --- Fine-tuning study variants (TIE-only, excluded from headline charts) ---
     ModelSpec("medium_hf", "Whisper Medium (HF)", "hf_whisper", "openai/whisper-medium", "whisper_medium_ft", "enc_dec", "769M", "#E69F00", 60, chart=False, tie_only=True),
     ModelSpec("medium_ft", "Whisper Medium (FT)", "hf_whisper", "models/whisper_medium_ft", "whisper_medium_ft", "enc_dec", "769M", "#B07200", 70, chart=False, tie_only=True),
-    ModelSpec("medium_ft_disjoint", "Whisper Medium (FT, speaker-disjoint)", "hf_whisper", "models/whisper_medium_ft_disjoint", "whisper_medium_ft", "enc_dec", "769M", "#7A4E00", 80, chart=False, tie_only=True),
-    # Seed replicates of the disjoint FT (seeds 43/44; the entry above is seed 42). The
-    # null result ("FT gains vanish once speaker leakage is removed") is only credible if
-    # it is stable across training seeds — Whisper FT seed variance is the same order as
-    # the effect being denied. Excluded from charts; aggregated in compare_finetune.py.
-    ModelSpec("medium_ft_disjoint_s43", "Whisper Medium (FT, disjoint, seed 43)", "hf_whisper", "models/whisper_medium_ft_disjoint_s43", "whisper_medium_ft", "enc_dec", "769M", "#6B4400", 81, chart=False, tie_only=True),
-    ModelSpec("medium_ft_disjoint_s44", "Whisper Medium (FT, disjoint, seed 44)", "hf_whisper", "models/whisper_medium_ft_disjoint_s44", "whisper_medium_ft", "enc_dec", "769M", "#5C3A00", 82, chart=False, tie_only=True),
-    # Size-matched control for the disjoint study. Removing the 280 test speakers
-    # leaves only 567/7200 train clips (3.8/46.9 h, after the duration/text
-    # filters), so the disjoint comparison confounds speaker-disjointness with a
-    # ~13x smaller training set. This control
-    # fine-tunes on an equally sized RANDOM (speaker-overlapping) train subset:
-    # if it regresses like the disjoint runs, the regression is a small-data
-    # effect; if it holds up, the disjointness itself is implicated.
-    ModelSpec("medium_ft_sizematch_s42", "Whisper Medium (FT, size-matched ctrl, seed 42)", "hf_whisper", "models/whisper_medium_ft_sizematch_s42", "whisper_medium_ft", "enc_dec", "769M", "#4D3000", 83, chart=False, tie_only=True),
-    ModelSpec("medium_ft_sizematch_s43", "Whisper Medium (FT, size-matched ctrl, seed 43)", "hf_whisper", "models/whisper_medium_ft_sizematch_s43", "whisper_medium_ft", "enc_dec", "769M", "#3E2700", 84, chart=False, tie_only=True),
-    ModelSpec("medium_ft_sizematch_s44", "Whisper Medium (FT, size-matched ctrl, seed 44)", "hf_whisper", "models/whisper_medium_ft_sizematch_s44", "whisper_medium_ft", "enc_dec", "769M", "#2F1E00", 85, chart=False, tie_only=True),
-    # --- Capacity study: Tiny/Small fine-tuning (professor's follow-up; see
+    # --- Capacity study: Tiny/Small fine-tuning (follow-up to the Medium null result; see
     # results/tie/analysis/findings_tiny_small_ft.md). Official-split only, no
     # disjoint/size-matched seeds (out of scope for this minimal protocol). ---
     ModelSpec("tiny_hf",  "Whisper Tiny (HF)",  "hf_whisper", "openai/whisper-tiny",     "whisper_medium_ft", "enc_dec", "39M",  "#4D4D4D", 90, chart=False, tie_only=True),

@@ -41,6 +41,6 @@ mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" "${WORKDIR}/models"
 
 cd "${WORKDIR}"
 
-# Optional training overrides (defaults in finetune.py):
+# Optional training overrides (defaults in finetune_medium.py):
 #   export FT_EPOCHS=10 FT_BATCH=8 FT_GRAD_ACCUM=2 FT_LR=1e-5 FT_PATIENCE=2
-python task6_whisper_medium_ft/finetune.py
+python finetune/finetune_medium.py

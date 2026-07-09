@@ -16,8 +16,8 @@ librosa==0.11.0             # resampling for the same tools (not needed for scor
 #   pip install spacy && python -m spacy download en_core_web_sm
 
 # For Stage 1 (ASR transcription), see per-engine requirements / conda specs:
-#   task_whisper/requirements.txt            — Whisper base / medium / large / large-v3-turbo
-#   task4_parakeet/requirements.txt          — Parakeet-TDT-0.6B-v2 + Parakeet-CTC-1.1B
-#   task5_qwen3_asr/requirements.txt         — Qwen3-ASR-1.7B
-#   task6_whisper_medium_ft/requirements.txt — Whisper Medium fine-tuning (HF transformers)
+#   whisper_asr/requirements.txt            — Whisper base / medium / large / large-v3-turbo
+#   parakeet/requirements.txt          — Parakeet-TDT-0.6B-v2 + Parakeet-CTC-1.1B
+#   qwen3/requirements.txt         — Qwen3-ASR-1.7B
+#   finetune/requirements.txt — Whisper Medium fine-tuning (HF transformers)
 #   environments/{whisper,parakeet,qwen3}.yaml — reproducible conda envs

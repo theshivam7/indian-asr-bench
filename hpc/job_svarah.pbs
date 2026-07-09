@@ -49,7 +49,7 @@ python scripts/smoke_test.py --dataset svarah \
 
 for M in base medium large large_v3_turbo; do
   echo -e "\n=== Svarah Stage 1: whisper ${M} ==="
-  python task_whisper/run_whisper.py --model "${M}" --dataset svarah
+  python whisper_asr/run_whisper.py --model "${M}" --dataset svarah
 done
 
 # Stage 1 — Parakeet TDT + CTC (parakeet env)
@@ -57,14 +57,14 @@ conda activate "${PARAKEET_ENV}"
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 for M in parakeet parakeet_ctc; do
   echo -e "\n=== Svarah Stage 1: ${M} ==="
-  python task4_parakeet/wer_parakeet.py --model "${M}" --dataset svarah
+  python parakeet/wer_parakeet.py --model "${M}" --dataset svarah
 done
 
 # Stage 1 — Qwen3 (qwen3 env)
 conda activate "${QWEN3_ENV}"
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 echo -e "\n=== Svarah Stage 1: qwen3 ==="
-python task5_qwen3_asr/wer_qwen3.py --dataset svarah
+python qwen3/wer_qwen3.py --dataset svarah
 
 # Stage 2 + 3 (CPU; whisper env has pandas/jiwer/matplotlib + whisper_normalizer)
 conda activate "${WHISPER_ENV}"

@@ -43,15 +43,15 @@ source $(conda info --base)/etc/profile.d/conda.sh
 conda env create -p $SCRATCH/envs/whisper      -f environments/whisper.yaml    # if absent
 conda env create -p $SCRATCH/envs/parakeet_env -f environments/parakeet.yaml   # if absent
 conda env create -p $SCRATCH/envs/qwen3_env    -f environments/qwen3.yaml      # if absent
-bash task6_whisper_medium_ft/setup.sh whisper_medium_ft                        # if absent
+bash finetune/setup.sh whisper_medium_ft                        # if absent
 # ensure the scoring env has the Whisper normalizer:
 conda run -p $SCRATCH/envs/whisper pip install whisper_normalizer==0.1.0
 ```
 
-## 1. Submit in 3 phases (one GPU job at a time)
+## 1. Submit in phases (one GPU job at a time)
 
 Each phase is a single GPU job. Submit a phase, wait for it to finish
-(`qstat -u $USER`), then submit the next. Result dirs are disjoint per phase, so
+(`qstat -u $USER`), then submit the next. Result dirs are separate per phase, so
 nothing clobbers anything.
 
 ```bash
@@ -64,38 +64,18 @@ bash hpc/submit_all.sh --phase 1
 
 # Phase 2 — Svarah full 7-model benchmark, ~10h (largest download → scratch cache).
 bash hpc/submit_all.sh --phase 2
-
-# Phase 3 — speaker-disjoint fine-tune (~10h) + final combined figures.
-bash hpc/submit_all.sh --phase 3
 ```
 
 Prefer to fire everything at once (queue permitting)? `bash hpc/submit_all.sh --phase all`
-submits all three with correct `afterok` chaining (Svarah parallel to phase 1;
-disjoint FT after phase 1; figures last).
+submits both with correct `afterok` chaining and runs the combined figures job last.
 
-Submitted phases 1 and 2 separately and want phase 3 queued now instead of
-waiting for phase 1 to finish? Chain it explicitly with `--after <phase1_job_id>`
-(PBS holds it until phase 1 exits successfully, then releases it automatically):
+The script auto-forwards the scratch paths (`HF_CACHE`, `FT_OUTPUT_DIR`) and your
+env locations to every job, and prints the job IDs.
 
-```bash
-bash hpc/submit_all.sh --phase 3 --after 14763802   # job id from phase 1's output
-```
-
-The script auto-forwards the scratch paths (`HF_CACHE`, `FT_OUTPUT_DIR`,
-`FT_DISJOINT_OUTPUT`, `FT_SIZEMATCH_OUTPUT`) and your env locations to every job,
-and prints the job IDs.
-
-Two follow-up phases for the fine-tuning study:
-
-```bash
-# Disjoint-FT seed replicates 43/44 (parallel) + one chained rescore:
-bash hpc/submit_all.sh --phase seeds
-
-# Size-matched speaker-overlapping control (seeds 42/43/44, ~2.5h each, parallel)
-# + one chained rescore. Separates the train-size effect from the disjointness
-# effect (the disjoint filter keeps only 567/7200 train clips):
-bash hpc/submit_all.sh --phase sizematch
-```
+Fine-tuning (Whisper Medium official split, and the Tiny/Small capacity study) is
+submitted separately — see [Fine-tuning (standalone)](README.md#fine-tuning-standalone)
+in the main HPC README, and `hpc/job_finetune_size.pbs` (`-v SIZE=tiny|small`) for
+the capacity study.
 
 ## 2. After the jobs finish
 

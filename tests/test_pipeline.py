@@ -120,7 +120,11 @@ def test_dataset_modes_reference_valid_roles():
 # Regression gate — committed headline corpus-WER values (transcript_clean).
 # Skips gracefully if Stage 2 outputs aren't present.
 # --------------------------------------------------------------------------- #
-EXPECTED_TIE_WER = {"base": 17.53, "medium": 14.76, "large": 15.93, "parakeet": 15.60, "qwen3": 16.66}
+EXPECTED_TIE_WER = {
+    "base": 17.53, "medium": 14.76, "large": 15.93, "parakeet": 15.60, "qwen3": 16.66,
+    "tiny": 19.43, "tiny_hf": 22.10, "tiny_ft": 19.14,
+    "small": 16.05, "small_hf": 17.38, "small_ft": 16.21,
+}
 
 def test_committed_tie_numbers_regression():
     import pandas as pd
