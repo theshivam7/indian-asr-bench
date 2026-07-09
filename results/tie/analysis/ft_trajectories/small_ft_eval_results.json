@@ -1,0 +1,10 @@
+{
+  "eval_wer": 0.1682436886803428,
+  "output_dir": "models/whisper_small_ft",
+  "base_model": "openai/whisper-small",
+  "max_steps": 2000,
+  "lr": 1e-05,
+  "batch_size": 8,
+  "grad_accum": 4,
+  "effective_batch": 32
+}
