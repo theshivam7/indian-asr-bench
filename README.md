@@ -11,6 +11,12 @@
   <a href="https://huggingface.co/datasets/ai4bharat/Svarah">
     <img src="https://img.shields.io/badge/Dataset-Svarah-yellow?logo=huggingface" />
   </a>
+  <a href="https://huggingface.co/theshivam7/whisper-tiny-indian-english">
+    <img src="https://img.shields.io/badge/Model-whisper--tiny--indian--english-yellow?logo=huggingface" />
+  </a>
+  <a href="https://huggingface.co/theshivam7/whisper-small-indian-english">
+    <img src="https://img.shields.io/badge/Model-whisper--small--indian--english-yellow?logo=huggingface" />
+  </a>
   <a href="https://huggingface.co/theshivam7/whisper-medium-indian-english">
     <img src="https://img.shields.io/badge/Model-whisper--medium--indian--english-yellow?logo=huggingface" />
   </a>
@@ -91,11 +97,11 @@ Any normalization or metric change re-runs Stage 2/3 straight from the committed
 | **Parakeet-TDT-0.6B-v2** | 600M | CTC + TDT | [nvidia/parakeet-tdt-0.6b-v2](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) |
 | **Parakeet-CTC-1.1B** | 1.1B | CTC | [nvidia/parakeet-ctc-1.1b](https://huggingface.co/nvidia/parakeet-ctc-1.1b) |
 | **Qwen3-ASR-1.7B** | 1.7B | LLM-based | [Qwen/Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) |
-| **Whisper Tiny (fine-tuned)** | 39M | Encoder-Decoder | `models/whisper_tiny_ft` (*this project* — local checkpoint, not published) |
-| **Whisper Small (fine-tuned)** | 244M | Encoder-Decoder | `models/whisper_small_ft` (*this project* — local checkpoint, not published) |
+| **Whisper Tiny (fine-tuned)** | 39M | Encoder-Decoder | [theshivam7/whisper-tiny-indian-english](https://huggingface.co/theshivam7/whisper-tiny-indian-english) (*this project*) |
+| **Whisper Small (fine-tuned)** | 244M | Encoder-Decoder | [theshivam7/whisper-small-indian-english](https://huggingface.co/theshivam7/whisper-small-indian-english) (*this project*) |
 | **Whisper Medium (fine-tuned)** | 769M | Encoder-Decoder | [theshivam7/whisper-medium-indian-english](https://huggingface.co/theshivam7/whisper-medium-indian-english) (*this project*) |
 
-All nine pretrained models are evaluated as-is, on **both** datasets — this is the headline benchmark. (Whisper Tiny/Small and large-v3-turbo/Parakeet-CTC were added on a rolling basis during the study; every model now has full coverage on both TIE_shorts and Svarah.) Fine-tuning is TIE-only and analyzed separately in [Fine-tuning](#fine-tuning-pretrained-vs-fine-tuned-across-sizes); Tiny/Small fine-tuned checkpoints are local-only (not published to the HF Hub), so only the Medium fine-tune has a public link above.
+All nine pretrained models are evaluated as-is, on **both** datasets — this is the headline benchmark. (Whisper Tiny/Small and large-v3-turbo/Parakeet-CTC were added on a rolling basis during the study; every model now has full coverage on both TIE_shorts and Svarah.) Fine-tuning is TIE-only and analyzed separately in [Fine-tuning](#fine-tuning-pretrained-vs-fine-tuned-across-sizes); all three fine-tuned checkpoints are published to the HF Hub.
 
 ---
 
