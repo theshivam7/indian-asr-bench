@@ -4,9 +4,9 @@
 
 | model | display | transcript_raw | transcript_clean | whisper_norm | CER_primary |
 | --- | --- | --- | --- | --- | --- |
-| tiny | Whisper Tiny | N/A | N/A | N/A | N/A |
+| tiny | Whisper Tiny | 20.33 | 19.96 | 19.52 | 11.08 |
 | base | Whisper Base | 14.88 | 14.53 | 14.37 | 7.78 |
-| small | Whisper Small | N/A | N/A | N/A | N/A |
+| small | Whisper Small | 10.4 | 10.06 | 9.91 | 5.29 |
 | medium | Whisper Medium | 8.18 | 7.89 | 7.69 | 4.15 |
 | large | Whisper Large-v3 | 7.49 | 7.11 | 6.8 | 3.78 |
 | large_v3_turbo | Whisper large-v3-turbo | 8.32 | 8.1 | 7.76 | 4.27 |

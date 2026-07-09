@@ -9,8 +9,12 @@ medium,F,12.05,58
 medium,M,14.92,927
 large,F,12.46,58
 large,M,16.14,927
+large_v3_turbo,F,15.89,58
+large_v3_turbo,M,18.1,927
 parakeet,F,11.78,58
 parakeet,M,15.83,927
+parakeet_ctc,F,12.02,58
+parakeet_ctc,M,16.71,927
 qwen3,F,14.05,58
 qwen3,M,16.82,927
 medium_hf,F,19.08,58

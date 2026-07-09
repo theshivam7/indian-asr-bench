@@ -9,9 +9,9 @@
 | small | Whisper Small | 16.44 | 16.05 | 19.2 | 16.96 | 15.8 | 10.83 |
 | medium | Whisper Medium | 15.11 | 14.76 | 18.01 | 15.76 | 14.48 | 10.14 |
 | large | Whisper Large-v3 | 16.31 | 15.93 | 19.14 | 16.94 | 15.76 | 11.2 |
-| large_v3_turbo | Whisper large-v3-turbo | N/A | N/A | N/A | N/A | N/A | N/A |
+| large_v3_turbo | Whisper large-v3-turbo | 18.35 | 17.98 | 21.1 | 18.91 | 17.75 | 12.93 |
 | parakeet | Parakeet-TDT-0.6B-v2 | 15.97 | 15.6 | 18.54 | 16.4 | 15.17 | 10.21 |
-| parakeet_ctc | Parakeet-CTC-1.1B | N/A | N/A | N/A | N/A | N/A | N/A |
+| parakeet_ctc | Parakeet-CTC-1.1B | 18.53 | 16.45 | 17.15 | 16.98 | 16.19 | 10.34 |
 | qwen3 | Qwen3-ASR-1.7B | 18.15 | 16.66 | 17.99 | 17.61 | 15.4 | 10.45 |
 | medium_hf | Whisper Medium (HF) | 14.75 | 14.42 | 17.72 | 15.51 | 14.23 | 10.06 |
 | medium_ft | Whisper Medium (FT) | 14.71 | 14.61 | 17.7 | 15.7 | 14.31 | 10.25 |
@@ -24,6 +24,6 @@
 
 - **transcript_raw**: Whisper Medium (FT) (14.71%)
 - **transcript_clean**: Whisper Medium (HF) (14.42%)
-- **hf_raw**: Whisper Medium (FT) (17.70%)
+- **hf_raw**: Parakeet-CTC-1.1B (17.15%)
 - **hf_clean**: Whisper Medium (HF) (15.51%)
 - **whisper_norm**: Whisper Medium (HF) (14.23%)

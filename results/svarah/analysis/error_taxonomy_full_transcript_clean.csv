@@ -1,5 +1,5 @@
 category,n_clips,share_pct,share_ci_lo,share_ci_hi,mean_recall,mean_ratio,mean_wer
-clip_over_run,14,0.2,0.1,0.4,0.96,1.79,0.889
-content_mismatch,25,0.4,0.3,0.6,0.29,0.86,0.84
-short_ref,1530,23.0,22.0,24.0,0.74,1.11,0.374
-unflagged,5087,76.4,75.4,77.4,0.93,1.01,0.099
+clip_over_run,11,0.2,0.1,0.3,0.96,1.84,0.934
+content_mismatch,29,0.4,0.3,0.6,0.28,0.89,0.87
+short_ref,1530,23.0,22.0,24.0,0.74,1.16,0.435
+unflagged,5086,76.4,75.4,77.4,0.92,1.01,0.108

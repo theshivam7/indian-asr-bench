@@ -1,21 +1,21 @@
 split,ID,Speaker_ID,Speech_Duration_seconds,Gender,Age,Native_Language,model,mode,reference_source,reference_raw,reference,hypothesis_raw,hypothesis,wer,cer,ref_recall,length_ratio
 test,281474976895273_f2716_chunk_1.wav,,1.705625,Male,30-45,Kashmiri,parakeet,transcript_clean,gold,RSRTC.,rsrtc,R S R T C,r s r t c,5.0,0.8,0.0,5.0
-test,281474976896170_f422_chunk_0.wav,,0.7569375,Male,60+,Kannada,parakeet,transcript_clean,gold,Previous,previous,With E V y S.,with e v y s,5.0,1.125,0.0,5.0
 test,281474976884349_f1690_chunk_3.wav,,0.790625,Female,18-30,Tamil,parakeet,transcript_clean,gold,Dharmapuri,dharmapuri,"And tied him up, buddy.",and tied him up buddy,5.0,1.7,0.0,5.0
-test,281474976888936_f2388_chunk_1.wav,,2.2556875,Female,18-30,Konkani,parakeet,transcript_clean,gold,@upi,upi,at the rate of UPI.,at the rate of upi,4.0,5.0,1.0,5.0
+test,281474976896170_f422_chunk_0.wav,,0.7569375,Male,60+,Kannada,parakeet,transcript_clean,gold,Previous,previous,With E V y S.,with e v y s,5.0,1.125,0.0,5.0
 test,281474976893692_f374_chunk_0.wav,,0.85375,Male,18-30,Bodo,parakeet,transcript_clean,gold,Visual.,visual,But he's well.,but he s well,4.0,1.8333,0.0,4.0
 test,281474976884349_f1690_chunk_0.wav,,0.85275,Female,18-30,Tamil,parakeet,transcript_clean,gold,Tiruvannamalai,tiruvannamalai,Did it normal late?,did it normal late,4.0,0.8571,0.0,4.0
+test,281474976888936_f2388_chunk_1.wav,,2.2556875,Female,18-30,Konkani,parakeet,transcript_clean,gold,@upi,upi,at the rate of UPI.,at the rate of upi,4.0,5.0,1.0,5.0
 test,281474976894171_f2343_chunk_0.wav,,10.4198125,Male,45-60,Odia,parakeet,transcript_clean,gold,For registered application ID MK201839611100749221,for registered application id mk201839611100749221,For registered application ID MK two zero one eight three nine six one one one zero zero seven four nine two two one,for registered application id mk two zero one eight three nine six one one one zero zero seven four nine two two one,3.8,1.68,0.8,4.6
 test,281474976897517_f2194_chunk_4.wav,,0.5996875,Male,30-45,Sindhi,parakeet,transcript_clean,gold,Udaipur,udaipur,What they push.,what they push,3.0,1.5714,0.0,3.0
-test,281474976895330_f1883_chunk_4.wav,,0.6163125,Male,30-45,Kashmiri,parakeet,transcript_clean,gold,achievements,achievements,It's humans.,it s humans,3.0,0.75,0.0,3.0
+test,281474976888231_f1490_chunk_1.wav,,1.728625,Female,60+,Tamil,parakeet,transcript_clean,gold,COVOVAX,covovax,Cool wool wax.,cool wool wax,3.0,1.1429,0.0,3.0
 test,281474976893169_f3301_chunk_6.wav,,1.54,Female,60+,Odia,parakeet,transcript_clean,gold,Yeah.,yeah,"Yeah. Yeah, yeah, yeah.",yeah yeah yeah yeah,3.0,3.75,1.0,4.0
 test,281474976909234_f2865_chunk_1.wav,,1.210625,Female,45-60,Punjabi,parakeet,transcript_clean,gold,PayUmoney,payumoney,Pay you money.,pay you money,3.0,0.4444,0.0,3.0
 test,281474976934159_f2630_chunk_0.wav,,0.8519375,Male,60+,Assamese,parakeet,transcript_clean,gold,Visual,visual,He's willing.,he s willing,3.0,1.6667,0.0,3.0
-test,281474976893839_f3333_chunk_0.wav,,1.034125,Female,18-30,Bodo,parakeet,transcript_clean,gold,Kukrajar,kukrajar,Cook ra child.,cook ra child,3.0,1.25,0.0,3.0
 test,281474976887027_f1910_chunk_1.wav,,0.88225,Male,45-60,Dogri,parakeet,transcript_clean,gold,Pranav,pranav,But I love,but i love,3.0,1.5,0.0,3.0
+test,281474976895330_f1883_chunk_4.wav,,0.6163125,Male,30-45,Kashmiri,parakeet,transcript_clean,gold,achievements,achievements,It's humans.,it s humans,3.0,0.75,0.0,3.0
 test,281474976897400_f1737_chunk_3.wav,,0.874875,Male,18-30,Odia,parakeet,transcript_clean,gold,odia,odia,Or the uh,or the uh,3.0,2.0,0.0,3.0
-test,281474976888231_f1490_chunk_1.wav,,1.728625,Female,60+,Tamil,parakeet,transcript_clean,gold,COVOVAX,covovax,Cool wool wax.,cool wool wax,3.0,1.1429,0.0,3.0
+test,281474976893839_f3333_chunk_0.wav,,1.034125,Female,18-30,Bodo,parakeet,transcript_clean,gold,Kukrajar,kukrajar,Cook ra child.,cook ra child,3.0,1.25,0.0,3.0
 test,281474976893912_f2185_chunk_6.wav,,0.6999375,Male,30-45,Bodo,parakeet,transcript_clean,gold,treating,treating,Three at ting.,three at ting,3.0,0.625,0.0,3.0
 test,281474976885515_f1997_chunk_6.wav,,1.76975,Male,18-30,Kannada,parakeet,transcript_clean,gold,vidyavardhaka institute,vidyavardhaka institute,with the Avar Dhaka institutes.,with the avar dhaka institutes,2.5,0.4348,0.0,2.5
-test,281474976900643_f417_chunk_0.wav,,0.653625,Male,30-45,Urdu,parakeet,transcript_clean,gold,Down,down,No one.,no one,2.0,1.0,0.0,2.0
-test,281474976893913_f2002_chunk_15.wav,,0.950125,Male,30-45,Bodo,parakeet,transcript_clean,gold,Its main,its main,It's men who,it s men who,2.0,0.875,0.0,2.0
+test,281474976884349_f1690_chunk_1.wav,,0.5906875,Female,18-30,Tamil,parakeet,transcript_clean,gold,Chennai,chennai,Den night.,den night,2.0,1.0,0.0,2.0
+test,281474976896582_f1500_chunk_0.wav,,0.681625,Female,60+,Tamil,parakeet,transcript_clean,gold,Visual,visual,Me sure.,me sure,2.0,0.8333,0.0,2.0

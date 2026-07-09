@@ -1,6 +1,10 @@
 model,Gender,corpus_wer_pct,num_samples
+tiny,Female,20.15,3579
+tiny,Male,19.73,3077
 base,Female,14.47,3579
 base,Male,14.6,3077
+small,Female,10.14,3579
+small,Male,9.97,3077
 medium,Female,8.03,3579
 medium,Male,7.73,3077
 large,Female,7.12,3579

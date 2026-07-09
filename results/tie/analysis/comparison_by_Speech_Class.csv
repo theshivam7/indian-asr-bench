@@ -14,9 +14,15 @@ medium,SLOW,17.24,373
 large,AVG,16.01,199
 large,FAST,13.85,413
 large,SLOW,18.72,373
+large_v3_turbo,AVG,17.35,199
+large_v3_turbo,FAST,16.46,413
+large_v3_turbo,SLOW,20.41,373
 parakeet,AVG,13.95,199
 parakeet,FAST,14.38,413
 parakeet,SLOW,18.25,373
+parakeet_ctc,AVG,15.38,199
+parakeet_ctc,FAST,15.44,413
+parakeet_ctc,SLOW,18.47,373
 qwen3,AVG,15.69,199
 qwen3,FAST,15.63,413
 qwen3,SLOW,18.65,373
