@@ -124,18 +124,30 @@ EXPECTED_TIE_WER = {
     "base": 17.53, "medium": 14.76, "large": 15.93, "parakeet": 15.60, "qwen3": 16.66,
     "tiny": 19.43, "tiny_hf": 22.10, "tiny_ft": 19.14,
     "small": 16.05, "small_hf": 17.38, "small_ft": 16.21,
+    "large_v3_turbo": 17.98, "parakeet_ctc": 16.45,
 }
 
-def test_committed_tie_numbers_regression():
+EXPECTED_SVARAH_WER = {
+    "tiny": 19.96, "base": 14.53, "small": 10.06, "medium": 7.89, "large": 7.11,
+    "large_v3_turbo": 8.10, "parakeet": 11.73, "parakeet_ctc": 15.65, "qwen3": 11.82,
+}
+
+def _check_committed_numbers(dataset, expected):
     import pandas as pd
-    summary = os.path.join(stage2_dir("tie"), "wer_summary_all_models.csv")
+    summary = os.path.join(stage2_dir(dataset), "wer_summary_all_models.csv")
     if not os.path.exists(summary):
-        print("[skip] no committed Stage 2 summary; run normalize_and_score.py --dataset tie")
+        print(f"[skip] no committed Stage 2 summary; run normalize_and_score.py --dataset {dataset}")
         return
     df = pd.read_csv(summary)
     tc = df[df["mode"] == "transcript_clean"].set_index("model")["corpus_wer_pct"]
-    for model, expected in EXPECTED_TIE_WER.items():
-        assert abs(tc[model] - expected) < 0.01, f"{model} drifted: {tc[model]} != {expected}"
+    for model, exp in expected.items():
+        assert abs(tc[model] - exp) < 0.01, f"{model} drifted: {tc[model]} != {exp}"
+
+def test_committed_tie_numbers_regression():
+    _check_committed_numbers("tie", EXPECTED_TIE_WER)
+
+def test_committed_svarah_numbers_regression():
+    _check_committed_numbers("svarah", EXPECTED_SVARAH_WER)
 
 
 if __name__ == "__main__":

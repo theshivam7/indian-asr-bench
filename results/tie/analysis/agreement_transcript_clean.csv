@@ -1,5 +1,5 @@
 category,n_clips,inter_hyp_dist,cross_arch_dist,hyp_to_ref_wer,ref_wer_grounded,ref_wer_free
-clip_over_run,6,0.202,0.182,0.899,0.996,0.883
-content_mismatch,5,0.172,0.17,1.003,1.025,0.999
+clip_over_run,7,0.226,0.196,0.877,0.887,0.874
+content_mismatch,5,0.166,0.164,1.006,1.022,1.001
 short_ref,1,0.0,0.0,0.0,0.0,0.0
-unflagged,973,0.113,0.105,0.166,0.158,0.167
+unflagged,972,0.112,0.107,0.167,0.161,0.168
