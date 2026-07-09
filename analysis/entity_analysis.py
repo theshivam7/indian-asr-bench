@@ -13,9 +13,11 @@ codes; optional spaCy NER adds person/org/place names if spaCy is installed.
 NEER = 1 - (entity tokens recovered in the hypothesis / total entity tokens),
 a recall-based measure that needs no alignment.
 
-Applicable ONLY where DatasetSpec.neer_register_col is set (Svarah). For TIE it is
-not applicable (academic prose has no entity-dense register, and its reference
-artifacts would confound the measure) — the script exits with that explanation.
+Applicable ONLY where DatasetSpec.neer_register_col is set. Currently DORMANT for
+both datasets: TIE has no entity-dense register (academic prose, and its reference
+artifacts would confound the measure), and the HF Svarah mirror exposes no use-case
+register column (see the SVARAH spec note in utils/registry.py) — the script exits
+with that explanation until a register field is derived.
 
 Reads  results/<dataset>/stage2_processed/<mode>/wer_<model>_<mode>.csv
 Writes results/<dataset>/analysis/entity_neer_<mode>.{csv,md}

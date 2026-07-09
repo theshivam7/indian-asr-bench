@@ -49,7 +49,7 @@ This project does four things:
 
 1. It benchmarks **nine pretrained ASR systems, symmetrically, on both datasets**: [TIE_shorts](https://huggingface.co/datasets/raianand/TIE_shorts) (986 NPTEL-style lecture clips, "found" YouTube data) and [Svarah](https://huggingface.co/datasets/ai4bharat/Svarah) (6,656 curated read-speech clips), across normalization modes (five on TIE, three on Svarah — it has no alternate dataset-provided reference) and every demographic/acoustic breakdown.
 2. It fine-tunes Whisper across three sizes (Tiny 39M, Small 244M, Medium 769M) on the same in-domain TIE data and compares each against its own pretrained baseline through an identical decoding pipeline, to test whether a null fine-tuning result at one size reflects a capacity ceiling or a dataset limitation (see [Fine-tuning](#fine-tuning-pretrained-vs-fine-tuned-across-sizes)).
-3. It digs into the failure modes with a full-corpus, multi-model consensus artifact classifier, not just a hand-reviewed tail. Reference artifacts turn out to be rare in both corpora (TIE 1.1%, Svarah 0.8% of classifiable clips) but dominate TIE's worst-WER tail (62%), while Svarah's tail is dominated instead by an isolated-word subtask (23% of its clips have <4-word references) where WER is quantized and the classifier is undefined. See [Error Analysis](#error-analysis).
+3. It digs into the failure modes with a full-corpus, multi-model consensus artifact classifier, not just a hand-reviewed tail. Reference artifacts turn out to be rare in both corpora (TIE 1.2%, Svarah 0.8% of classifiable clips) but dominate TIE's worst-WER tail (65.5%), while Svarah's tail is dominated instead by an isolated-word subtask (23% of its clips have <4-word references) where WER is quantized and the classifier is undefined. See [Error Analysis](#error-analysis).
 4. And it checks that classifier against actual human judgment with a blind, stratified annotation protocol, rather than just trusting an unvalidated heuristic (see [`analysis/validation/PROTOCOL.md`](analysis/validation/PROTOCOL.md)).
 
 Two recurring themes: **how you normalize text moves WER as much as which model you pick**, and **the median clip is 3–4 pp better than the corpus WER** because a rare-but-severe tail (reference artifacts on TIE; sub-second isolated-word items on Svarah) inflates the average.
@@ -377,7 +377,7 @@ All normalization is applied **symmetrically** to reference and hypothesis. Whic
 | `hf_raw` (dataset's normalization, broken) | 20.24% | 18.01% | 19.14% | 18.54% | 17.99% |
 | `hf_clean` (dataset norm + our fix) | 18.07% | 15.76% | 16.94% | 16.40% | 17.61% |
 
-`Normalised_Transcript` maps `"the 1st component"` → `"the one s t component"` (ordinal split into characters), affecting 50+ clips and inflating `hf_raw` WER by **2.7–3.3 pp** for the four conventional systems, compared to the gold `transcript_clean`. Qwen3 is the exception (+1.3 pp): its richly punctuated verbatim output already disagrees with the raw reference's formatting, so the reference bug costs it less — the bias isn't even uniform across models. **Always use `transcript_clean`.**
+`Normalised_Transcript` maps `"the 1st component"` → `"the one s t component"` (ordinal split into characters), affecting 50+ clips and inflating `hf_raw` WER by **2.7–3.3 pp** for the seven Whisper/Parakeet-TDT systems, compared to the gold `transcript_clean`. The two most *verbatim* systems are the exceptions — Qwen3 (+1.3 pp) and Parakeet-CTC (+0.7 pp; raw-vs-raw its sign even flips, 17.15% `hf_raw` vs 18.53% `transcript_raw`): their punctuation-rich literal output happens to agree better with the mangled normalized reference. Reference faults are style-dependent, so they can't be differenced out across models. **Always use `transcript_clean`.**
 
 **Metrics** (`utils/wer_compute.py`): WER and CER both use the standard substitutions+deletions+insertions over the reference word/character count, with an empty hypothesis handled consistently as all-deletions for both metrics. Mean/median/std/P90/P95 use `statistics.mean`/`median`/`stdev` plus nearest-rank percentiles. Confidence intervals use a speaker- (TIE) or recording-clustered (Svarah) paired bootstrap (2000 resamples, seed 42) with Holm–Bonferroni correction across every pairwise family — already implemented and reported for every result above, not a Phase 2 addition.
 
@@ -490,6 +490,16 @@ Stated so the numbers above are read correctly:
 - Training-data contamination is possible: NPTEL lectures are public and may already appear in Whisper's web-scraped training data. A small probe (grounded vs. free-decoding agreement with flawed references) turned up no memorization signal, but with n=10 it's a low-powered check.
 - Stage-1 transcripts are single runs with temperature-fallback decoding ([`docs/DECODE_CONFIG.md`](docs/DECODE_CONFIG.md)). The committed raw CSVs, not re-decoding, are the reproducibility anchor.
 - Some cells are just small: duration extremes sit at n=4–5, and TIE has only 58 female speakers. Read those numbers qualitatively, not as precise estimates.
+
+---
+
+## Future Work
+
+- **Run the blind human-annotation pass** ([`analysis/validation/`](analysis/validation/), 91-item stratified sheet) to turn the artifact classifier's heuristic status into measured precision/recall — the highest-value remaining task.
+- **Fine-tune on natively speaker-disjoint Indian-accent data** (e.g. the Indian subset of AESRC2020) to separate accent/content adaptation from the speaker adaptation that TIE's overlapping splits cannot rule out.
+- **Multi-seed replication** of the fine-tuning capacity study (currently one run per size), which would also power the study to confirm or reject the ~3 pp Tiny-size effect.
+- **Activate the NEER entity metric** (`analysis/entity_analysis.py`) once a use-case register field is derived for Svarah (e.g. from `audio_filepath` naming) — entity-dense clips currently score WER far above 100% for spelling-convention reasons rather than misrecognition.
+- **Long-form decoding study**: the HF chunked pipeline scores much higher WER than openai-whisper's stitched decoding on 60s+ clips with identical weights; quantifying that engine effect would de-confound several tail metrics.
 
 ---
 
