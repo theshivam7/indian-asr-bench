@@ -55,19 +55,22 @@ Two recurring themes: **how you normalize text moves WER as much as which model 
 The benchmark is a **generalized multi-dataset framework**: one pipeline, driven by a central registry, that runs identically on any dataset. Only dataset *loading* is dataset-specific; everything after Stage 1 is dataset-agnostic.
 
 ```mermaid
-flowchart TD
-    R["utils/registry.py<br/>DatasetSpec + ModelSpec<br/>(single source of truth)"]
-    S1["Stage 1 — inference driver<br/>results/&lt;dataset&gt;/stage1_raw_transcripts/wer_&lt;model&gt;_raw.csv<br/>GPU · immutable · committed"]
-    S2["Stage 2 — normalize_and_score.py --dataset X<br/>results/&lt;dataset&gt;/stage2_processed/&lt;mode&gt;/<br/>CPU · WER + CER + hallucination"]
-    S3["Stage 3 — compare_all / statistics / error_analysis / entity_analysis<br/>results/&lt;dataset&gt;/analysis/<br/>CPU"]
-    F["paper figures<br/>local paper workspace, not shipped<br/>paper/figures/"]
-
-    R --> S1 --> S2 --> S3 --> F
+flowchart LR
+    A[Registry] --> B[Stage 1\nTranscribe]
+    B --> C[Stage 2\nScore]
+    C --> D[Stage 3\nAnalyze]
+    D --> E[Figures]
 ```
 
-- `utils/registry.py` holds every model, dataset, evaluation mode, display name and colour. Nothing is defined anywhere else.
-- `utils/datasets.py` is the dataset adapter: it validates that a dataset's declared columns actually exist, which catches provisional schemas early.
-- Raw transcripts are the immutable source of truth: always committed, one CSV per (dataset, model). Any normalization or metric change recomputes Stage 2/3 straight from them, with no re-inference needed.
+| Step | What it does | Runs on |
+|---|---|---|
+| Registry | `utils/registry.py` — every model, dataset, mode, display name and colour. Single source of truth; nothing is defined anywhere else. | — |
+| Stage 1 — Transcribe | Engine driver runs each model on a dataset's eval split → `results/<dataset>/stage1_raw_transcripts/wer_<model>_raw.csv`. Committed and immutable — the reproducibility anchor. | GPU |
+| Stage 2 — Score | `normalize_and_score.py --dataset X` → WER/CER per mode → `results/<dataset>/stage2_processed/` | CPU |
+| Stage 3 — Analyze | `compare_all` / `statistics` / `error_analysis` / `entity_analysis` → `results/<dataset>/analysis/` | CPU |
+| Figures | Publication figures in the local `paper/` workspace (not shipped) | CPU |
+
+Any normalization or metric change re-runs Stage 2/3 straight from the committed Stage 1 transcripts — no re-inference needed. `utils/datasets.py` is the dataset adapter: it validates a dataset's declared columns actually exist, catching provisional schemas early.
 
 **Add a dataset** → append one `DatasetSpec` to `utils/registry.py` (HF id, column map, subgroup dims, applicable modes). No other file changes.
 **Add a model** → append one `ModelSpec` (engine, checkpoint id, arch class, colour) and run its engine driver with `--model`.
@@ -88,6 +91,8 @@ flowchart TD
 | **Parakeet-TDT-0.6B-v2** | 600M | CTC + TDT | [nvidia/parakeet-tdt-0.6b-v2](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) |
 | **Parakeet-CTC-1.1B** | 1.1B | CTC | [nvidia/parakeet-ctc-1.1b](https://huggingface.co/nvidia/parakeet-ctc-1.1b) |
 | **Qwen3-ASR-1.7B** | 1.7B | LLM-based | [Qwen/Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) |
+| **Whisper Tiny (fine-tuned)** | 39M | Encoder-Decoder | `models/whisper_tiny_ft` (*this project* — local checkpoint, not published) |
+| **Whisper Small (fine-tuned)** | 244M | Encoder-Decoder | `models/whisper_small_ft` (*this project* — local checkpoint, not published) |
 | **Whisper Medium (fine-tuned)** | 769M | Encoder-Decoder | [theshivam7/whisper-medium-indian-english](https://huggingface.co/theshivam7/whisper-medium-indian-english) (*this project*) |
 
 All nine pretrained models are evaluated as-is, on **both** datasets — this is the headline benchmark. (Whisper Tiny/Small and large-v3-turbo/Parakeet-CTC were added on a rolling basis during the study; every model now has full coverage on both TIE_shorts and Svarah.) Fine-tuning is TIE-only and analyzed separately in [Fine-tuning](#fine-tuning-pretrained-vs-fine-tuned-across-sizes); Tiny/Small fine-tuned checkpoints are local-only (not published to the HF Hub), so only the Medium fine-tune has a public link above.
@@ -160,48 +165,50 @@ Is any of this significant? We ran a speaker-clustered paired bootstrap over 280
 4. Whisper large-v3-turbo is the *least* stable model of the whole family (Std Dev 23.62%, the highest here) despite being a distilled variant of Large-v3 — it hallucinates on the hardest clips more than any other model.
 5. Normalization and reference choice alone move WER by roughly 2–3 pp, about as much as the gap between the best and worst mid-tier models (details in [Normalization](#normalization)).
 
+The five breakdowns below use the **top 5 models by overall corpus WER** (Medium, Parakeet-TDT, Large-v3, Small, Parakeet-CTC — see the [primary metric table](#primary-metric-transcript_clean) above for the full 9-model ranking).
+
 #### Breakdown by speech rate
 
-| Speech Rate | Base | Medium | Large | Parakeet | Qwen3 | Samples |
-|:-----------:|:----:|:------:|:-----:|:--------:|:-----:|:-------:|
-| FAST | 16.51% | **13.54%** | 13.85% | 14.38% | 15.63% | 413 |
-| AVG | 15.96% | **13.41%** | 16.01% | 13.95% | 15.69% | 199 |
-| SLOW | 19.87% | 17.24% | 18.72% | 18.25% | **18.65%** | 373 |
+| Speech Rate | Medium | Parakeet-TDT | Large-v3 | Small | Parakeet-CTC | Samples |
+|:-----------:|:------:|:-------------:|:--------:|:-----:|:------------:|:-------:|
+| FAST | **13.54%** | 14.38% | 13.85% | 14.53% | 15.44% | 413 |
+| AVG | **13.41%** | 13.95% | 16.01% | 14.80% | 15.38% | 199 |
+| SLOW | **17.24%** | 18.25% | 18.72% | 18.88% | 18.47% | 373 |
 
 #### Breakdown by region
 
-| Region | Base | Medium | Large | Parakeet | Qwen3 | Samples |
-|:------:|:----:|:------:|:-----:|:--------:|:-----:|:-------:|
-| EAST | 16.81% | **13.95%** | 16.95% | 15.44% | 15.81% | 352 |
-| NORTH | 17.07% | **14.74%** | 15.10% | 16.06% | 16.26% | 202 |
-| SOUTH | 18.44% | **15.34%** | 15.67% | 15.64% | 17.66% | 362 |
-| WEST | 17.34% | 15.47% | 15.06% | **14.86%** | 16.51% | 69 |
+| Region | Medium | Parakeet-TDT | Large-v3 | Small | Parakeet-CTC | Samples |
+|:------:|:------:|:-------------:|:--------:|:-----:|:------------:|:-------:|
+| EAST | **13.95%** | 15.44% | 16.95% | 15.71% | 15.99% | 352 |
+| NORTH | **14.74%** | 16.06% | 15.10% | 16.22% | 16.61% | 202 |
+| SOUTH | **15.34%** | 15.64% | 15.67% | 16.03% | 16.86% | 362 |
+| WEST | 15.47% | **14.86%** | 15.06% | 17.22% | 15.97% | 69 |
 
 #### Breakdown by audio duration
 
-| Duration | Base | Medium | Large | Parakeet | Qwen3 |
-|:--------:|:----:|:------:|:-----:|:--------:|:-----:|
-| 0–5s | 25.00% | 25.00% | 25.00% | 40.00% | 30.00% |
-| 5–15s | 25.11% | 21.61% | 25.28% | 23.91% | 23.65% |
-| **15–30s** | 16.97% | **13.82%** | 14.77% | 14.96% | 15.98% |
-| 30–60s | 19.63% | 19.83% | 22.35% | **18.93%** | 20.62% |
-| **60s+** | 33.33% | 37.31% | 38.23% | **18.35%** | 20.80% |
+| Duration | Medium | Parakeet-TDT | Large-v3 | Small | Parakeet-CTC |
+|:--------:|:------:|:-------------:|:--------:|:-----:|:------------:|
+| 0–5s | **25.00%** | 40.00% | **25.00%** | **25.00%** | 30.00% |
+| 5–15s | **21.61%** | 23.91% | 25.28% | 22.46% | 25.36% |
+| **15–30s** | **13.82%** | 14.96% | 14.77% | 14.90% | 15.79% |
+| 30–60s | 19.83% | **18.93%** | 22.35% | 22.60% | 19.83% |
+| **60s+** | 37.31% | **18.35%** | 38.23% | 45.87% | 20.18% |
 
-Parakeet and Qwen3 are far more robust on 60s+ clips: Whisper hallucinates during long pauses, while the TDT/LLM decoders do not. (The extreme buckets are tiny: n=4 for 0–5s, n=5 for 60s+, so a single clip moves them by 20+ pp; 87% of clips sit in 15–30s. Read the extremes qualitatively.)
+Both Parakeet variants are far more robust on 60s+ clips than any Whisper size: Whisper hallucinates during long pauses, while the TDT/CTC decoders do not. (The extreme buckets are tiny: n=4 for 0–5s, n=5 for 60s+, so a single clip moves them by 20+ pp; 87% of clips sit in 15–30s. Read the extremes qualitatively.)
 
 #### Breakdown by gender
 
-| Gender | Base | Medium | Large | Parakeet | Qwen3 | Samples |
-|:------:|:----:|:------:|:-----:|:--------:|:-----:|:-------:|
-| Female | 13.92% | 12.05% | 12.46% | **11.78%** | 14.05% | 58 |
-| Male | 17.74% | **14.92%** | 16.14% | 15.83% | 16.82% | 927 |
+| Gender | Medium | Parakeet-TDT | Large-v3 | Small | Parakeet-CTC | Samples |
+|:------:|:------:|:-------------:|:--------:|:-----:|:------------:|:-------:|
+| Female | 12.05% | **11.78%** | 12.46% | 13.99% | 12.02% | 58 |
+| Male | **14.92%** | 15.83% | 16.14% | 16.18% | 16.71% | 927 |
 
 #### Breakdown by discipline
 
-| Discipline | Base | Medium | Large | Parakeet | Qwen3 | Samples |
-|:----------:|:----:|:------:|:-----:|:--------:|:-----:|:-------:|
-| Engineering | 18.00% | 15.09% | 16.06% | 16.30% | 17.14% | 691 |
-| Non-Engineering | 16.42% | **13.99%** | 15.64% | **13.95%** | 15.55% | 294 |
+| Discipline | Medium | Parakeet-TDT | Large-v3 | Small | Parakeet-CTC | Samples |
+|:----------:|:------:|:-------------:|:--------:|:-----:|:------------:|:-------:|
+| Engineering | **15.09%** | 16.30% | 16.06% | 16.36% | 16.89% | 691 |
+| Non-Engineering | 13.99% | **13.95%** | 15.64% | 15.35% | 15.41% | 294 |
 
 #### YouTube captions (archived reference)
 
