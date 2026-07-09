@@ -29,6 +29,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+plt.rcParams.update({"savefig.dpi": 300, "savefig.facecolor": "white"})
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.wer_compute import compute_corpus_wer

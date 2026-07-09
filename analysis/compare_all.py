@@ -131,7 +131,8 @@ def main(dataset: str) -> None:
                      ).to_csv(os.path.join(out_dir, "comparison_by_duration.csv"), index=False)
 
     # ---- 3. quick-look charts --------------------------------------------------
-    plt.rcParams.update({"figure.dpi": 150, "font.size": 10})
+    plt.rcParams.update({"figure.dpi": 150, "font.size": 10,
+                         "savefig.dpi": 300, "savefig.facecolor": "white"})
 
     # ranking (single series -> identity via labels, not colour)
     ranked = sorted(((MODEL_DISPLAY.get(m, m), float(df_summary.loc[df_summary.model == m, PRIMARY_MODE].values[0]))
