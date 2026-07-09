@@ -1,0 +1,26 @@
+{
+  "model_key": "parakeet_ctc",
+  "model_id": "nvidia/parakeet-ctc-1.1b",
+  "engine": "nemo_ctc",
+  "dataset": "tie",
+  "hf_id": "raianand/TIE_shorts",
+  "hf_revision": "28c53e285feae86f4ba25d8aaeca4fd0c709784c",
+  "git_commit": "",
+  "python": "3.10.20",
+  "hostname": "x1000c2s4b0n1",
+  "timestamp_utc": "2026-07-09T07:29:56+00:00",
+  "packages": {
+    "torch": "2.5.1+cu118",
+    "datasets": "4.8.5",
+    "numpy": "2.2.6",
+    "librosa": "0.11.0",
+    "soundfile": "0.13.1",
+    "jiwer": "3.1.0",
+    "transformers": "4.57.6",
+    "nemo_toolkit": "2.7.3"
+  },
+  "decode_kwargs": {
+    "batch_size": 16,
+    "engine_defaults": "nemo"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "model_key": "large_v3_turbo",
+  "model_id": "turbo",
+  "engine": "openai_whisper",
+  "dataset": "tie",
+  "hf_id": "raianand/TIE_shorts",
+  "hf_revision": "28c53e285feae86f4ba25d8aaeca4fd0c709784c",
+  "git_commit": "",
+  "python": "3.10.20",
+  "hostname": "x1000c2s4b0n1",
+  "timestamp_utc": "2026-07-09T07:36:48+00:00",
+  "packages": {
+    "torch": "2.5.1",
+    "datasets": "4.8.5",
+    "numpy": "2.2.6",
+    "librosa": "0.11.0",
+    "soundfile": "0.13.1",
+    "jiwer": "4.0.0",
+    "openai-whisper": "20250625"
+  },
+  "decode_kwargs": {
+    "language": "en",
+    "engine_defaults": "openai-whisper"
+  }
+}
