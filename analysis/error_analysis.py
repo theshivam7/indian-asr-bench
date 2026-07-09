@@ -158,7 +158,7 @@ def _load_full(dataset: str, model: str, mode: str) -> pd.DataFrame | None:
 # 1. Legacy worst-K tail analysis (kept for continuity with the hand analysis)
 # ----------------------------------------------------------------------------
 
-def analyze_tail(pool: pd.DataFrame, n_models: int):
+def analyze_tail(pool: pd.DataFrame):
     tail = (pool.sort_values("wer", ascending=False)
                 .groupby("model", sort=False).head(TOP_K).copy())
     per_clip = tail.groupby("ID").agg(
@@ -366,7 +366,7 @@ def main(dataset: str, mode: str) -> None:
     # this is how the spurious headline arises (isolated-word items auto-flag).
     cons["category_naive"] = cons.apply(
         lambda r: classify(r["recall_mean"], r["ratio_mean"], r["ref_words"], min_ref=0), axis=1)
-    tail = analyze_tail(pool, n_models)
+    tail = analyze_tail(pool)
     tax_full = full_corpus_taxonomy(cons)
     adjusted = artifact_adjusted_wer(pool, cons)
     print("  computing inter-hypothesis agreement (pairwise edit distances) ...", flush=True)

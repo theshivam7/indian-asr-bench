@@ -63,7 +63,7 @@ def filter_tie_split(ds, has_duration_col: bool = True,
     are dropped rather than crashing the run.
 
     Returns a flatten_indices()-materialized dataset, ready for raw arrow audio access.
-    Shared by finetune_medium.py and finetune_stepwise.py so both drop exactly the same clips.
+    Shared by finetune_medium.py and finetune_tiny_small.py so both drop exactly the same clips.
     """
     n_before = len(ds)
     if has_duration_col:
