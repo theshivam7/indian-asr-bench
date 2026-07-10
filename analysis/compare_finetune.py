@@ -29,7 +29,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-plt.rcParams.update({"savefig.dpi": 300, "savefig.facecolor": "white"})
+plt.rcParams.update({
+    "savefig.dpi": 300, "savefig.facecolor": "white",
+    "font.size": 11, "axes.titlesize": 12.5, "axes.labelsize": 11.5,
+    "axes.spines.top": False, "axes.spines.right": False,
+    "axes.axisbelow": True, "grid.alpha": 0.25, "grid.linewidth": 0.6,
+    "legend.frameon": False,
+})
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -300,24 +306,28 @@ def run_pair(pair: dict) -> dict:
         lines.append("")
 
         # --------------- 4. Chart ---------------
-        fig, ax = plt.subplots(figsize=(9, 5.5))
+        fig, ax = plt.subplots(figsize=(9, 5.2))
         modes_present = [m for m in MODES if m in have[baseline] and m in have[finetuned]]
         x = range(len(modes_present))
         w = 0.38
         base_vals = [have[baseline][m] for m in modes_present]
         ft_vals = [have[finetuned][m] for m in modes_present]
-        b1 = ax.bar([i - w/2 for i in x], base_vals, w, label="Pretrained (HF)", color="#888")
-        b2 = ax.bar([i + w/2 for i in x], ft_vals, w, label="Fine-tuned", color="#2a7")
-        for bars in (b1, b2):
+        b1 = ax.bar([i - w/2 for i in x], base_vals, w, label="Pretrained (HF)", color="#ADBDCC")
+        b2 = ax.bar([i + w/2 for i in x], ft_vals, w, label="Fine-tuned", color="#0072B2")
+        for bars, color in ((b1, "#33383D"), (b2, "#0072B2")):
             for bar in bars:
-                ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.2,
-                        f"{bar.get_height():.1f}", ha="center", va="bottom", fontsize=8)
+                ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.25,
+                        f"{bar.get_height():.1f}", ha="center", va="bottom",
+                        fontsize=10, color=color)
         ax.set_xticks(list(x))
-        ax.set_xticklabels(modes_present, rotation=15)
+        ax.set_xticklabels(modes_present)
         ax.set_ylabel("Corpus WER (%)")
-        ax.set_title(f"{display_name}: Pretrained vs Fine-tuned (TIE_shorts test)")
-        ax.legend()
-        ax.grid(axis="y", alpha=0.3)
+        ax.set_title(f"{display_name}: pretrained vs fine-tuned, all modes (TIE_shorts test)",
+                     loc="left", pad=12)
+        ax.legend(loc="upper right")
+        ax.grid(axis="y"); ax.grid(axis="x", visible=False)
+        ax.tick_params(axis="x", length=0)
+        ax.margins(y=0.12)
         fig.tight_layout()
         chart_path = os.path.join(ANALYSIS_DIR, f"{out_stem}.png")
         fig.savefig(chart_path)
