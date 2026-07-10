@@ -131,24 +131,48 @@ def main(dataset: str) -> None:
                      ).to_csv(os.path.join(out_dir, "comparison_by_duration.csv"), index=False)
 
     # ---- 3. quick-look charts --------------------------------------------------
-    plt.rcParams.update({"figure.dpi": 150, "font.size": 10,
-                         "savefig.dpi": 300, "savefig.facecolor": "white"})
+    plt.rcParams.update({
+        "figure.dpi": 150, "savefig.dpi": 300, "savefig.facecolor": "white",
+        "font.size": 11, "axes.titlesize": 12.5, "axes.labelsize": 11.5,
+        "axes.spines.top": False, "axes.spines.right": False,
+        "axes.axisbelow": True, "grid.alpha": 0.25, "grid.linewidth": 0.6,
+        "legend.frameon": False,
+    })
 
-    # ranking (single series -> identity via labels, not colour)
-    ranked = sorted(((MODEL_DISPLAY.get(m, m), float(df_summary.loc[df_summary.model == m, PRIMARY_MODE].values[0]))
+    # ranking: neutral bars, accent on the best model, 95% cluster-bootstrap CI
+    # whiskers when statistics.py has already produced them
+    ranked = sorted(((m, MODEL_DISPLAY.get(m, m), float(df_summary.loc[df_summary.model == m, PRIMARY_MODE].values[0]))
                      for m in chart_models
                      if pd.notna(df_summary.loc[df_summary.model == m, PRIMARY_MODE].values[0])),
-                    key=lambda t: t[1], reverse=True)
+                    key=lambda t: t[2], reverse=True)
     if ranked:
-        names, vals = zip(*ranked)
-        fig, ax = plt.subplots(figsize=(9, 0.6 * len(names) + 1.5))
-        bars = ax.barh(names, vals, color="#4878a8")
-        bars[-1].set_color("#2ca02c")
-        for bar, v in zip(bars, vals):
-            ax.text(bar.get_width() + max(vals) * 0.01, bar.get_y() + bar.get_height() / 2,
-                    f"{v:.2f}%", va="center", fontsize=9)
-        ax.set_xlabel("Corpus WER (%)"); ax.margins(x=0.12); ax.grid(axis="x", alpha=0.3)
-        ax.set_title(f"Model ranking by WER ({PRIMARY_MODE}, lower is better) — {spec.display}")
+        keys, names, vals = zip(*ranked)
+        ci = {}
+        stats_path = os.path.join(out_dir, f"statistics_{PRIMARY_MODE}.csv")
+        if os.path.exists(stats_path):
+            sdf = pd.read_csv(stats_path)
+            ci = {r["model"]: (float(r["ci_lo_pct"]), float(r["ci_hi_pct"])) for _, r in sdf.iterrows()}
+        fig, ax = plt.subplots(figsize=(9, 0.52 * len(names) + 1.4))
+        best = min(vals)
+        colors = ["#0072B2" if v == best else "#ADBDCC" for v in vals]
+        ax.barh(names, vals, color=colors, height=0.62)
+        for y, (k, v) in enumerate(zip(keys, vals)):
+            label_x = v
+            if k in ci:
+                lo, hi = ci[k]
+                ax.errorbar(v, y, xerr=[[v - lo], [hi - v]], fmt="none",
+                            ecolor="#33383D", elinewidth=1.3, capsize=3.5)
+                label_x = hi
+            ax.text(label_x + max(vals) * 0.012, y, f"{v:.2f}%", va="center",
+                    fontsize=10.5, fontweight="bold" if v == best else "normal",
+                    color="#0072B2" if v == best else "#33383D")
+        ax.margins(x=0.14)
+        ax.grid(axis="x"); ax.grid(axis="y", visible=False)
+        ax.tick_params(axis="y", length=0)
+        ci_note = " with 95% cluster-bootstrap CI" if ci else ""
+        ax.set_xlabel(f"Corpus WER (%){ci_note}")
+        ax.set_title(f"{spec.display}: corpus WER, {PRIMARY_MODE} mode (lower is better)",
+                     loc="left", pad=12)
         fig.tight_layout(); fig.savefig(os.path.join(out_dir, "wer_by_model.png")); plt.close(fig)
 
     # by mode
