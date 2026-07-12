@@ -9,6 +9,37 @@ constraints observed on the cluster:
   plus the named `whisper_medium_ft` in `~/.conda/envs`.
 - Scheduler is **PBS Pro**; GPU is on compute nodes (`cuda/11.8.0` module).
 
+## ⚠️ Never run compute on the login node — always `qsub -I` first
+
+The login node (`asp2a-login-*`) is a **shared entry point for every NSCC user**
+across NUS/NTU/A*STAR/SUTD/NEA — it's for `ssh`, `git`, editing, and submitting
+jobs, nothing else. NSCC's own guidance is explicit: *"Avoid running heavy load
+tasks in login nodes"* / *"Avoid transfer massive amount of data on login node."*
+A fair-share monitor kills offending processes automatically and **more than 3
+violations can auto-block the account.**
+
+This applies to *anything* that loads a model or transcribes audio — including a
+"quick" one-off probe script, not just full pipeline runs. **Before running any
+python command that does real work (model inference, audio decoding, anything
+beyond reading a CSV), grab an interactive compute-node session first:**
+
+```bash
+# CPU interactive session (audio probes, quick checks, no GPU needed)
+qsub -I -P $PROJECT -l select=1:ncpus=8:mem=32gb -l walltime=00:30:00 -q normal
+
+# GPU interactive session (model inference / timing probes)
+qsub -I -P $PROJECT -l select=1:ngpus=1 -l walltime=00:30:00 -q normal
+```
+
+Wait for the shell prompt to switch to a **compute-node hostname** (anything
+other than `asp2a-login-*`) before running anything — that's the signal you're
+off the login node. Then `cd` back into the repo, `conda activate` the env, and
+run the command. `exit` when done to free the node back to the queue.
+
+For anything expected to run longer than a few minutes, or that's part of the
+regular pipeline, submit a real batch job (`hpc/job_*.pbs` via `qsub`, see
+below) instead of holding an interactive session open.
+
 ## 0. One-time setup
 
 ```bash
@@ -93,6 +124,13 @@ Then commit the updated `results/**` and `paper/figures/**` and push.
 
 ## Troubleshooting
 
+- **NSCC fair-share violation email** ("we have terminated all your processes on
+  the login node") — means real compute (model inference, audio decoding) ran
+  directly at the `asp2a-login-*` shell prompt instead of inside a job. See
+  [Never run compute on the login node](#-never-run-compute-on-the-login-node--always-qsub--i-first)
+  above — grab `qsub -I` first, every time, even for a 30-second test. This
+  counts toward an automatic account block after 3 violations, so treat it as a
+  hard stop, not a warning.
 - **`Disk quota exceeded`** — you wrote to `$HOME`. This bites in three DIFFERENT
   places, each needing its own redirect (all handled automatically by
   `hpc/job_*.pbs` and `submit_all.sh`, but relevant if you run things by hand):
