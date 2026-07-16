@@ -9,10 +9,13 @@ Used by finetune/finetune_medium.py and finetune/finetune_tiny_small.py. Kept he
 the training scripts stay thin, matching the project's "logic lives in utils/" structure.
 """
 
-from dataclasses import dataclass
-from typing import Any
+from __future__ import annotations
 
-import torch
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import torch
 
 from utils.io_helpers import decode_audio_value, raw_audio_column as _raw_audio_column
 from utils.normalize import strip_wrapping_quotes
@@ -66,8 +69,6 @@ def _filter_by_bytes_duration(ds, max_seconds: float, label: str = ""):
     materialized (raw arrow access by row index).
     """
     import pyarrow.compute as pc
-
-    from utils.io_helpers import decode_audio_value
 
     col = _raw_audio_column(ds).combine_chunks()
     lengths = pc.fill_null(pc.binary_length(col.field("bytes")), 0).to_pylist()
