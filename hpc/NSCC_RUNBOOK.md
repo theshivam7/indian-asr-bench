@@ -110,7 +110,7 @@ After ft-aesrc finishes, run ONE scoring pass (CPU job) to score everything and 
 the pretrained-vs-fine-tuned reports under `results/aesrc/analysis/`:
 
 ```bash
-qsub -P $PROJECT -v DATASET=aesrc hpc/job_score.pbs
+qsub -P $PROJECT -v DATASET=aesrc,WHISPER_ENV=$SCRATCH/envs/whisper hpc/job_score.pbs
 ```
 
 Prefer to fire everything at once (queue permitting)? `bash hpc/submit_all.sh --phase all`
@@ -132,9 +132,9 @@ stages already ran inside each job. To rebuild just the cross-dataset figures or
 re-score after a code change (no GPU):
 
 ```bash
-qsub -P $PROJECT -v DATASET=tie    hpc/job_score.pbs      # rescore + analyse TIE
-qsub -P $PROJECT -v DATASET=svarah hpc/job_score.pbs      # rescore + analyse Svarah
-qsub -P $PROJECT -v DATASET=aesrc  hpc/job_score.pbs      # rescore + analyse AESRC (Indian)
+qsub -P $PROJECT -v DATASET=tie,WHISPER_ENV=$SCRATCH/envs/whisper    hpc/job_score.pbs   # rescore + analyse TIE
+qsub -P $PROJECT -v DATASET=svarah,WHISPER_ENV=$SCRATCH/envs/whisper hpc/job_score.pbs   # rescore + analyse Svarah
+qsub -P $PROJECT -v DATASET=aesrc,WHISPER_ENV=$SCRATCH/envs/whisper  hpc/job_score.pbs   # rescore + analyse AESRC (Indian)
 qsub -P $PROJECT -v DATASETS=tie,svarah hpc/job_figures.pbs
 ```
 
