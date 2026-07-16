@@ -5,6 +5,8 @@ duration_bucket,model,corpus_wer_pct
 0-5s,medium,6.32
 0-5s,large,5.79
 0-5s,large_v3_turbo,6.29
+0-5s,parakeet,7.28
+0-5s,parakeet_ctc,8.4
 0-5s,qwen3,5.8
 0-5s,medium_hf,6.2
 0-5s,tiny_hf,19.22
@@ -18,6 +20,8 @@ duration_bucket,model,corpus_wer_pct
 5-15s,medium,4.8
 5-15s,large,4.27
 5-15s,large_v3_turbo,5.05
+5-15s,parakeet,4.66
+5-15s,parakeet_ctc,6.1
 5-15s,qwen3,4.33
 5-15s,medium_hf,4.73
 5-15s,tiny_hf,14.66

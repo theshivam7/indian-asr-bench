@@ -114,7 +114,17 @@ def main(dataset: str) -> None:
         if rows:
             pd.DataFrame(rows).to_csv(os.path.join(out_dir, f"comparison_by_{col}.csv"), index=False)
 
-    # duration breakdown
+    # duration breakdown. Duration is a clip property, not a model property, so pool an
+    # ID -> duration map across every model's table first: engines that predate the
+    # derived-duration path (the NeMo runners on AESRC) left the column empty, and
+    # without the fill their models silently vanish from this table.
+    dur_by_id = {}
+    for model in models:
+        df = all_data.get((model, PRIMARY_MODE))
+        if df is None:
+            continue
+        d = pd.to_numeric(df["Speech_Duration_seconds"], errors="coerce")
+        dur_by_id.update({i: v for i, v in zip(df["ID"], d) if pd.notna(v)})
     dur = {}
     for model in models:
         df = all_data.get((model, PRIMARY_MODE))
@@ -122,6 +132,7 @@ def main(dataset: str) -> None:
             continue
         df = df.copy()
         df["_dur"] = pd.to_numeric(df["Speech_Duration_seconds"], errors="coerce")
+        df["_dur"] = df["_dur"].fillna(df["ID"].map(dur_by_id))
         df["_bucket"] = pd.cut(df["_dur"], bins=DURATION_BINS, labels=DURATION_LABELS)
         for bucket, gdf in df.groupby("_bucket", observed=True):
             dur.setdefault(str(bucket), {})[model] = round(_corpus_wer(gdf), 2)
