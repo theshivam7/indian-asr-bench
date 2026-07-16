@@ -1,0 +1,3 @@
+category,n_clips,inter_hyp_dist,cross_arch_dist,hyp_to_ref_wer,ref_wer_grounded,ref_wer_free
+content_mismatch,4,0.924,0.92,0.906,0.853,0.922
+unflagged,1727,0.088,0.09,0.083,0.079,0.084

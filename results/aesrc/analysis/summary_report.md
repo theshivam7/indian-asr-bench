@@ -1,0 +1,27 @@
+# WER Evaluation Summary — AESRC2020 (Indian)
+
+## Corpus WER (%) by model and mode (+ primary-mode CER)
+
+| model | display | transcript_raw | transcript_clean | whisper_norm | CER_primary |
+| --- | --- | --- | --- | --- | --- |
+| tiny | Whisper Tiny | 13.91 | 13.66 | 13.21 | 6.24 |
+| base | Whisper Base | 10.27 | 9.96 | 9.64 | 4.3 |
+| small | Whisper Small | 7.52 | 7.23 | 6.96 | 2.87 |
+| medium | Whisper Medium | 6.05 | 5.73 | 5.41 | 2.17 |
+| large | Whisper Large-v3 | 5.39 | 5.2 | 4.78 | 1.93 |
+| large_v3_turbo | Whisper large-v3-turbo | 6.13 | 5.81 | 5.56 | 2.14 |
+| parakeet | Parakeet-TDT-0.6B-v2 | 6.19 | 6.26 | 5.93 | 2.4 |
+| parakeet_ctc | Parakeet-CTC-1.1B | 7.38 | 7.5 | 7.13 | 2.96 |
+| qwen3 | Qwen3-ASR-1.7B | 5.14 | 5.23 | 4.89 | 1.99 |
+| medium_hf | Whisper Medium (HF) | 5.92 | 5.63 | 5.26 | 2.17 |
+| tiny_hf | Whisper Tiny (HF) | 17.64 | 17.45 | 16.97 | 9.44 |
+| small_hf | Whisper Small (HF) | 7.49 | 7.22 | 6.91 | 2.82 |
+| tiny_aesrc_ft | Whisper Tiny (AESRC FT) | 12.49 | 12.64 | 9.83 | 8.45 |
+| small_aesrc_ft | Whisper Small (AESRC FT) | 5.55 | 5.64 | 5.36 | 2.12 |
+| medium_aesrc_ft | Whisper Medium (AESRC FT) | 4.37 | 4.48 | 4.18 | 1.64 |
+
+## Best model per mode
+
+- **transcript_raw**: Whisper Medium (AESRC FT) (4.37%)
+- **transcript_clean**: Whisper Medium (AESRC FT) (4.48%)
+- **whisper_norm**: Whisper Medium (AESRC FT) (4.18%)
