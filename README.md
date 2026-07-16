@@ -117,14 +117,19 @@ All nine pretrained models run as-is on **both** datasets. That is the headline 
 
 **[ai4bharat/Svarah](https://huggingface.co/datasets/ai4bharat/Svarah)**: read-speech prompts recorded under a controlled protocol. "Curated" data, the counterpoint to TIE.
 
+**[pengyizhou/accented_english](https://huggingface.co/datasets/pengyizhou/accented_english)** (AESRC2020, Indian subset): short read commands and queries from the Accented English Speech Recognition Challenge 2020 ([Shi et al., ICASSP 2021](https://arxiv.org/abs/2102.10233)). The mirror carries 8 national accents; the pipeline filters to `accent == INDIAN` on load. Its test split is natively speaker-disjoint from train (481 vs 38 speakers, zero overlap), which makes it the clean instrument for the fine-tuning capacity study. The mirror states no license, so paper use needs a data-use sign-off first.
+
 | Dataset | Split | Clips | Duration | Mean / clip | Median / clip |
 |---------|:-----:|------:|:--------:|:-----------:|:--------------:|
 | TIE_shorts | train | 7,200 (filtered from 7,884 raw) | 46.9h | - | - |
 | TIE_shorts | validation | 986 | 6.84h | 24.98s | 24.62s |
 | TIE_shorts | **test (eval, scored)** | 986 (985 scored, 1 empty reference) | 6.72h | 24.53s | 24.20s |
 | Svarah | **test (eval-only, scored)** | 6,656 | 9.61h | 5.20s | 4.21s |
+| AESRC (Indian) | train | 12,820 | 17.48h | 4.91s | - |
+| AESRC (Indian) | validation | 532 | 0.76h | 5.12s | - |
+| AESRC (Indian) | **test (eval, scored)** | 1,731 | 2.15h | 4.47s | - |
 
-TIE's `test` split is the eval set throughout this README. `train` and `validation` are used only for fine-tuning. Svarah has no train or validation split and is eval-only.
+TIE's and AESRC's `test` splits are the eval sets; `train` and `validation` are used only for fine-tuning. Svarah has no train or validation split and is eval-only.
 
 **TIE_shorts test-split demographics:**
 
@@ -316,7 +321,7 @@ Read past the headline number:
 - Both runs show a healthy learn-then-overfit trajectory (best checkpoints at steps 600 and 800 of 2000), which rules out a no-learning explanation.
 - Absolute WER stays at 14 to 22% after fine-tuning because the domain is hard. Whisper Large-v3 scores 15.93% on TIE vs 7.11% on Svarah with identical weights.
 
-> ⚠️ **Speaker overlap (disclosed).** 100% of test speakers, and 100% of test clips, come from speakers also seen in training ([`speaker_overlap.md`](results/tie/analysis/speaker_overlap.md), via [`check_speaker_overlap.py`](finetune/check_speaker_overlap.py)). There is no clip-level leakage, but the comparison is speaker-matched, so part of any gain reflects speaker adaptation rather than accent or content learning.
+> **Speaker overlap (disclosed).** 100% of test speakers, and 100% of test clips, come from speakers also seen in training ([`speaker_overlap.md`](results/tie/analysis/speaker_overlap.md), via [`check_speaker_overlap.py`](finetune/check_speaker_overlap.py)). There is no clip-level leakage, but the comparison is speaker-matched, so part of any gain reflects speaker adaptation rather than accent or content learning.
 
 > **Long-clip decoding note.** On 60s+ clips the HF chunked pipeline scores much higher WER than `openai-whisper` with identical weights. This hits pretrained and fine-tuned equally, so the head-to-head stays fair, but it inflates tail metrics for HF-pipeline runs.
 

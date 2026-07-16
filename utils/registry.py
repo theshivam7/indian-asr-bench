@@ -69,7 +69,10 @@ def get_normalizer(mode: str) -> str:
 #              (Qwen3) *can* hallucinate.
 # `chart`      whether the model appears in the headline ranking charts (the
 #              FT-study variants are excluded to keep the engine comparison fair).
-# `tie_only`   FT variants are TIE-specific (Svarah is eval-only, no fine-tune).
+# `only_datasets`  restricts a model to specific dataset keys (None = all datasets).
+#              Fine-tuned variants only apply to the dataset they were trained on;
+#              their HF-pipeline pretrained baselines apply to every fine-tunable
+#              dataset (Svarah is eval-only, no fine-tune).
 
 ENGINES = ("openai_whisper", "hf_whisper", "nemo_tdt", "nemo_ctc", "qwen")
 ARCH_CLASSES = ("enc_dec", "transducer", "ctc", "llm")
@@ -87,7 +90,7 @@ class ModelSpec:
     color: str           # Okabe-Ito hex, fixed across all figures
     order: int           # sort order in tables/figures
     chart: bool = True
-    tie_only: bool = False
+    only_datasets: tuple | None = None
 
 
 # Okabe-Ito colourblind-safe palette (kept identical to the previous figures):
@@ -106,16 +109,23 @@ MODEL_SPECS = (
     ModelSpec("parakeet",     "Parakeet-TDT-0.6B-v2", "nemo_tdt", "nvidia/parakeet-tdt-0.6b-v2", "parakeet", "transducer", "600M",  "#D55E00", 40),
     ModelSpec("parakeet_ctc", "Parakeet-CTC-1.1B", "nemo_ctc", "nvidia/parakeet-ctc-1.1b",    "parakeet", "ctc",        "1.1B",  "#882255", 45),
     ModelSpec("qwen3",  "Qwen3-ASR-1.7B", "qwen", "Qwen/Qwen3-ASR-1.7B", "qwen3", "llm", "1.7B", "#CC79A7", 50),
-    # --- Fine-tuning study variants (TIE-only, excluded from headline charts) ---
-    ModelSpec("medium_hf", "Whisper Medium (HF)", "hf_whisper", "openai/whisper-medium", "whisper_medium_ft", "enc_dec", "769M", "#E69F00", 60, chart=False, tie_only=True),
-    ModelSpec("medium_ft", "Whisper Medium (FT)", "hf_whisper", "models/whisper_medium_ft", "whisper_medium_ft", "enc_dec", "769M", "#B07200", 70, chart=False, tie_only=True),
-    # --- Capacity study: Tiny/Small fine-tuning (follow-up to the Medium null result; see
-    # results/tie/analysis/findings_tiny_small_ft.md). Official-split only, no
-    # disjoint/size-matched seeds (out of scope for this minimal protocol). ---
-    ModelSpec("tiny_hf",  "Whisper Tiny (HF)",  "hf_whisper", "openai/whisper-tiny",     "whisper_medium_ft", "enc_dec", "39M",  "#4D4D4D", 90, chart=False, tie_only=True),
-    ModelSpec("tiny_ft",  "Whisper Tiny (FT)",  "hf_whisper", "models/whisper_tiny_ft",  "whisper_medium_ft", "enc_dec", "39M",  "#7F7F7F", 91, chart=False, tie_only=True),
-    ModelSpec("small_hf", "Whisper Small (HF)", "hf_whisper", "openai/whisper-small",    "whisper_medium_ft", "enc_dec", "244M", "#B8A73A", 92, chart=False, tie_only=True),
-    ModelSpec("small_ft", "Whisper Small (FT)", "hf_whisper", "models/whisper_small_ft", "whisper_medium_ft", "enc_dec", "244M", "#8A7B1F", 93, chart=False, tie_only=True),
+    # --- Fine-tuning study variants (excluded from headline charts). The *_hf baselines
+    # apply to every fine-tunable dataset; the *_ft variants only to the dataset they were
+    # trained on. ---
+    ModelSpec("medium_hf", "Whisper Medium (HF)", "hf_whisper", "openai/whisper-medium", "whisper_medium_ft", "enc_dec", "769M", "#E69F00", 60, chart=False, only_datasets=("tie", "aesrc")),
+    ModelSpec("medium_ft", "Whisper Medium (FT)", "hf_whisper", "models/whisper_medium_ft", "whisper_medium_ft", "enc_dec", "769M", "#B07200", 70, chart=False, only_datasets=("tie",)),
+    # --- TIE capacity study: Tiny/Small fine-tuning (follow-up to the Medium null result;
+    # see results/tie/analysis/findings_tiny_small_ft.md). Official-split only. ---
+    ModelSpec("tiny_hf",  "Whisper Tiny (HF)",  "hf_whisper", "openai/whisper-tiny",     "whisper_medium_ft", "enc_dec", "39M",  "#4D4D4D", 90, chart=False, only_datasets=("tie", "aesrc")),
+    ModelSpec("tiny_ft",  "Whisper Tiny (FT)",  "hf_whisper", "models/whisper_tiny_ft",  "whisper_medium_ft", "enc_dec", "39M",  "#7F7F7F", 91, chart=False, only_datasets=("tie",)),
+    ModelSpec("small_hf", "Whisper Small (HF)", "hf_whisper", "openai/whisper-small",    "whisper_medium_ft", "enc_dec", "244M", "#B8A73A", 92, chart=False, only_datasets=("tie", "aesrc")),
+    ModelSpec("small_ft", "Whisper Small (FT)", "hf_whisper", "models/whisper_small_ft", "whisper_medium_ft", "enc_dec", "244M", "#8A7B1F", 93, chart=False, only_datasets=("tie",)),
+    # --- AESRC capacity study: Tiny/Small/Medium fine-tuned on the AESRC2020 Indian train
+    # split (natively speaker-disjoint test set). All three use the step-based recipe in
+    # finetune/finetune_tiny_small.py; baselines are the shared *_hf specs above. ---
+    ModelSpec("tiny_aesrc_ft",   "Whisper Tiny (AESRC FT)",   "hf_whisper", "models/whisper_tiny_aesrc_ft",   "whisper_medium_ft", "enc_dec", "39M",  "#9A9A9A", 94, chart=False, only_datasets=("aesrc",)),
+    ModelSpec("small_aesrc_ft",  "Whisper Small (AESRC FT)",  "hf_whisper", "models/whisper_small_aesrc_ft",  "whisper_medium_ft", "enc_dec", "244M", "#6B5F18", 95, chart=False, only_datasets=("aesrc",)),
+    ModelSpec("medium_aesrc_ft", "Whisper Medium (AESRC FT)", "hf_whisper", "models/whisper_medium_aesrc_ft", "whisper_medium_ft", "enc_dec", "769M", "#8F5C00", 96, chart=False, only_datasets=("aesrc",)),
 )
 MODEL_BY_KEY = {m.key: m for m in MODEL_SPECS}
 ALL_MODELS = tuple(m.key for m in MODEL_SPECS)
@@ -171,6 +181,9 @@ class DatasetSpec:
     #                               utils.io_helpers.decode_audio_value (soundfile) instead.
     #                               Keep False for TIE: its "audio" column stores raw float arrays
     #                               (not Audio-typed bytes), which already bypasses the decoder.
+    filter_col: str | None = None  # HF column + value defining the subset of rows this spec uses
+    filter_value: str | None = None  # (e.g. accent == "INDIAN"). Applied by the adapter on every
+    #                               split load, so all pipeline stages see only the subset.
 
 
 TIE = DatasetSpec(
@@ -251,7 +264,41 @@ SVARAH = DatasetSpec(
     audio_undecoded=True,   # bytes-stored audio: bypass datasets' (torchcodec) decoder entirely
 )
 
-DATASET_SPECS = (TIE, SVARAH)
+# AESRC2020 (Accented English Speech Recognition Challenge 2020, Datatang; Shi et al.,
+# ICASSP 2021) via the pengyizhou/accented_english parquet mirror. The mirror carries all
+# 8 accents; this spec selects the INDIAN subset only (filter_col/filter_value), verified
+# against the live schema on 2026-07-16: columns id / audio (16kHz bytes-stored WAV) /
+# transcription / speaker / accent; splits train (118,927) / valid (5,614) / test (14,493);
+# Indian rows: 12,820 / 532 / 1,731. Test speakers (481) are fully disjoint from the 38
+# train and valid speakers; valid shares train's speaker set exactly, so validation WER
+# measures fit, not speaker generalization. Full population analysis (exact durations,
+# speaker structure, label sanity, licensing) in docs/AESRC2020_INDIAN_ANALYSIS.md.
+AESRC = DatasetSpec(
+    key="aesrc",
+    hf_id="pengyizhou/accented_english",
+    display="AESRC2020 (Indian)",
+    splits={"train": "train", "validation": "valid", "eval": "test"},
+    gold_ref_col="transcription",
+    alt_ref_col=None,                         # no pre-normalized reference field
+    id_col="id",
+    speaker_col="speaker",
+    audio_col="audio",
+    duration_col=None,                        # no duration column; derived from audio bytes
+    metadata_cols={
+        "Accent": "accent",
+    },
+    subgroup_dims=(),                         # accent is constant after filtering; no other dims
+    applicable_modes=("transcript_raw", "transcript_clean", "whisper_norm"),
+    license="Unspecified (mirror carries no license; AESRC2020 is Datatang's corpus - "
+            "confirm data-use terms before paper use, see docs/AESRC2020_INDIAN_ANALYSIS.md)",
+    citation="Shi et al., ICASSP 2021 (arXiv:2102.10233)",
+    hf_revision="4a80d8388f06368a0fa2a325770bec3492cabd3d",  # 2026-06-29; predates all runs
+    audio_undecoded=True,   # bytes-stored audio: bypass datasets' (torchcodec) decoder entirely
+    filter_col="accent",
+    filter_value="INDIAN",
+)
+
+DATASET_SPECS = (TIE, SVARAH, AESRC)
 DATASET_BY_KEY = {d.key: d for d in DATASET_SPECS}
 
 
@@ -262,11 +309,10 @@ def get_dataset(key: str) -> DatasetSpec:
 
 
 def models_for_dataset(dataset_key: str) -> tuple:
-    """Model keys applicable to a dataset (excludes TIE-only FT variants elsewhere)."""
+    """Model keys applicable to a dataset, honoring each spec's only_datasets gate."""
     d = get_dataset(dataset_key)
-    if d.key == "tie":
-        return ALL_MODELS
-    return tuple(m.key for m in MODEL_SPECS if not m.tie_only)
+    return tuple(m.key for m in MODEL_SPECS
+                 if m.only_datasets is None or d.key in m.only_datasets)
 
 
 def modes_for_dataset(dataset_key: str) -> tuple:

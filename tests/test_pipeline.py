@@ -101,10 +101,37 @@ def test_registry_integrity():
     for m in registry.MODEL_SPECS:
         assert m.engine in registry.ENGINES
         assert m.arch_class in registry.ARCH_CLASSES
-    # TIE sees every model incl. FT variants; Svarah excludes the TIE-only ones.
+        if m.only_datasets is not None:
+            assert set(m.only_datasets) <= set(registry.DATASET_BY_KEY), \
+                f"{m.key}.only_datasets references an unknown dataset"
+    # Svarah is eval-only: no FT variants or HF baselines apply there.
     assert set(registry.models_for_dataset("svarah")).isdisjoint(
-        {m.key for m in registry.MODEL_SPECS if m.tie_only})
+        {m.key for m in registry.MODEL_SPECS if m.only_datasets is not None})
     assert "hf_raw" not in registry.modes_for_dataset("svarah")   # Svarah has no alt reference
+
+
+def test_dataset_model_gating():
+    tie_models = set(registry.models_for_dataset("tie"))
+    aesrc_models = set(registry.models_for_dataset("aesrc"))
+    # TIE keeps its FT variants; AESRC gets its own plus the shared HF baselines.
+    assert {"tiny_ft", "small_ft", "medium_ft"} <= tie_models
+    assert {"tiny_ft", "small_ft", "medium_ft"}.isdisjoint(aesrc_models)
+    assert {"tiny_aesrc_ft", "small_aesrc_ft", "medium_aesrc_ft"} <= aesrc_models
+    assert {"tiny_aesrc_ft", "small_aesrc_ft", "medium_aesrc_ft"}.isdisjoint(tie_models)
+    assert {"tiny_hf", "small_hf", "medium_hf"} <= tie_models & aesrc_models
+    # All 9 pretrained chart models apply everywhere.
+    for d in registry.DATASET_BY_KEY:
+        assert set(registry.CHART_MODELS) <= set(registry.models_for_dataset(d))
+
+
+def test_aesrc_spec():
+    spec = registry.get_dataset("aesrc")
+    assert spec.filter_col == "accent" and spec.filter_value == "INDIAN"
+    assert spec.audio_undecoded is True          # bytes-stored audio needs the decode bypass
+    assert spec.duration_col is None             # duration derived from audio bytes
+    assert spec.speaker_col == "speaker"
+    assert "hf_raw" not in spec.applicable_modes  # no alt reference field
+    assert set(spec.splits) == {"train", "validation", "eval"}
 
 
 def test_dataset_modes_reference_valid_roles():

@@ -118,9 +118,33 @@ def load_split(dataset_key: str, role: str = "eval"):
 
         ds = ds.cast_column(spec.audio_col, Audio(decode=False))
         print(f"  Cast '{spec.audio_col}' -> Audio(decode=False) (torchcodec-free bytes access)")
+    ds = _apply_row_filter(spec, ds)
     _validate_schema(spec, ds)
     _validate_data(spec, ds)
     return ds, spec
+
+
+def _apply_row_filter(spec, ds):
+    """Keep only rows where spec.filter_col == spec.filter_value (e.g. AESRC accent).
+
+    input_columns keeps the filter pass from touching the audio column. flatten_indices()
+    is required afterwards: filter() applies a lazy indices overlay, and every raw arrow
+    audio access (raw_audio_column) indexes ds.data by physical row, which would misalign
+    with logical rows under an overlay.
+    """
+    if not spec.filter_col:
+        return ds
+    if spec.filter_col not in ds.column_names:
+        raise KeyError(f"[datasets] '{spec.key}': filter_col '{spec.filter_col}' not in "
+                       f"columns {sorted(ds.column_names)} - fix the DatasetSpec.")
+    n_before = len(ds)
+    ds = ds.filter(lambda v: v == spec.filter_value,
+                   input_columns=[spec.filter_col]).flatten_indices()
+    print(f"  Filter {spec.filter_col} == '{spec.filter_value}': {n_before} -> {len(ds)} rows")
+    if len(ds) == 0:
+        raise ValueError(f"[datasets] '{spec.key}': filter {spec.filter_col} == "
+                         f"'{spec.filter_value}' matched 0 rows - wrong filter value?")
+    return ds
 
 
 def load_eval(dataset_key: str):

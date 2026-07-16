@@ -45,7 +45,7 @@ python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUD
 # Fail-early preflight: exercises dataset load, ID validation, and audio decode on
 # CPU. If the data/env is broken, die here in seconds, not hours into inference.
 python scripts/smoke_test.py --dataset svarah \
-    || { echo "[FATAL] Svarah smoke test failed - fix before burning GPU time"; exit 1; }
+    || { echo "[FATAL] Svarah smoke test failed - fix before using GPU time"; exit 1; }
 
 for M in base medium large large_v3_turbo; do
   echo -e "\n=== Svarah Stage 1: whisper ${M} ==="

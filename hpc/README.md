@@ -31,8 +31,9 @@ PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup       # also create mis
 ```
 
 Without `--phase`, the submitter only submits **phase 1** (see `hpc/NSCC_RUNBOOK.md` for the
-phased 1/2 submission flow, and the `--after <job_id>` flag for chaining phases you submit
-separately).
+phased submission flow, and the `--after <job_id>` flag for chaining phases you submit
+separately). Phases: `1` (TIE new models), `2` (Svarah), `3` (AESRC Indian pretrained
+benchmark), `ft-aesrc` (tiny/small/medium fine-tune on AESRC, three serially-chained jobs).
 
 Dependency graph (`-->` = PBS `afterok`):
 
@@ -66,9 +67,14 @@ qsub -P <id> -v DATASETS=tie,svarah                hpc/job_figures.pbs # CPU-onl
 qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full from-scratch 7-model run
 ```
 
+`DATASET` accepts any registry key (`tie`, `svarah`, `aesrc`); the AESRC spec filters
+to the Indian accent subset on load.
+
 Bundled multi-step jobs: `job_new_models_tie.pbs` (turbo + parakeet_ctc on TIE,
 then rescore + analyse), `job_svarah.pbs` (all 7 models on Svarah → Stage 2/3 +
-NEER), `job_finetune_size.pbs` (Tiny/Small capacity-study fine-tune, `-v SIZE=tiny|small`).
+NEER), `job_aesrc.pbs` (9 pretrained models on the AESRC Indian test split → Stage 2/3),
+`job_finetune_size.pbs` (capacity-study fine-tune: `-v SIZE=tiny|small` for TIE,
+`-v SIZE=tiny|small|medium,DATASET=aesrc` for AESRC).
 
 ## Fine-tuning (standalone)
 

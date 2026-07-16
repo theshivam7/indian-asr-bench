@@ -71,14 +71,14 @@ lines += [
 ]
 if test_clip_share > 0:
     lines.append(
-        f"> ⚠️ **Speaker-matched fine-tuning**: {test_clip_share * 100:.1f}% of test clips come from "
+        f"> **Speaker-matched fine-tuning**: {test_clip_share * 100:.1f}% of test clips come from "
         "speakers also seen during training. The fine-tuning improvement therefore partly reflects "
         "speaker adaptation. This is disclosed, not hidden — it reflects the dataset's official splits, "
         "which we did not modify."
     )
 else:
     lines.append(
-        "> ✅ No speaker overlap between train and test — the fine-tuning gain reflects genuine "
+        "> No speaker overlap between train and test — the fine-tuning gain reflects genuine "
         "generalization to unseen speakers."
     )
 lines.append("")
