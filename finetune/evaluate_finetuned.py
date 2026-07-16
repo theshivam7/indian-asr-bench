@@ -52,6 +52,7 @@ DEFAULT_FT_DIR = os.path.join(REPO_ROOT, "models", "whisper_medium_ft")
 # per-name default, so any local fine-tuned variant can be evaluated without editing
 # this script.
 _source = os.environ.get("MODEL_SOURCE")
+_is_local_dir = False   # set True when the path must already exist on disk
 if _source:
     model_path = _source
 elif MODEL_NAME == "medium_ft":
@@ -64,7 +65,11 @@ elif MODEL_NAME in MODEL_BY_KEY and MODEL_BY_KEY[MODEL_NAME].engine == "hf_whisp
     # local path made relative to the repo root (weights on this cluster live
     # under $SCRATCH, not in the repo, so MODEL_SOURCE remains the usual override).
     _mid = MODEL_BY_KEY[MODEL_NAME].model_id
-    model_path = _mid if "/" in _mid and not _mid.startswith("models") else os.path.join(REPO_ROOT, _mid)
+    if "/" in _mid and not _mid.startswith("models"):
+        model_path = _mid                              # HF hub id, downloaded on demand
+    else:
+        model_path = os.path.join(REPO_ROOT, _mid)     # registry-local weights
+        _is_local_dir = True
 else:
     sys.exit(f"[ERROR] MODEL_NAME='{MODEL_NAME}' needs an explicit MODEL_SOURCE "
              f"(path or HF id), or use 'medium_ft' / 'medium_hf'.")
@@ -74,8 +79,10 @@ else:
 # utils/registry.py) rather than by presence of a path separator: HF namespaced ids like
 # "openai/whisper-medium" also contain "/", so that check alone misfires on every HF-hosted
 # pretrained baseline (medium_hf, tiny_hf, small_hf, ...) and would incorrectly exit before
-# ever calling build_asr_pipeline.
-if model_path.startswith(("models/", "models" + os.sep)) and not os.path.isdir(model_path):
+# ever calling build_asr_pipeline. Registry-resolved local paths become absolute after the
+# REPO_ROOT join, so the branch above marks them explicitly rather than re-matching the prefix.
+if (_is_local_dir or model_path.startswith(("models/", "models" + os.sep))) \
+        and not os.path.isdir(model_path):
     sys.exit(f"[ERROR] model weights not found at {model_path}. "
              f"Run finetune_medium.py or finetune_tiny_small.py first.")
 
