@@ -85,6 +85,32 @@ def decode_audio_value(audio_value: dict, target_sr: int | None = None) -> tuple
     return samples, sr
 
 
+def probe_audio_duration(audio_value) -> float | None:
+    """Clip duration in seconds from a raw audio value, without decoding samples.
+
+    Bytes-stored audio ({"bytes", "path"}) is probed via soundfile's header read;
+    array-stored audio derives it from the array length. Returns None when the
+    value carries no usable audio. Used to fill Speech_Duration_seconds for
+    datasets whose spec has no duration column, so duration-bucket analyses and
+    the manifest's real-time-factor timing work for every dataset.
+    """
+    if not isinstance(audio_value, dict):
+        return None
+    array = audio_value.get("array")
+    if array is not None:
+        sr = int(audio_value.get("sampling_rate") or 16000)
+        return len(np.asarray(array).reshape(-1)) / sr if sr > 0 else None
+    if audio_value.get("bytes"):
+        import soundfile as sf
+
+        try:
+            info = sf.info(io.BytesIO(audio_value["bytes"]))
+            return float(info.frames) / float(info.samplerate)
+        except RuntimeError:   # unreadable header: treat as unknown, not fatal
+            return None
+    return None
+
+
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
@@ -157,6 +183,7 @@ def build_sample_row(
     spec=None,
     split: str | None = None,
     alt_ref: str | None = None,
+    duration: float | None = None,
 ) -> dict:
     """Build the canonical raw-CSV row for any dataset, driven by its DatasetSpec.
 
@@ -165,7 +192,9 @@ def build_sample_row(
     Called with the old 4-arg signature it defaults to the TIE spec and reproduces
     the original TIE schema byte-for-byte (so the untouched task4/5/6 scripts keep
     working). ``alt_ref`` is the alternate reference (TIE Normalised_Transcript);
-    if None it is pulled from ``spec.alt_ref_col`` when present.
+    if None it is pulled from ``spec.alt_ref_col`` when present. ``duration``
+    overrides the spec's duration column (used when the caller derived it from the
+    audio itself, e.g. AESRC's bytes-stored clips with no duration column).
     """
     from utils.registry import TIE
 
@@ -175,12 +204,16 @@ def build_sample_row(
         split = spec.splits.get("eval", "test")
     if alt_ref is None:
         alt_ref = sample.get(spec.alt_ref_col) if spec.alt_ref_col else ""
+    if duration is None:
+        duration = (sample.get(spec.duration_col) or "") if spec.duration_col else ""
+    else:
+        duration = round(float(duration), 3)
 
     row = {
         "split": split,
         "ID": sample_id,
         "Speaker_ID": sample.get(spec.speaker_col, "") if spec.speaker_col else "",
-        "Speech_Duration_seconds": (sample.get(spec.duration_col) or "") if spec.duration_col else "",
+        "Speech_Duration_seconds": duration,
     }
     for out_name, src_col in spec.metadata_cols.items():
         row[out_name] = sample.get(src_col, "")

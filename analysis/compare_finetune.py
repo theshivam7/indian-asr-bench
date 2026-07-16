@@ -224,6 +224,11 @@ def run_pair(pair: dict) -> dict:
             if df is not None:
                 have[model][mode] = corpus_wer(df)
 
+    if not have[baseline] or not have[finetuned]:
+        print(f"  [SKIP] {display_name}: no scored results yet for '{baseline}' and/or "
+              f"'{finetuned}' — no report written")
+        return dict(key=key, display_name=display_name, params=params, headline=None)
+
     lines += [
         "## Corpus WER (%) by evaluation mode",
         "",

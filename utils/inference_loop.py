@@ -35,6 +35,7 @@ from utils.io_helpers import (
     remove_checkpoint,
     write_run_manifest,
     raw_audio_column,
+    probe_audio_duration,
 )
 
 
@@ -60,6 +61,9 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
     # dict so plain iteration never triggers datasets' Audio-feature decode, and pass the
     # matching raw arrow value as the second argument instead (see module docstring).
     callback_takes_raw_audio = len(inspect.signature(transcribe_one).parameters) >= 2
+    # Datasets without a duration column (AESRC) get per-clip duration derived from the
+    # audio header, so duration-bucket analyses and manifest timing stay available.
+    derive_duration = spec.duration_col is None and spec.audio_undecoded
     raw_audio = raw_audio_column(ds) if callback_takes_raw_audio else None
     ds_iter = ds.remove_columns(["audio"]) if callback_takes_raw_audio else ds
 
@@ -86,6 +90,10 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
         if not transcript:
             continue
         sid = sample_id(sample, spec)
+        duration = None
+        if derive_duration:
+            av = raw_audio[idx].as_py() if callback_takes_raw_audio else sample.get(spec.audio_col)
+            duration = probe_audio_duration(av)
         if sid in completed:
             hyp_raw = str(ckpt_map.get(sid, {}).get("hypothesis_raw") or "")
         else:
@@ -96,7 +104,10 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
             n_fresh += 1
             if spec.duration_col:
                 fresh_audio_seconds += float(sample.get(spec.duration_col) or 0.0)
-        rows.append(build_sample_row(sample, sid, transcript, hyp_raw, spec=spec, split=split))
+            elif duration:
+                fresh_audio_seconds += duration
+        rows.append(build_sample_row(sample, sid, transcript, hyp_raw, spec=spec, split=split,
+                                     duration=duration))
         if len(rows) % checkpoint_every == 0:
             save_checkpoint(rows, model_key, dataset_key)
 
