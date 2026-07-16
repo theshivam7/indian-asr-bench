@@ -13,9 +13,9 @@ test,281474976893991_f3340_chunk_0.wav,,0.47075,Female,45-60,Telugu,small,whispe
 test,281474976899564_f2428_chunk_0.wav,,0.2633125,Female,45-60,Bengali,small,whisper_norm,gold,House,house,How is.</p><p longo Resources base class.,how is p longo resources base class,7.0,6.0,0.0,7.0
 test,281474976909238_f2866_chunk_1.wav,,4.55175,Female,45-60,Punjabi,small,whisper_norm,gold,377138354339 ?,377138354339,"3, 7, 8, 5, 4, 3, 9.",3 7 8 5 4 3 9,7.0,0.5833,0.0,7.0
 test,281474976884349_f1690_chunk_1.wav,,0.5906875,Female,18-30,Tamil,small,whisper_norm,gold,Chennai,chennai,Have a great day and night.,have a great day and night,6.0,3.2857,0.0,6.0
-test,281474976897634_f275_chunk_0.wav,,0.2164375,Male,30-45,Tamil,small,whisper_norm,gold,Help,help,Thank you. Have a great day.,thank you have a great day,6.0,6.0,0.0,6.0
-test,281474976893988_f2006_chunk_3.wav,,0.430625,Female,45-60,Telugu,small,whisper_norm,gold,Padma,padma,"proven enough, not a good dog.",proven enough not a good dog,6.0,5.0,0.0,6.0
 test,281474976888943_f2387_chunk_1.wav,,3.040875,Female,18-30,Konkani,small,whisper_norm,gold,673694,673694,6 7 3 6 9 4,6 7 3 6 9 4,6.0,0.8333,0.0,6.0
+test,281474976893988_f2006_chunk_3.wav,,0.430625,Female,45-60,Telugu,small,whisper_norm,gold,Padma,padma,"proven enough, not a good dog.",proven enough not a good dog,6.0,5.0,0.0,6.0
+test,281474976897634_f275_chunk_0.wav,,0.2164375,Male,30-45,Tamil,small,whisper_norm,gold,Help,help,Thank you. Have a great day.,thank you have a great day,6.0,6.0,0.0,6.0
 test,281474976899945_f943_chunk_0.wav,,0.41,Male,30-45,Maithili,small,whisper_norm,gold,hallow,hallow,Max deer up until next video.,max deer up until next video,6.0,4.3333,0.0,6.0
 test,281474976885769_f1327_chunk_0.wav,,0.4158125,Female,30-45,Kannada,small,whisper_norm,gold,power off,power off,"So, I'll see you in the next video. Bye-bye.",so i will see you in the next video bye bye,5.5,4.2222,0.0,5.5
 test,281474976893988_f2006_chunk_4.wav,,0.5846875,Female,45-60,Telugu,small,whisper_norm,gold,Vishnupriya,vishnupriya,I hope I know you.,i hope i know you,5.0,1.2727,0.0,5.0

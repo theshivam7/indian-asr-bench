@@ -52,13 +52,13 @@ A naive (guard-free) run flags 12/985 clips (1.2%) as artifacts. The agreement t
 
 ## Worst-20 tail (continuity with the original hand analysis)
 
-Top-20 highest-WER clips per model (180 rows -> 55 distinct). **Tail artifact share: 65.5%** (95% Wilson CI 52.3–76.6%).
+Top-20 highest-WER clips per model (180 rows -> 54 distinct). **Tail artifact share: 66.7%** (95% Wilson CI 53.4–77.8%).
 
 | category | n_clips | share_pct | mean_recall | mean_ratio | mean_wer |
 | --- | --- | --- | --- | --- | --- |
-| clip_over_run | 31 | 56.4 | 0.94 | 2.03 | 1.118 |
-| content_mismatch | 5 | 9.1 | 0.18 | 0.86 | 1.006 |
-| genuine_error | 19 | 34.5 | 0.69 | 1.41 | 0.863 |
+| clip_over_run | 31 | 57.4 | 0.94 | 2.03 | 1.118 |
+| content_mismatch | 5 | 9.3 | 0.18 | 0.86 | 1.006 |
+| genuine_error | 18 | 33.3 | 0.69 | 1.42 | 0.872 |
 
 17 tail clips appear in the worst-20 of >=3 distinct architectures; across those the mean per-clip spread is recall std=0.024, length-ratio std=0.159.
 
