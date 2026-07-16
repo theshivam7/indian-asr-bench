@@ -1,0 +1,31 @@
+#!/bin/bash
+#PBS -N asr_spk_overlap
+#PBS -l select=1:ncpus=4:mem=16gb
+#PBS -l walltime=1:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/speaker_overlap.log
+#PBS -e logs/speaker_overlap.log
+#PBS -j oe
+#PBS -k oed
+
+# CPU-only: speaker-overlap leakage disclosure for one dataset. Reads only the speaker
+# column from the cached splits (no GPU, no audio decode beyond the adapter's one-clip
+# probe) and writes results/<dataset>/analysis/speaker_overlap.md. Run after a job that
+# has already downloaded the dataset's train/valid/test splits into HF_CACHE.
+#   qsub -v DATASET=aesrc hpc/job_speaker_overlap.pbs
+
+WORKDIR=${WORKDIR:-$(pwd)}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/whisper}
+HF_CACHE=${HF_CACHE:-${SCRATCH:-/scratch/users/ntu/$USER}/hf_cache}
+DATASET=${DATASET:-tie}
+
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}"
+mkdir -p "${WORKDIR}/logs"
+cd "${WORKDIR}"
+conda activate "${WHISPER_ENV}"
+
+echo "=== Speaker-overlap check for dataset '${DATASET}' $(date) ==="
+python finetune/check_speaker_overlap.py --dataset "${DATASET}"
+echo "=== done $(date) ==="

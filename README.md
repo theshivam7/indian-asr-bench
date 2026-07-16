@@ -2,14 +2,17 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/Datasets-TIE__shorts%20+%20Svarah-orange" />
-  <img src="https://img.shields.io/badge/Test%20clips-986%20+%206656-purple" />
+  <img src="https://img.shields.io/badge/Datasets-TIE__shorts%20+%20Svarah%20+%20AESRC-orange" />
+  <img src="https://img.shields.io/badge/Test%20clips-986%20+%206656%20+%201731-purple" />
   <img src="https://img.shields.io/badge/Models-9%20per%20dataset-blue" />
   <a href="https://huggingface.co/datasets/raianand/TIE_shorts">
     <img src="https://img.shields.io/badge/Dataset-TIE__shorts-yellow?logo=huggingface" />
   </a>
   <a href="https://huggingface.co/datasets/ai4bharat/Svarah">
     <img src="https://img.shields.io/badge/Dataset-Svarah-yellow?logo=huggingface" />
+  </a>
+  <a href="https://huggingface.co/datasets/pengyizhou/accented_english">
+    <img src="https://img.shields.io/badge/Dataset-AESRC2020-yellow?logo=huggingface" />
   </a>
   <a href="https://huggingface.co/theshivam7/whisper-tiny-indian-english">
     <img src="https://img.shields.io/badge/Model-whisper--tiny--indian--english-yellow?logo=huggingface" />
@@ -24,7 +27,7 @@
 
 <p align="center">
   <b>A reproducible Word Error Rate benchmark for ASR on Indian English speech:<br>
-  two datasets, nine models each, up to five normalization modes, and a fine-tuning capacity study across model sizes.</b>
+  three datasets, nine models each, up to five normalization modes, and a fine-tuning capacity study across model sizes.</b>
 </p>
 
 <p align="center">
@@ -57,7 +60,7 @@ This project answers four questions:
 Two headline findings:
 
 - **Normalization moves WER as much as the model choice.** Switching normalizer or reference shifts scores by 2 to 4.5 pp, the size of most model-to-model gaps.
-- **The median clip scores 3 to 4 pp better than corpus WER.** A rare but severe tail inflates the average: reference artifacts on TIE_shorts, sub-second isolated words on Svarah.
+- **The median clip scores well below corpus WER.** On TIE the gap is 3 to 4 pp (reference artifacts in the tail); on Svarah it is 7 to 12 pp, since median WER is 0% for six of nine models on its many short, isolated-word prompts, while a rare severe miss inflates the corpus average.
 
 ---
 
@@ -107,7 +110,7 @@ Extending the benchmark:
 | **Whisper Small (fine-tuned)** | 244M | Encoder-Decoder | [theshivam7/whisper-small-indian-english](https://huggingface.co/theshivam7/whisper-small-indian-english) (*this project*) |
 | **Whisper Medium (fine-tuned)** | 769M | Encoder-Decoder | [theshivam7/whisper-medium-indian-english](https://huggingface.co/theshivam7/whisper-medium-indian-english) (*this project*) |
 
-All nine pretrained models run as-is on **both** datasets. That is the headline benchmark. Fine-tuning is TIE-only and analyzed separately in [Fine-tuning](#fine-tuning-pretrained-vs-fine-tuned-across-sizes); all three fine-tuned checkpoints are published on the HF Hub.
+All nine pretrained models run as-is on **all three** datasets. That is the headline benchmark. Fine-tuning is analyzed separately in [Fine-tuning](#fine-tuning-pretrained-vs-fine-tuned-across-sizes): TIE's Tiny/Small/Medium capacity study is complete (checkpoints published on the HF Hub); the same study is running on AESRC's natively speaker-disjoint split, results incoming.
 
 ---
 
@@ -181,6 +184,24 @@ Statistical check: speaker-clustered paired bootstrap over 280 speakers, Holm-co
 - Whisper Base (74M) is statistically tied with large-v3-turbo (809M), diff −0.45 pp. Model size alone does not predict rank here.
 
 > Fine-tuned models are excluded from this ranking because they decode through a different engine (HF `transformers` rather than `openai-whisper`). Their engine-controlled comparison is in [Fine-tuning](#fine-tuning-pretrained-vs-fine-tuned-across-sizes).
+
+#### Cross-check: `whisper_norm`
+
+Corpus WER under OpenAI's `EnglishTextNormalizer` instead of this project's `transcript_clean` normalizer, same gold reference. Computed for every model alongside the primary metric; shown here since it does not appear in the ranking table above.
+
+| Model | `transcript_clean` (gold) | `whisper_norm` | Δ |
+|-------|:--------------------------:|:---------------:|:-:|
+| Whisper Medium | 14.76% | 14.48% | −0.28 pp |
+| Parakeet-TDT-0.6B-v2 | 15.60% | 15.17% | −0.43 pp |
+| Whisper Large-v3 | 15.93% | 15.76% | −0.17 pp |
+| Whisper Small | 16.05% | 15.80% | −0.25 pp |
+| Parakeet-CTC-1.1B | 16.45% | 16.19% | −0.26 pp |
+| Qwen3-ASR-1.7B | 16.66% | 15.40% | −1.26 pp |
+| Whisper Base | 17.53% | 17.03% | −0.50 pp |
+| Whisper large-v3-turbo | 17.98% | 17.75% | −0.23 pp |
+| Whisper Tiny | 19.43% | 19.01% | −0.42 pp |
+
+`whisper_norm` lowers every model's WER, but unevenly: Qwen3 moves the most (−1.26 pp), rising from 6th to 3rd place and passing both Large-v3 and Small, while the Whisper family barely shifts (~0.2 to 0.5 pp). `transcript_clean` remains the primary metric throughout this README.
 
 #### Key findings
 
@@ -482,7 +503,7 @@ Stated so the numbers above are read correctly:
 ## Future Work
 
 - **Run the blind human-annotation pass** ([`analysis/validation/`](analysis/validation/), 91-item stratified sheet). It turns the classifier's heuristic status into measured precision and recall, and it is the highest-value remaining task.
-- **Fine-tune on natively speaker-disjoint Indian-accent data** (for example the Indian subset of AESRC2020) to separate accent adaptation from the speaker adaptation TIE's overlapping splits cannot rule out.
+- **Cross-dataset fine-tuning contrast**: with AESRC's capacity study landing (speaker-disjoint test, no overlap confound), compare its FT deltas against TIE's speaker-matched ones directly, isolating genuine generalization from speaker adaptation.
 - **Multi-seed replication** of the capacity study, which would also give it the power to confirm or reject the ~3 pp Tiny-size effect.
 - **Activate the NEER entity metric** (`analysis/entity_analysis.py`) once a use-case register field is derived for Svarah. Entity-dense clips currently score far above 100% WER for spelling-convention reasons, not misrecognition.
 - **Long-form decoding study**: quantify why the HF chunked pipeline scores higher than `openai-whisper` on 60s+ clips with identical weights.
