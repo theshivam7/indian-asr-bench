@@ -1,0 +1,78 @@
+#!/bin/bash
+#PBS -N asr_bench_aesrc
+#PBS -l select=1:ngpus=1:ncpus=8:mem=64gb
+#PBS -l walltime=10:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/aesrc.log
+#PBS -e logs/aesrc.log
+#PBS -j oe
+#PBS -k oed
+
+# Full AESRC2020 (Indian subset) benchmark: 9 pretrained models -> Stage 2 -> Stage 3
+# (compare + statistics + error analysis). The registry spec filters the dataset to
+# accent == INDIAN on load (test split: 14,493 -> 1,731 clips, 2.15h audio). First run
+# downloads the test parquet shards (~1.7GB) into HF_CACHE; keep HF_CACHE on /scratch.
+# Fine-tuning is a separate job (hpc/job_finetune_size.pbs with DATASET=aesrc).
+
+WORKDIR=${WORKDIR:-$(pwd)}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+WHISPER_ENV=${WHISPER_ENV:-whisper}
+PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
+QWEN3_ENV=${QWEN3_ENV:-qwen3}
+HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
+
+module load "${CUDA_MODULE}" 2>/dev/null || true
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}" XDG_CACHE_HOME="${HF_CACHE}"
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
+cd "${WORKDIR}"
+
+echo "=== AESRC (Indian) pipeline started $(date) on $(hostname) ==="
+
+echo "--- GPU / CUDA diagnostics ---"
+nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
+
+# Stage 1 -- Whisper family (whisper env)
+conda activate "${WHISPER_ENV}"
+# Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
+# non-interactive PBS batch shell (same quirk documented in job_svarah.pbs); without
+# this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok, '| device count:', torch.cuda.device_count()); sys.exit(0 if ok else 1)" \
+    || { echo "[FATAL] CUDA not available in ${WHISPER_ENV} - aborting before a CPU-bound run"; exit 1; }
+
+# Fail-early preflight: exercises dataset load, the INDIAN filter, ID validation, and
+# audio decode on CPU. If the data/env is broken, die here in seconds, not hours in.
+python scripts/smoke_test.py --dataset aesrc \
+    || { echo "[FATAL] AESRC smoke test failed - fix before using GPU time"; exit 1; }
+
+for M in tiny base small medium large large_v3_turbo; do
+  echo -e "\n=== AESRC Stage 1: whisper ${M} ==="
+  python whisper_asr/run_whisper.py --model "${M}" --dataset aesrc
+done
+
+# Stage 1 -- Parakeet TDT + CTC (parakeet env)
+conda activate "${PARAKEET_ENV}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+for M in parakeet parakeet_ctc; do
+  echo -e "\n=== AESRC Stage 1: ${M} ==="
+  python parakeet/wer_parakeet.py --model "${M}" --dataset aesrc
+done
+
+# Stage 1 -- Qwen3 (qwen3 env)
+conda activate "${QWEN3_ENV}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+echo -e "\n=== AESRC Stage 1: qwen3 ==="
+python qwen3/wer_qwen3.py --dataset aesrc
+
+# Stage 2 + 3 (CPU; whisper env has pandas/jiwer/matplotlib + whisper_normalizer)
+conda activate "${WHISPER_ENV}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+echo -e "\n=== AESRC Stage 2 + 3 ==="
+python normalize_and_score.py --dataset aesrc
+python analysis/compare_all.py --dataset aesrc
+python analysis/statistics.py --dataset aesrc
+python analysis/error_analysis.py --dataset aesrc
+
+echo "=== AESRC pipeline complete $(date) ==="

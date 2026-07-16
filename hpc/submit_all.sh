@@ -12,15 +12,18 @@
 #
 #   PHASE 1      job_new_models_tie        GPU ~5h   turbo + parakeet_ctc on TIE, rescore
 #   PHASE 2      job_svarah                GPU ~10h  all 7 models on Svarah (biggest download)
+#   PHASE 3      job_aesrc                 GPU ~8h   9 pretrained models on AESRC Indian test
+#   PHASE ft-aesrc  job_finetune_size x3   GPU ~5h each  tiny/small/medium fine-tune on AESRC,
+#                                          submitted serially (afterany-chained)
 #
 # USAGE (from the repo root on a login node):
-#     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase 1     # then 2
+#     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase 1     # then 2, 3, ft-aesrc
 #     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup       # create/verify envs only
-#     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase all   # submit both, chained by afterok
+#     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase all   # submit 1+2, chained by afterok
 #
-# Phase 2 (Svarah) writes to a separate results dir — safe to submit while Phase 1
-# is still running:
+# Phases write to separate results dirs — safe to submit while another phase runs:
 #     PROJECT=<id> bash hpc/submit_all.sh --phase 2
+#     PROJECT=<id> bash hpc/submit_all.sh --phase 3
 #
 # Svarah is a GATED HF dataset — authenticate ONCE (writes token under HF cache):
 #     export HF_CACHE=/scratch/users/ntu/$USER/hf_cache
@@ -115,11 +118,30 @@ qsub_job() { qsub -P "$PROJECT" -v "$VARS" "$@"; }
 
 submit_phase1() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_new_models_tie.pbs; }
 submit_phase2() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_svarah.pbs; }
+submit_phase3() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_aesrc.pbs; }
 submit_figs()   { qsub_job -W depend=afterok"$1" hpc/job_figures.pbs; }
+
+# Three fine-tune jobs (tiny -> small -> medium) on AESRC, chained afterany so only one
+# GPU job runs at a time. Each needs its own SIZE/FT_SIZE_OUTPUT, so VARS is per-job.
+submit_ft_aesrc() {
+  local dep="${1:-}" size jid prev="" depflag
+  for size in tiny small medium; do
+    if [ -n "$prev" ]; then depflag="-W depend=afterany:$prev";
+    elif [ -n "$dep" ]; then depflag="-W depend=afterok:$dep";
+    else depflag=""; fi
+    jid=$(qsub -P "$PROJECT" \
+          -v "${VARS},SIZE=${size},DATASET=aesrc,FT_SIZE_OUTPUT=${SCRATCH}/models/whisper_${size}_aesrc_ft" \
+          $depflag hpc/job_finetune_size.pbs)
+    echo "  [ft-aesrc] ${size} fine-tune : $jid${prev:+ (afterany $prev)}"
+    prev="$jid"
+  done
+}
 
 case "$PHASE" in
   1) J=$(submit_phase1 "$AFTER");    echo "  [phase 1] TIE new models : $J${AFTER:+ (afterok $AFTER)}" ;;
   2) J=$(submit_phase2 "$AFTER");    echo "  [phase 2] Svarah         : $J${AFTER:+ (afterok $AFTER)}" ;;
+  3) J=$(submit_phase3 "$AFTER");    echo "  [phase 3] AESRC Indian   : $J${AFTER:+ (afterok $AFTER)}" ;;
+  ft-aesrc) submit_ft_aesrc "$AFTER" ;;
   all)
      J1=$(submit_phase1)
      J2=$(submit_phase2)                       # parallel with phase 1 (separate result dirs)
@@ -127,7 +149,7 @@ case "$PHASE" in
      echo "  [phase 1] TIE new models : $J1"
      echo "  [phase 2] Svarah         : $J2 (parallel)"
      echo "  [final ] combined figs   : $F  (afterok $J1,$J2)" ;;
-  *) echo "ERROR: --phase must be 1, 2, or all" >&2; exit 1 ;;
+  *) echo "ERROR: --phase must be 1, 2, 3, ft-aesrc, or all" >&2; exit 1 ;;
 esac
 
 echo "------------------------------------------------------------------"

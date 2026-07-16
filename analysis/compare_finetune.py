@@ -2,24 +2,27 @@
 Fine-tuning capacity study: pretrained vs fine-tuned, per model size.
 
 One report per size (Tiny / Small / Medium), each comparing:
-    Headline   : <size>_ft  vs  <size>_hf   (pretrained through the SAME HF chunked
+    Headline   : fine-tuned  vs  <size>_hf   (pretrained through the SAME HF chunked
                  pipeline). Same engine, same decoding => the delta is the true FT gain.
-    Secondary  : <size>_ft  vs  <size>       (the original openai-whisper number, for continuity).
+    Secondary  : fine-tuned  vs  <size>       (the original openai-whisper number, for continuity).
 
 Each size runs the same minimal protocol: one official-split fine-tune vs its own
 HF-pipeline pretrained baseline (see results/tie/analysis/findings_tiny_small_ft.md).
 
-Reads results/tie/stage2_processed/{mode}/wer_{model}_{mode}.csv
-(produced by normalize_and_score.py --dataset tie). Writes, per size:
-    results/tie/analysis/finetune_comparison[_<size>].md
-    results/tie/analysis/finetune_comparison[_<size>].png
-    results/tie/analysis/finetune_wer_distribution[_<size>].png
+Reads results/<dataset>/stage2_processed/{mode}/wer_{model}_{mode}.csv
+(produced by normalize_and_score.py --dataset <dataset>). Writes, per size:
+    results/<dataset>/analysis/finetune_comparison[_<size>].md
+    results/<dataset>/analysis/finetune_comparison[_<size>].png
+    results/<dataset>/analysis/finetune_wer_distribution[_<size>].png
 and once across all sizes:
-    results/tie/analysis/finetune_capacity_summary.md / .csv
+    results/<dataset>/analysis/finetune_capacity_summary.md / .csv
 
-Run after normalize_and_score.py --dataset tie.
+Usage (after normalize_and_score.py for the same dataset):
+    python analysis/compare_finetune.py                    # dataset = tie (default)
+    python analysis/compare_finetune.py --dataset aesrc
 """
 
+import argparse
 import os
 import sys
 
@@ -44,25 +47,73 @@ from utils.registry import ALL_MODES as MODES, PRIMARY_MODE, MODEL_ORDER, MODEL_
 from utils.io_helpers import stage2_dir, analysis_dir
 from analysis.statistics import _clip_errors, _holm, analyze
 
-# The fine-tuning study is TIE-only (Svarah is eval-only, not fine-tunable).
-DATASET = "tie"
-
 # One entry per model size, each running the same minimal protocol: one official-split
-# fine-tune vs its own HF-pipeline pretrained baseline. out_stem="finetune_comparison"
-# for medium preserves the historical filename (finetune_comparison.md/.png,
-# finetune_wer_distribution.png).
-FT_PAIRS = (
-    dict(key="tiny", display_name="Whisper Tiny", params="39M",
-         secondary="tiny", baseline="tiny_hf", finetuned="tiny_ft",
-         out_stem="finetune_comparison_tiny"),
-    dict(key="small", display_name="Whisper Small", params="244M",
-         secondary="small", baseline="small_hf", finetuned="small_ft",
-         out_stem="finetune_comparison_small"),
-    dict(key="medium", display_name="Whisper Medium", params="769M",
-         secondary="medium", baseline="medium_hf", finetuned="medium_ft",
-         out_stem="finetune_comparison"),
-)
+# fine-tune vs its own HF-pipeline pretrained baseline. For TIE, out_stem=
+# "finetune_comparison" for medium preserves the historical filename
+# (finetune_comparison.md/.png, finetune_wer_distribution.png).
+FT_PAIRS_BY_DATASET = {
+    "tie": (
+        dict(key="tiny", display_name="Whisper Tiny", params="39M",
+             secondary="tiny", baseline="tiny_hf", finetuned="tiny_ft",
+             out_stem="finetune_comparison_tiny"),
+        dict(key="small", display_name="Whisper Small", params="244M",
+             secondary="small", baseline="small_hf", finetuned="small_ft",
+             out_stem="finetune_comparison_small"),
+        dict(key="medium", display_name="Whisper Medium", params="769M",
+             secondary="medium", baseline="medium_hf", finetuned="medium_ft",
+             out_stem="finetune_comparison"),
+    ),
+    "aesrc": (
+        dict(key="tiny", display_name="Whisper Tiny", params="39M",
+             secondary="tiny", baseline="tiny_hf", finetuned="tiny_aesrc_ft",
+             out_stem="finetune_comparison_tiny"),
+        dict(key="small", display_name="Whisper Small", params="244M",
+             secondary="small", baseline="small_hf", finetuned="small_aesrc_ft",
+             out_stem="finetune_comparison_small"),
+        dict(key="medium", display_name="Whisper Medium", params="769M",
+             secondary="medium", baseline="medium_hf", finetuned="medium_aesrc_ft",
+             out_stem="finetune_comparison_medium"),
+    ),
+}
 
+# Dataset-specific report text: training-data description and the speaker-structure
+# caveat differ (TIE's official splits share speakers; AESRC's test set is disjoint).
+DATASET_BLURBS = {
+    "tie": dict(
+        test_label="TIE_shorts test",
+        summary_label="official split",
+        train_desc=[
+            "Fine-tuned on the `raianand/TIE_shorts` **train** split (7,884 raw clips; ~7,200 remain",
+            "after dropping empty transcripts, clips >30s, and clips with no embedded audio — see the",
+            "run log for the exact realized count), best checkpoint selected on the **validation**",
+            "split, evaluated on the **test** split (986 clips) — the same test set used for every",
+            "pretrained model in this benchmark.",
+        ],
+        speaker_caveat=[
+            "- **Speaker overlap**: see `speaker_overlap.md`. If test speakers also appear in train, part of the",
+            "  gain reflects speaker adaptation (disclosed, per the dataset's official splits).",
+        ],
+    ),
+    "aesrc": dict(
+        test_label="AESRC2020 Indian test",
+        summary_label="AESRC2020 Indian",
+        train_desc=[
+            "Fine-tuned on the AESRC2020 **Indian** train split (`pengyizhou/accented_english`,",
+            "accent == INDIAN: 12,820 raw clips, 17.5h), best checkpoint selected on the",
+            "**validation** split, evaluated on the **test** split (1,731 clips) — the same test",
+            "set used for every pretrained model on this dataset.",
+        ],
+        speaker_caveat=[
+            "- **Speaker structure**: the test split's 481 speakers are fully disjoint from the 38",
+            "  train/validation speakers, so the delta measures genuine speaker generalization.",
+            "  The validation split shares train's speaker set, so checkpoint selection measures",
+            "  fit only (see docs/AESRC2020_INDIAN_ANALYSIS.md).",
+        ],
+    ),
+}
+
+# Set by main() before run_pair() is called.
+DATASET = "tie"
 STAGE2_DIR = stage2_dir(DATASET)
 ANALYSIS_DIR = analysis_dir(DATASET)
 
@@ -150,14 +201,11 @@ def run_pair(pair: dict) -> dict:
     print(f"PRETRAINED vs FINE-TUNED — {display_name}")
     print("=" * 70)
 
+    blurb = DATASET_BLURBS[DATASET]
     lines = [
         f"# {display_name} — Pretrained vs Fine-tuned",
         "",
-        "Fine-tuned on the `raianand/TIE_shorts` **train** split (7,884 raw clips; ~7,200 remain",
-        "after dropping empty transcripts, clips >30s, and clips with no embedded audio — see the",
-        "run log for the exact realized count), best checkpoint selected on the **validation**",
-        "split, evaluated on the **test** split (986 clips) — the same test set used for every",
-        "pretrained model in this benchmark.",
+        *blurb["train_desc"],
         "",
         f"**Headline comparison** is against `{baseline}` — the *pretrained* {display_name} run",
         "through the **same** HuggingFace chunked pipeline as the fine-tuned model. This isolates",
@@ -248,25 +296,28 @@ def run_pair(pair: dict) -> dict:
                 lines.append(f"| {g} | {b:.2f}% | {f:.2f}% | {d_abs} | {len(gf)} |")
             lines.append("")
 
-        # Duration buckets (same bins as compare_all.py).
-        lines += [f"## By Audio Duration (`{PRIMARY_MODE}`)", "",
-                  "| Duration | Pretrained (HF) | Fine-tuned | Δ abs |",
-                  "|----------|:---------------:|:----------:|:-----:|"]
-        bins = [0, 5, 15, 30, 60, float("inf")]
-        labels = ["0-5s", "5-15s", "15-30s", "30-60s", "60s+"]
+        # Duration buckets (same bins as compare_all.py). Skipped when the dataset
+        # records no per-clip duration (the column is empty for such datasets).
         for d in (df_base, df_ft):
             d["Speech_Duration_seconds"] = pd.to_numeric(d["Speech_Duration_seconds"], errors="coerce")
-            d["_bucket"] = pd.cut(d["Speech_Duration_seconds"], bins=bins, labels=labels)
-        for bucket in labels:
-            gb = df_base[df_base["_bucket"] == bucket]
-            gf = df_ft[df_ft["_bucket"] == bucket]
-            if gb.empty or gf.empty:
-                continue
-            b = corpus_wer(gb)
-            f = corpus_wer(gf)
-            d_abs, _ = fmt_delta(b, f)
-            lines.append(f"| {bucket} | {b:.2f}% | {f:.2f}% | {d_abs} |")
-        lines.append("")
+        if df_base["Speech_Duration_seconds"].notna().any():
+            lines += [f"## By Audio Duration (`{PRIMARY_MODE}`)", "",
+                      "| Duration | Pretrained (HF) | Fine-tuned | Δ abs |",
+                      "|----------|:---------------:|:----------:|:-----:|"]
+            bins = [0, 5, 15, 30, 60, float("inf")]
+            labels = ["0-5s", "5-15s", "15-30s", "30-60s", "60s+"]
+            for d in (df_base, df_ft):
+                d["_bucket"] = pd.cut(d["Speech_Duration_seconds"], bins=bins, labels=labels)
+            for bucket in labels:
+                gb = df_base[df_base["_bucket"] == bucket]
+                gf = df_ft[df_ft["_bucket"] == bucket]
+                if gb.empty or gf.empty:
+                    continue
+                b = corpus_wer(gb)
+                f = corpus_wer(gf)
+                d_abs, _ = fmt_delta(b, f)
+                lines.append(f"| {bucket} | {b:.2f}% | {f:.2f}% | {d_abs} |")
+            lines.append("")
 
         # --------------- 3. Per-sample paired analysis ---------------
         merged = df_base[["ID", "wer"]].merge(
@@ -322,7 +373,7 @@ def run_pair(pair: dict) -> dict:
         ax.set_xticks(list(x))
         ax.set_xticklabels(modes_present)
         ax.set_ylabel("Corpus WER (%)")
-        ax.set_title(f"{display_name}: pretrained vs fine-tuned, all modes (TIE_shorts test)",
+        ax.set_title(f"{display_name}: pretrained vs fine-tuned, all modes ({blurb['test_label']})",
                      loc="left", pad=12)
         ax.legend(loc="upper right")
         ax.grid(axis="y"); ax.grid(axis="x", visible=False)
@@ -364,8 +415,7 @@ def run_pair(pair: dict) -> dict:
         f"- **Engine**: the headline compares fine-tuned vs *pretrained-via-HF* (`{baseline}`), both decoded",
         "  with the same chunked `transformers` pipeline, so the engine is held constant. The original",
         "  `openai-whisper` number is shown only as a continuity reference.",
-        "- **Speaker overlap**: see `speaker_overlap.md`. If test speakers also appear in train, part of the",
-        "  gain reflects speaker adaptation (disclosed, per the dataset's official splits).",
+        *blurb["speaker_caveat"],
         "",
     ]
     lines += caveats
@@ -378,15 +428,29 @@ def run_pair(pair: dict) -> dict:
     return dict(key=key, display_name=display_name, params=params, headline=headline_stats)
 
 
-results = [run_pair(p) for p in FT_PAIRS]
+def main(dataset: str) -> None:
+    global DATASET, STAGE2_DIR, ANALYSIS_DIR
+    if dataset not in FT_PAIRS_BY_DATASET:
+        sys.exit(f"[ERROR] no fine-tuning study defined for dataset '{dataset}' "
+                 f"(available: {tuple(FT_PAIRS_BY_DATASET)})")
+    DATASET = dataset
+    STAGE2_DIR = stage2_dir(dataset)
+    ANALYSIS_DIR = analysis_dir(dataset)
 
-# --------------- Cross-size capacity summary ---------------
-capacity_rows = [r for r in results if r["headline"]]
-if capacity_rows:
+    results = [run_pair(p) for p in FT_PAIRS_BY_DATASET[dataset]]
+
+    # --------------- Cross-size capacity summary ---------------
+    capacity_rows = [r for r in results if r["headline"]]
+    if not capacity_rows:
+        print("\n  [SKIP] capacity summary — no size has both a HF baseline and a fine-tuned result yet")
+        print("\nDone.")
+        return
+
     pvals = [r["headline"]["p"] for r in capacity_rows]
     p_holm = _holm(pvals) if len(pvals) > 1 else pvals
+    summary_label = DATASET_BLURBS[dataset]["summary_label"]
     cap_lines = [
-        "# Fine-tuning capacity summary — Tiny / Small / Medium (official split)",
+        f"# Fine-tuning capacity summary — Tiny / Small / Medium ({summary_label})",
         "",
         "One official-split fine-tune per model size, each compared against its own",
         "HF-pipeline pretrained baseline.",
@@ -450,7 +514,11 @@ if capacity_rows:
         fh.write("\n".join(cap_lines))
     pd.DataFrame(csv_rows).to_csv(os.path.join(ANALYSIS_DIR, "finetune_capacity_summary.csv"), index=False)
     print(f"\n  Saved capacity summary: {cap_md_path}")
-else:
-    print("\n  [SKIP] capacity summary — no size has both a HF baseline and a fine-tuned result yet")
+    print("\nDone.")
 
-print("\nDone.")
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description="Pretrained vs fine-tuned comparison, per model size.")
+    ap.add_argument("--dataset", default="tie",
+                    help=f"dataset key with a fine-tuning study ({', '.join(FT_PAIRS_BY_DATASET)})")
+    main(ap.parse_args().dataset)

@@ -1,11 +1,12 @@
 """Preprocessing + data collator for Whisper fine-tuning (HF transformers).
 
 Standard HuggingFace "Fine-Tune Whisper" recipe:
-    - prepare_dataset: audio array -> log-mel input_features, Transcript -> label ids
+    - prepare_dataset: audio array -> log-mel input_features, transcript -> label ids
     - DataCollatorSpeechSeq2SeqWithPadding: pad features + labels, mask pad tokens with -100
+    - filter_finetune_split / filter_tie_split: clip-usability filtering per dataset
 
-Used by finetune/finetune_medium.py. Kept here so the training script stays thin,
-matching the project's "logic lives in utils/" structure.
+Used by finetune/finetune_medium.py and finetune/finetune_tiny_small.py. Kept here so
+the training scripts stay thin, matching the project's "logic lives in utils/" structure.
 """
 
 from dataclasses import dataclass
@@ -36,37 +37,74 @@ def within_duration(dur, max_seconds: float = MAX_AUDIO_SECONDS) -> bool:
 
 
 def has_audio_array(raw_col):
-    # Check validity at the pyarrow level (raw_col[idx]["array"].is_valid) rather than
-    # raw_col[idx].as_py() — .as_py() would fully materialize every row's audio samples
-    # into Python objects just to immediately discard them, roughly doubling this pass's
-    # cost on top of the identical work .map() does right after for the surviving rows.
+    # Validity check at the pyarrow level rather than .as_py(): materializing every row's
+    # audio into Python objects just to discard them would roughly double this pass's cost.
+    # TIE stores decoded arrays ({"array", ...}); bytes-stored datasets (AESRC) store
+    # {"bytes", "path"} - check whichever field the storage actually has.
+    field_names = {f.name for f in raw_col.type}
+    field = "array" if "array" in field_names else "bytes"
+
     def _check(_transcript, idx):
-        return raw_col[idx]["array"].is_valid
+        return raw_col[idx][field].is_valid
 
     return _check
 
 
-def filter_tie_split(ds, has_duration_col: bool = True,
-                      duration_col: str = "Speech_Duration_seconds",
-                      transcript_col: str = "Transcript",
-                      max_seconds: float = MAX_AUDIO_SECONDS, label: str = ""):
-    """Apply TIE's standard clip-usability filters, in the correct order.
+# AESRC's mirror stores every clip as fixed-format WAV (16 kHz, 16-bit, mono, 78-byte
+# header; verified corpus-wide in docs/AESRC2020_INDIAN_ANALYSIS.md), so exact duration
+# is (byte_length - header) / byte_rate, with no decoding.
+_WAV_HEADER_BYTES = 78
+_WAV_BYTES_PER_SECOND = 32000
+
+
+def _filter_by_bytes_duration(ds, max_seconds: float, label: str = ""):
+    """Drop clips longer than max_seconds using byte-derived WAV durations.
+
+    Used when a dataset has no duration column but stores fixed-format WAV bytes.
+    The format assumption is verified against one decoded clip; a mismatch raises
+    rather than silently mis-filtering. `ds` must already be flatten_indices()-
+    materialized (raw arrow access by row index).
+    """
+    import pyarrow.compute as pc
+
+    from utils.io_helpers import decode_audio_value
+
+    col = _raw_audio_column(ds).combine_chunks()
+    lengths = pc.fill_null(pc.binary_length(col.field("bytes")), 0).to_pylist()
+    seconds = [(n - _WAV_HEADER_BYTES) / _WAV_BYTES_PER_SECOND for n in lengths]
+
+    probe_idx = next((i for i, n in enumerate(lengths) if n > 0), None)
+    if probe_idx is not None:
+        samples, sr = decode_audio_value(col[probe_idx].as_py())
+        actual = len(samples) / sr
+        if abs(actual - seconds[probe_idx]) > 0.05:
+            raise ValueError(
+                f"byte-derived duration ({seconds[probe_idx]:.2f}s) disagrees with decoded "
+                f"duration ({actual:.2f}s) for clip {probe_idx}; the fixed-WAV-format "
+                f"assumption does not hold for this dataset.")
+
+    keep = [i for i, s in enumerate(seconds) if s <= max_seconds]
+    if len(keep) < len(ds):
+        print(f"  {label}: {len(ds)} -> {len(keep)} after dropping >{max_seconds}s clips "
+              f"(byte-derived durations)")
+        ds = ds.select(keep).flatten_indices()
+    return ds
+
+
+def _filter_core(ds, transcript_col: str, duration_col: str | None,
+                 max_seconds: float, label: str, bytes_duration: bool = False):
+    """Shared clip-usability filtering for fine-tuning splits.
 
     Order matters (fixed 2026-07-08): text/duration filtering must run BEFORE the
     no-embedded-audio filter, and BOTH must run before any downstream random subset
-    selection (speaker-disjoint / size-matched / max-train-samples caps) — otherwise a
-    sampled clip lacking audio silently shrinks the realized subset below its nominal
-    size (historically observed: disjoint seed 42 realized 566 of a nominal 567 clips).
+    selection (e.g. max-train-samples caps), otherwise a sampled clip lacking audio
+    silently shrinks the realized subset below its nominal size.
 
-    Some TIE_shorts rows have no embedded audio array — only a stale local path from the
-    original dataset upload (e.g. "E:\\TIE_shorts\\...") that isn't reachable here; those
-    are dropped rather than crashing the run.
-
-    Returns a flatten_indices()-materialized dataset, ready for raw arrow audio access.
-    Shared by finetune_medium.py and finetune_tiny_small.py so both drop exactly the same clips.
+    Returns a flatten_indices()-materialized dataset, ready for raw arrow audio access
+    (filter() applies a lazy indices overlay; raw arrow access needs physical ordering).
     """
     n_before = len(ds)
-    if has_duration_col:
+    if duration_col:
         ds = ds.filter(
             lambda transcript, dur: has_usable_text(transcript) and within_duration(dur, max_seconds),
             input_columns=[transcript_col, duration_col],
@@ -74,18 +112,43 @@ def filter_tie_split(ds, has_duration_col: bool = True,
     else:
         ds = ds.filter(has_usable_text, input_columns=[transcript_col])
     print(f"  {label}: {n_before} -> {len(ds)} after dropping empty / >{max_seconds}s clips")
-
-    # filter() may apply a lazy indices overlay instead of physically reordering the
-    # underlying arrow table. flatten_indices() materializes a fresh, physically-ordered
-    # table so the raw arrow "audio" access below (by row index) lines up correctly.
     ds = ds.flatten_indices()
+
+    if duration_col is None and bytes_duration:
+        ds = _filter_by_bytes_duration(ds, max_seconds, label=label)
+
     n_before = len(ds)
     ds = ds.filter(
         has_audio_array(_raw_audio_column(ds)), input_columns=[transcript_col], with_indices=True,
     )
     print(f"  {label}: {n_before} -> {len(ds)} after dropping clips with no embedded audio")
-    ds = ds.flatten_indices()
-    return ds
+    return ds.flatten_indices()
+
+
+def filter_finetune_split(ds, spec, max_seconds: float = MAX_AUDIO_SECONDS, label: str = ""):
+    """Spec-driven clip-usability filters for any registry dataset.
+
+    Transcript and duration columns come from the DatasetSpec. Datasets without a
+    duration column but with bytes-stored audio (AESRC) get byte-derived durations,
+    so a >30s clip can never pair feature-extractor-truncated audio with its full
+    transcript.
+    """
+    return _filter_core(ds, spec.gold_ref_col, spec.duration_col, max_seconds, label,
+                        bytes_duration=spec.audio_undecoded)
+
+
+def filter_tie_split(ds, has_duration_col: bool = True,
+                      duration_col: str = "Speech_Duration_seconds",
+                      transcript_col: str = "Transcript",
+                      max_seconds: float = MAX_AUDIO_SECONDS, label: str = ""):
+    """TIE-specific wrapper around _filter_core (kept for finetune_medium.py).
+
+    Some TIE_shorts rows have no embedded audio array, only a stale local path from
+    the original dataset upload; those are dropped rather than crashing the run.
+    TIE's validation split has no duration column, hence has_duration_col.
+    """
+    return _filter_core(ds, transcript_col, duration_col if has_duration_col else None,
+                        max_seconds, label)
 
 
 def make_prepare_dataset(processor, raw_audio_column):

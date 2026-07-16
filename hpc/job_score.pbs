@@ -30,7 +30,9 @@ python normalize_and_score.py --dataset "${DATASET}"
 python analysis/compare_all.py --dataset "${DATASET}"
 python analysis/statistics.py --dataset "${DATASET}"
 python analysis/error_analysis.py --dataset "${DATASET}"
-[ "${DATASET}" = "tie" ] && python analysis/compare_finetune.py
+case "${DATASET}" in
+    tie|aesrc) python analysis/compare_finetune.py --dataset "${DATASET}" ;;
+esac
 [ "${DATASET}" = "svarah" ] && python analysis/entity_analysis.py --dataset svarah
 if [ -f paper/figures/make_paper_figures.py ]; then
     python paper/figures/make_paper_figures.py --dataset "${DATASET}"

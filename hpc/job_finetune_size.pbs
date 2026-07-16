@@ -1,36 +1,43 @@
 #!/bin/bash
 #PBS -N asr_ft_size
 #PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
-#PBS -l walltime=8:00:00
+#PBS -l walltime=12:00:00
 #PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/
 #PBS -j oe
 #PBS -k oed
 #PBS -V
 
-# Capacity study: fine-tune Whisper Tiny or Small on TIE_shorts' official split (minimal
-# protocol — one run, no disjoint/size-matched seeds — see
-# results/tie/analysis/findings_tiny_small_ft.md). Uses the step-based recipe
-# (finetune/finetune_tiny_small.py), NOT the epoch-based finetune_medium.py used for the medium
-# study — see that script's docstring for the disclosed recipe deltas (effective batch 32
-# vs 16, fp16 vs bf16, no SpecAugment/early stopping, different checkpoint-selection
-# normalizer).
+# Capacity study: fine-tune one Whisper size on a dataset's official train split using the
+# step-based recipe (finetune/finetune_tiny_small.py). See that script's docstring for the
+# disclosed recipe deltas vs the epoch-based finetune_medium.py used for TIE's medium study
+# (effective batch 32 vs 16, fp16 vs bf16, no SpecAugment/early stopping, different
+# checkpoint-selection normalizer).
 #
-#   qsub -v SIZE=tiny  hpc/job_finetune_size.pbs
+#   qsub -v SIZE=tiny  hpc/job_finetune_size.pbs                  # TIE (default dataset)
 #   qsub -v SIZE=small hpc/job_finetune_size.pbs
+#   qsub -v SIZE=medium,DATASET=aesrc hpc/job_finetune_size.pbs   # AESRC Indian subset
+#
+# TIE allows tiny|small only (its medium study used the epoch-based recipe and is
+# historical); AESRC runs all three sizes through this one recipe.
 #
 # Runs FT + both post-FT HF-pipeline evals (fine-tuned and pretrained-via-HF baseline) in
 # one job so the size's engine-controlled comparison is self-contained. Submit serially
 # (afterany-chained), not in parallel — see hpc/README.md; job_whisper.pbs's fixed log
 # filename and NSCC's one-job GPU etiquette both assume one job at a time.
 
+DATASET=${DATASET:-tie}
+
 if [ -z "${SIZE}" ]; then
     echo "[FATAL] SIZE is not set. Submit with: qsub -v SIZE=tiny $0  (or SIZE=small)"
     exit 1
 fi
-case "${SIZE}" in
-    tiny|small) ;;
-    *) echo "[FATAL] SIZE must be 'tiny' or 'small', got '${SIZE}'"; exit 1 ;;
+case "${DATASET}:${SIZE}" in
+    tie:tiny|tie:small) ;;
+    aesrc:tiny|aesrc:small|aesrc:medium) ;;
+    tie:*) echo "[FATAL] SIZE must be 'tiny' or 'small' for DATASET=tie, got '${SIZE}'"; exit 1 ;;
+    aesrc:*) echo "[FATAL] SIZE must be 'tiny', 'small' or 'medium' for DATASET=aesrc, got '${SIZE}'"; exit 1 ;;
+    *) echo "[FATAL] DATASET must be 'tie' or 'aesrc', got '${DATASET}'"; exit 1 ;;
 esac
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
@@ -48,28 +55,35 @@ cd "${WORKDIR}"
 conda activate "${WHISPER_FT_ENV}"
 export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 
-echo "--- GPU / CUDA diagnostics (${SIZE} capacity-study fine-tune) ---"
+echo "--- GPU / CUDA diagnostics (${SIZE} on ${DATASET}, capacity-study fine-tune) ---"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
 python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok); sys.exit(0 if ok else 1)" \
     || { echo "[FATAL] CUDA not available in ${WHISPER_FT_ENV} - aborting"; exit 1; }
 
+# Model keys follow the registry: TIE fine-tunes are <size>_ft, AESRC's are <size>_aesrc_ft.
+if [ "${DATASET}" = "tie" ]; then
+    FT_MODEL_NAME="${SIZE}_ft"
+else
+    FT_MODEL_NAME="${SIZE}_${DATASET}_ft"
+fi
+
 # Keep weights off the quota-limited $HOME.
-FT_OUT="${FT_SIZE_OUTPUT:-models/whisper_${SIZE}_ft}"
+FT_OUT="${FT_SIZE_OUTPUT:-models/whisper_${FT_MODEL_NAME}}"
 mkdir -p "$(dirname "${FT_OUT}")"
 
-echo "=== Stage 0: fine-tune whisper-${SIZE} (step-based recipe) $(date) ==="
-python finetune/finetune_tiny_small.py \
+echo "=== Stage 0: fine-tune whisper-${SIZE} on ${DATASET} (step-based recipe) $(date) ==="
+python finetune/finetune_tiny_small.py --dataset "${DATASET}" \
     --base-model "openai/whisper-${SIZE}" --output-dir "${FT_OUT}"
 
-echo "=== Stage 1: transcribe ${SIZE}_ft on test ==="
-MODEL_NAME="${SIZE}_ft" MODEL_SOURCE="${FT_OUT}" \
+echo "=== Stage 1: transcribe ${FT_MODEL_NAME} on ${DATASET} test ==="
+DATASET="${DATASET}" MODEL_NAME="${FT_MODEL_NAME}" MODEL_SOURCE="${FT_OUT}" \
     python finetune/evaluate_finetuned.py
 
-echo "=== Stage 1: transcribe ${SIZE}_hf (pretrained, same HF pipeline) on test ==="
-MODEL_NAME="${SIZE}_hf" MODEL_SOURCE="openai/whisper-${SIZE}" \
+echo "=== Stage 1: transcribe ${SIZE}_hf (pretrained, same HF pipeline) on ${DATASET} test ==="
+DATASET="${DATASET}" MODEL_NAME="${SIZE}_hf" MODEL_SOURCE="openai/whisper-${SIZE}" \
     python finetune/evaluate_finetuned.py
 
-# Stage 2/3 deliberately NOT run here (same race-avoidance as the disjoint/sizematch seed
-# jobs): after tiny AND small both finish, run ONE scoring pass:
-#   python normalize_and_score.py --dataset tie && python analysis/compare_finetune.py
-echo "=== ${SIZE} capacity-study fine-tune complete (raw CSVs written; scoring deferred) $(date) ==="
+# Stage 2/3 deliberately NOT run here (race avoidance): after every size has finished,
+# run ONE scoring pass:
+#   python normalize_and_score.py --dataset ${DATASET} && python analysis/compare_finetune.py --dataset ${DATASET}
+echo "=== ${SIZE} capacity-study fine-tune on ${DATASET} complete (raw CSVs written; scoring deferred) $(date) ==="

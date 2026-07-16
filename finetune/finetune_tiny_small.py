@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fine-tune Whisper on TIE_shorts using a step-based training recipe.
+"""Fine-tune Whisper on a registry dataset using a step-based training recipe.
 
 Adapted from an externally supplied reference script (`step4_train_whisper.py`) for the
 tiny/small capacity study — see results/tie/analysis/findings_tiny_small_ft.md. Kept
@@ -38,13 +38,24 @@ Disclosed additions (the source script lacked these; needed for a usable, compar
     fine-tuning recipe (including finetune_medium.py's own medium study) and its absence risks the
     whole run's checkpoint selection, not just a cosmetic recipe difference.
 
+Datasets: --dataset selects any registry dataset with train+validation splits.
+    tie   (default) — loads TIE_shorts directly, preserving the original capacity-study
+          code path byte-for-byte (TIE's validation split has no duration column, so it
+          cannot go through the adapter's schema validation).
+    aesrc — loads via utils.datasets.load_split, which applies the registry's
+          accent == "INDIAN" filter and schema/ID validation. All three sizes
+          (tiny/small/medium) use this same recipe on AESRC. Note: AESRC's validation
+          split shares the train split's 38 speakers, so checkpoint-selection WER
+          measures fit, not speaker generalization; the speaker-disjoint test split is
+          never touched during training.
+
 Usage:
     python finetune/finetune_tiny_small.py \\
         --base-model openai/whisper-tiny --output-dir models/whisper_tiny_ft
-    python finetune/finetune_tiny_small.py \\
-        --base-model openai/whisper-small --output-dir models/whisper_small_ft
+    python finetune/finetune_tiny_small.py --dataset aesrc \\
+        --base-model openai/whisper-medium --output-dir models/whisper_medium_aesrc_ft
 
-CLI (matches the source script's flags, plus --base-model/--output-dir/--max-train-samples):
+CLI (matches the source script's flags, plus --dataset/--base-model/--output-dir/--max-train-samples):
     --max-steps (2000)  --lr (1e-5)  --batch-size (8)  --grad-accum (4)
     --max-train-samples (unset)  — subset training data for a quick smoke test
 """
@@ -75,24 +86,28 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.io_helpers import HF_CACHE, raw_audio_column, decode_audio_value
 from utils.normalize import strip_wrapping_quotes
-from utils.finetune_data import DataCollatorSpeechSeq2SeqWithPadding, filter_tie_split
+from utils.registry import get_dataset
+from utils.finetune_data import (
+    DataCollatorSpeechSeq2SeqWithPadding,
+    filter_finetune_split,
+    filter_tie_split,
+)
 
 warnings.filterwarnings("ignore")
 
 
-class TIEWhisperDataset(Dataset):
-    """Torch Dataset over a filtered TIE_shorts split: reads audio straight from arrow
-    storage (utils.io_helpers.decode_audio_value, bypassing datasets' Audio decode — same
-    trick finetune_medium.py uses) and extracts log-mel features on the fly in __getitem__,
-    mirroring the source script's LocalWhisperDataset (which read local wavs via librosa).
+class WhisperFTDataset(Dataset):
+    """Torch Dataset over a filtered fine-tuning split: reads audio straight from arrow
+    storage (utils.io_helpers.decode_audio_value, bypassing datasets' Audio decode) and
+    extracts log-mel features on the fly in __getitem__.
 
-    `ds` must already be filter_tie_split()-filtered and flatten_indices()-materialized so
-    raw arrow row i matches logical row i.
+    `ds` must already be filtered and flatten_indices()-materialized so raw arrow row i
+    matches logical row i.
     """
 
-    def __init__(self, ds, processor: WhisperProcessor):
+    def __init__(self, ds, processor: WhisperProcessor, transcript_col: str):
         self.raw_audio = raw_audio_column(ds)
-        self.transcripts = ds["Transcript"]
+        self.transcripts = ds[transcript_col]
         self.processor = processor
 
     def __len__(self) -> int:
@@ -102,15 +117,34 @@ class TIEWhisperDataset(Dataset):
         audio_value = self.raw_audio[idx].as_py()
         audio_array, sr = decode_audio_value(audio_value, target_sr=16000)
         feats = self.processor.feature_extractor(audio_array, sampling_rate=sr).input_features[0]
-        # Targets come from the gold `Transcript` column; strip only a wrapping quote pair
-        # (a known TIE data quirk — see utils.normalize.strip_wrapping_quotes), same as
-        # finetune_medium.py's medium study.
+        # Targets come from the gold transcript column; strip only a wrapping quote pair
+        # (a TIE data quirk, no-op for datasets without it), same as finetune_medium.py.
         labels = self.processor.tokenizer(strip_wrapping_quotes(self.transcripts[idx])).input_ids
         return {"input_features": feats, "labels": labels}
 
 
+def load_finetune_splits(dataset_key: str):
+    """Return raw (unfiltered) train + validation HF splits for a dataset.
+
+    TIE loads directly (its validation split lacks the duration column the adapter's
+    schema validation requires); every other dataset goes through utils.datasets.
+    load_split, which applies any registry row filter and fail-early validation.
+    """
+    if dataset_key == "tie":
+        train_hf = load_dataset("raianand/TIE_shorts", split="train", cache_dir=HF_CACHE)
+        eval_hf = load_dataset("raianand/TIE_shorts", split="validation", cache_dir=HF_CACHE)
+        return train_hf, eval_hf
+
+    from utils.datasets import load_split
+
+    train_hf, _ = load_split(dataset_key, "train")
+    eval_hf, _ = load_split(dataset_key, "validation")
+    return train_hf, eval_hf
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", default="tie", help="registry dataset key (tie, aesrc, ...)")
     parser.add_argument("--base-model", default="openai/whisper-tiny")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--max-steps", type=int, default=2000)
@@ -121,8 +155,10 @@ def main() -> None:
                          help="Subset training data for a quick smoke test.")
     args = parser.parse_args()
 
+    spec = get_dataset(args.dataset)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[finetune_tiny_small] base_model={args.base_model} out={args.output_dir} device={device}")
+    print(f"[finetune_tiny_small] dataset={args.dataset} base_model={args.base_model} "
+          f"out={args.output_dir} device={device}")
 
     processor = WhisperProcessor.from_pretrained(
         args.base_model, language="English", task="transcribe"
@@ -138,33 +174,36 @@ def main() -> None:
     model.generation_config.language = "english"
     model.generation_config.task = "transcribe"
 
-    print("Loading TIE_shorts train/validation splits ...")
-    train_hf = load_dataset("raianand/TIE_shorts", split="train", cache_dir=HF_CACHE)
-    eval_hf = load_dataset("raianand/TIE_shorts", split="validation", cache_dir=HF_CACHE)
+    print(f"Loading {spec.display} train/validation splits ...")
+    train_hf, eval_hf = load_finetune_splits(args.dataset)
 
     if args.max_train_samples:
-        # Smoke-test path: subset the RAW dataset BEFORE filtering. filter_tie_split()
-        # internally calls flatten_indices() twice, which materializes every surviving
-        # clip's full audio array into a new arrow table -- for TIE's ~7.2k-clip filtered
-        # train split that's expensive enough to OOM-kill a memory-constrained login node
+        # Smoke-test path: subset the RAW dataset BEFORE filtering. The filters call
+        # flatten_indices(), which materializes every surviving clip's full audio into a
+        # new arrow table -- expensive enough to OOM-kill a memory-constrained node
         # (observed 2026-07-09), and it happens regardless of --max-train-samples if the
         # cap is only applied afterward. 3x headroom on the raw slice comfortably survives
-        # TIE's ~91% filter pass-rate for any reasonable smoke-test sample size.
+        # the ~91% filter pass-rate for any reasonable smoke-test sample size.
         train_hf = train_hf.select(range(min(args.max_train_samples * 3, len(train_hf))))
         eval_hf = eval_hf.select(range(min(24, len(eval_hf))))
         print(f"  SMOKE TEST: pre-capped raw train to {len(train_hf)} rows before filtering")
 
     print("Filtering ...")
-    train_hf = filter_tie_split(train_hf, has_duration_col=True, label="train")
-    eval_hf = filter_tie_split(eval_hf, has_duration_col=False, label="validation")
+    if args.dataset == "tie":
+        # Preserved TIE code path: validation split has no duration column.
+        train_hf = filter_tie_split(train_hf, has_duration_col=True, label="train")
+        eval_hf = filter_tie_split(eval_hf, has_duration_col=False, label="validation")
+    else:
+        train_hf = filter_finetune_split(train_hf, spec, label="train")
+        eval_hf = filter_finetune_split(eval_hf, spec, label="validation")
 
     if args.max_train_samples:
         train_hf = train_hf.select(range(min(args.max_train_samples, len(train_hf)))).flatten_indices()
         eval_hf = eval_hf.select(range(min(8, len(eval_hf)))).flatten_indices()
         print(f"  SMOKE TEST: capped filtered train to {len(train_hf)} samples")
 
-    train_ds = TIEWhisperDataset(train_hf, processor)
-    eval_ds = TIEWhisperDataset(eval_hf, processor)
+    train_ds = WhisperFTDataset(train_hf, processor, spec.gold_ref_col)
+    eval_ds = WhisperFTDataset(eval_hf, processor, spec.gold_ref_col)
     print(f"  train: {len(train_ds)} clips   validation: {len(eval_ds)} clips")
 
     tokenizer = processor.tokenizer
@@ -241,6 +280,7 @@ def main() -> None:
     results = trainer.evaluate()
     summary = {
         "eval_wer": float(results["eval_wer"]),
+        "dataset": args.dataset,
         "output_dir": str(args.output_dir),
         "base_model": args.base_model,
         "max_steps": args.max_steps,
@@ -252,7 +292,7 @@ def main() -> None:
     (args.output_dir / "eval_results.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary))
     print("\nNext: run transcription with")
-    print(f"  MODEL_NAME=<size>_ft MODEL_SOURCE={args.output_dir} "
+    print(f"  DATASET={args.dataset} MODEL_NAME=<model_key> MODEL_SOURCE={args.output_dir} "
           f"python finetune/evaluate_finetuned.py")
     print("\nDone.")
 

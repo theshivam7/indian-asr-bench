@@ -12,18 +12,22 @@ Both transcribe the SAME `test` split through the SAME chunked HF pipeline (util
 so the only difference is the model weights. This isolates the true fine-tuning gain from any
 decoding/engine differences.
 
-Saves to results/tie/stage1_raw_transcripts/wer_{MODEL_NAME}_raw.csv (same schema as all other models),
-so Stage 2 (normalize_and_score.py) and Stage 3 (analysis/) treat it as just another model.
+Saves to results/<dataset>/stage1_raw_transcripts/wer_{MODEL_NAME}_raw.csv (same schema as all
+other models), so Stage 2 (normalize_and_score.py) and Stage 3 (analysis/) treat it as just
+another model.
 
 Uses the shared utils.inference_loop (dataset-aware, resumable, SIGTERM-safe) — same as
 whisper_asr/run_whisper.py and qwen3/wer_qwen3.py. The chunked HF pipeline needs
 the raw (undecoded) audio value rather than datasets' Audio-feature decode, so this driver
 opts into inference_loop's two-argument transcribe_one(sample, raw_audio_value) form.
 
+DATASET selects the registry dataset whose eval split is transcribed (default: tie).
+
 Usage:
     MODEL_NAME=medium_ft python finetune/evaluate_finetuned.py
     MODEL_NAME=medium_hf python finetune/evaluate_finetuned.py
     MODEL_NAME=tiny_ft MODEL_SOURCE=models/whisper_tiny_ft python finetune/evaluate_finetuned.py
+    DATASET=aesrc MODEL_NAME=tiny_aesrc_ft MODEL_SOURCE=models/whisper_tiny_aesrc_ft python finetune/evaluate_finetuned.py
 """
 
 import os
@@ -39,6 +43,7 @@ from utils.registry import MODEL_BY_KEY
 warnings.filterwarnings("ignore")
 
 MODEL_NAME = os.environ.get("MODEL_NAME", "medium_ft")
+DATASET = os.environ.get("DATASET", "tie")
 
 REPO_ROOT = os.path.join(os.path.dirname(__file__), "..")
 DEFAULT_FT_DIR = os.path.join(REPO_ROOT, "models", "whisper_medium_ft")
@@ -74,11 +79,11 @@ if model_path.startswith(("models/", "models" + os.sep)) and not os.path.isdir(m
     sys.exit(f"[ERROR] model weights not found at {model_path}. "
              f"Run finetune_medium.py or finetune_tiny_small.py first.")
 
-print(f"=== Stage 1 transcription: {MODEL_NAME}  (weights: {model_path}) ===\n")
+print(f"=== Stage 1 transcription: {MODEL_NAME} on {DATASET}  (weights: {model_path}) ===\n")
 pipe = build_asr_pipeline(model_path)
 
 run_transcription(
-    MODEL_NAME, "tie",
+    MODEL_NAME, DATASET,
     transcribe_one=lambda sample, raw_audio_value: transcribe_sample_hf(pipe, sample, raw_audio_value),
     manifest_extra={"decode_kwargs": {"engine_defaults": "hf_whisper chunked pipeline"}},
 )

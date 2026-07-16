@@ -9,7 +9,7 @@ constraints observed on the cluster:
   plus the named `whisper_medium_ft` in `~/.conda/envs`.
 - Scheduler is **PBS Pro**; GPU is on compute nodes (`cuda/11.8.0` module).
 
-## ⚠️ Never run compute on the login node — always `qsub -I` first
+## Never run compute on the login node — always `qsub -I` first
 
 The login node (`asp2a-login-*`) is a **shared entry point for every NSCC user**
 across NUS/NTU/A*STAR/SUTD/NEA — it's for `ssh`, `git`, editing, and submitting
@@ -81,9 +81,9 @@ conda run -p $SCRATCH/envs/whisper pip install whisper_normalizer==0.1.0
 
 ## 1. Submit in phases (one GPU job at a time)
 
-Each phase is a single GPU job. Submit a phase, wait for it to finish
-(`qstat -u $USER`), then submit the next. Result dirs are separate per phase, so
-nothing clobbers anything.
+Each phase is a single GPU job (ft-aesrc submits three, internally chained). Submit
+a phase, wait for it to finish (`qstat -u $USER`), then submit the next. Result dirs
+are separate per phase, so no phase overwrites another's output.
 
 ```bash
 export PROJECT=<nscc_project_id>            # required
@@ -95,6 +95,22 @@ bash hpc/submit_all.sh --phase 1
 
 # Phase 2 — Svarah full 7-model benchmark, ~10h (largest download → scratch cache).
 bash hpc/submit_all.sh --phase 2
+
+# Phase 3 — AESRC2020 Indian subset: 9 pretrained models on the 1,731-clip test split,
+# ~8h incl. the first-run parquet download (~1.7GB, split-scoped) into $HF_CACHE.
+bash hpc/submit_all.sh --phase 3
+
+# Phase ft-aesrc — fine-tune tiny/small/medium on AESRC's Indian train split (12,820
+# clips, 17.5h; first run downloads ~14.4GB of train parquet to $HF_CACHE). Three GPU
+# jobs, auto-chained so only one runs at a time. Weights go to $SCRATCH/models/.
+bash hpc/submit_all.sh --phase ft-aesrc
+```
+
+After ft-aesrc finishes, run ONE scoring pass (CPU job) to score everything and build
+the pretrained-vs-fine-tuned reports under `results/aesrc/analysis/`:
+
+```bash
+qsub -P $PROJECT -v DATASET=aesrc hpc/job_score.pbs
 ```
 
 Prefer to fire everything at once (queue permitting)? `bash hpc/submit_all.sh --phase all`
@@ -103,10 +119,11 @@ submits both with correct `afterok` chaining and runs the combined figures job l
 The script auto-forwards the scratch paths (`HF_CACHE`, `FT_OUTPUT_DIR`) and your
 env locations to every job, and prints the job IDs.
 
-Fine-tuning (Whisper Medium official split, and the Tiny/Small capacity study) is
+TIE fine-tuning (Whisper Medium official split, and the Tiny/Small capacity study) is
 submitted separately — see [Fine-tuning (standalone)](README.md#fine-tuning-standalone)
 in the main HPC README, and `hpc/job_finetune_size.pbs` (`-v SIZE=tiny|small`) for
-the capacity study.
+the capacity study. AESRC fine-tuning uses the same job with `DATASET=aesrc`
+(`-v SIZE=tiny|small|medium,DATASET=aesrc`), or `--phase ft-aesrc` above for all three.
 
 ## 2. After the jobs finish
 
@@ -117,6 +134,7 @@ re-score after a code change (no GPU):
 ```bash
 qsub -P $PROJECT -v DATASET=tie    hpc/job_score.pbs      # rescore + analyse TIE
 qsub -P $PROJECT -v DATASET=svarah hpc/job_score.pbs      # rescore + analyse Svarah
+qsub -P $PROJECT -v DATASET=aesrc  hpc/job_score.pbs      # rescore + analyse AESRC (Indian)
 qsub -P $PROJECT -v DATASETS=tie,svarah hpc/job_figures.pbs
 ```
 
@@ -127,16 +145,16 @@ Then commit the updated `results/**` and `paper/figures/**` and push.
 - **NSCC fair-share violation email** ("we have terminated all your processes on
   the login node") — means real compute (model inference, audio decoding) ran
   directly at the `asp2a-login-*` shell prompt instead of inside a job. See
-  [Never run compute on the login node](#-never-run-compute-on-the-login-node--always-qsub--i-first)
-  above — grab `qsub -I` first, every time, even for a 30-second test. This
+  [Never run compute on the login node](#never-run-compute-on-the-login-node--always-qsub--i-first)
+  above — request `qsub -I` first, every time, even for a 30-second test. This
   counts toward an automatic account block after 3 violations, so treat it as a
   hard stop, not a warning.
-- **`Disk quota exceeded`** — you wrote to `$HOME`. This bites in three DIFFERENT
+- **`Disk quota exceeded`** — you wrote to `$HOME`. This occurs in three DIFFERENT
   places, each needing its own redirect (all handled automatically by
   `hpc/job_*.pbs` and `submit_all.sh`, but relevant if you run things by hand):
   `HF_HOME`/`HF_DATASETS_CACHE` (HF datasets/models), `XDG_CACHE_HOME`
   (openai-whisper's own model cache — does NOT follow `HF_HOME`), and
-  `CONDA_PKGS_DIRS` (conda's own package/repodata cache — bites `conda install`).
+  `CONDA_PKGS_DIRS` (conda's own package/repodata cache — affects `conda install`).
   Make sure `SCRATCH`, `HF_CACHE`, and the repo itself are under `/scratch`.
   Fine-tune weights default to `$SCRATCH/models/...` via the submitter.
 - **`torch.cuda.is_available()` is `False`** — first check WHERE you're testing it:
