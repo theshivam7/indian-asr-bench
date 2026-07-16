@@ -346,14 +346,17 @@ def run_pair(pair: dict) -> dict:
             "| ID | Pretrained WER | Fine-tuned WER | Δ |",
             "|----|:--------------:|:--------------:|:-:|",
         ]
-        gains = merged[merged["delta"] > 1e-9].sort_values("delta", ascending=False).head(10)
+        # ID tie-break + stable sort keeps the top-10 cutoff deterministic among tied deltas.
+        gains = (merged[merged["delta"] > 1e-9]
+                 .sort_values(["delta", "ID"], ascending=[False, True], kind="stable").head(10))
         for _, r in gains.iterrows():
             lines.append(f"| {r['ID']} | {r['wer_base']*100:.1f}% | {r['wer_ft']*100:.1f}% | "
                          f"−{r['delta']*100:.1f} pp |")
         lines += ["", "### Biggest regressions (top 10)", "",
                   "| ID | Pretrained WER | Fine-tuned WER | Δ |",
                   "|----|:--------------:|:--------------:|:-:|"]
-        losses = merged[merged["delta"] < -1e-9].sort_values("delta", ascending=True).head(10)
+        losses = (merged[merged["delta"] < -1e-9]
+                  .sort_values(["delta", "ID"], ascending=[True, True], kind="stable").head(10))
         if losses.empty:
             lines.append("| _none_ | — | — | — |")
         for _, r in losses.iterrows():

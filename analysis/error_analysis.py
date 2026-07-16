@@ -159,7 +159,10 @@ def _load_full(dataset: str, model: str, mode: str) -> pd.DataFrame | None:
 # ----------------------------------------------------------------------------
 
 def analyze_tail(pool: pd.DataFrame):
-    tail = (pool.sort_values("wer", ascending=False)
+    # ID tie-break + stable sort: without it, which tied-WER clips fall inside the
+    # per-model TOP_K boundary is environment-dependent, and every taxonomy count
+    # downstream of the pool inherits that nondeterminism.
+    tail = (pool.sort_values(["wer", "ID"], ascending=[False, True], kind="stable")
                 .groupby("model", sort=False).head(TOP_K).copy())
     per_clip = tail.groupby("ID").agg(
         n_models=("model", "nunique"), n_arch=("arch", "nunique"),
@@ -170,7 +173,8 @@ def analyze_tail(pool: pd.DataFrame):
     per_clip["category"] = per_clip.apply(
         lambda r: classify(r["recall_mean"], r["ratio_mean"], r["ref_words"]), axis=1)
     per_clip.loc[per_clip["category"] == "unflagged", "category"] = "genuine_error"
-    per_clip = per_clip.sort_values(["n_models", "wer_mean"], ascending=False)
+    per_clip = per_clip.sort_values(["n_models", "wer_mean", "ID"],
+                                    ascending=[False, False, True], kind="stable")
 
     n_distinct = len(per_clip)
     tax = (per_clip.groupby("category")

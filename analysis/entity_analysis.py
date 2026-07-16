@@ -123,7 +123,7 @@ def main(dataset: str, mode: str, use_spacy: bool) -> None:
     if not rows:
         print(f"[entity_analysis] no scored use-case rows found for {spec.display}/{mode}.")
         return
-    df = pd.DataFrame(rows).sort_values("neer_pct")
+    df = pd.DataFrame(rows).sort_values(["neer_pct", "model"], kind="stable")
     out = analysis_dir(dataset)
     df.to_csv(os.path.join(out, f"entity_neer_{mode}.csv"), index=False)
     md = df[["display", "n_clips", "n_entities", "entity_recall_pct", "neer_pct"]].copy()

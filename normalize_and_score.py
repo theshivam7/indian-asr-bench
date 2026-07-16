@@ -113,7 +113,11 @@ def save_csv(rows: list[dict], dataset: str, model: str, mode: str) -> None:
 def save_top20(rows: list[dict], dataset: str, model: str, mode: str) -> None:
     if not rows:
         return
-    df = pd.DataFrame(rows).sort_values("wer", ascending=False).head(20)
+    # ID tie-break + stable sort: WER quantizes heavily on short-clip datasets (AESRC),
+    # so an unkeyed sort makes the top-20 cutoff environment-dependent among tied clips.
+    df = (pd.DataFrame(rows)
+          .sort_values(["wer", "ID"], ascending=[False, True], kind="stable")
+          .head(20))
     df.to_csv(os.path.join(stage2_dir(dataset), f"top_20_high_wer_{model}_{mode}.csv"), index=False)
 
 

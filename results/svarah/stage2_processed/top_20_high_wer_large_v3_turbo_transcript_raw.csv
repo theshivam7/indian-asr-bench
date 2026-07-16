@@ -2,20 +2,20 @@ split,ID,Speaker_ID,Speech_Duration_seconds,Gender,Age,Native_Language,model,mod
 test,281474976894812_f1306_chunk_0.wav,,0.2736875,Female,18-30,Malayalam,large_v3_turbo,transcript_raw,gold,Play,play,"I can admit that this will to my home, if your homes are fine. Wait, wait, please.ты put them on stage. Just start doing the other one. Now this is our reading mencion, the first video will come in, and do it again.",i can admit that this will to my home if your homes are fine wait wait please ты put them on stage just start doing the other one now this is our reading mencion the first video will come in and do it again,44.0,50.75,0.0,44.0
 test,281474976887069_f2936_chunk_1.wav,,6.1138125,Female,30-45,Gujarati,large_v3_turbo,transcript_raw,gold,76486997868,76486997868,7 6 4 8 6 9 9 7 8 6 8,7 6 4 8 6 9 9 7 8 6 8,11.0,0.9091,0.0,11.0
 test,281474976896927_f2662_chunk_0.wav,,0.4615625,Male,18-30,Gujarati,large_v3_turbo,transcript_raw,gold,Three,three,3 family to hug the,3 family to hug the,5.0,3.2,0.0,5.0
-test,281474976897085_f725_chunk_0.wav,,0.390875,Male,18-30,Hindi,large_v3_turbo,transcript_raw,gold,Cat,cat,Captpped in the video.,captpped in the video,4.0,6.0,0.0,4.0
-test,281474976899941_f80_chunk_0.wav,,0.42675,Male,30-45,Maithili,large_v3_turbo,transcript_raw,gold,House,house,How old is it?,how old is it,4.0,2.0,0.0,4.0
 test,281474976884349_f1690_chunk_2.wav,,0.6885,Female,18-30,Tamil,large_v3_turbo,transcript_raw,gold,Coimbatore,coimbatore,go in the tour.,go in the tour,4.0,1.0,0.0,4.0
 test,281474976887081_f2283_chunk_4.wav,,0.576375,Female,30-45,Gujarati,large_v3_turbo,transcript_raw,gold,Raaz,raaz,"For this $10,00",for this 10 00,4.0,3.25,0.0,4.0
+test,281474976897085_f725_chunk_0.wav,,0.390875,Male,18-30,Hindi,large_v3_turbo,transcript_raw,gold,Cat,cat,Captpped in the video.,captpped in the video,4.0,6.0,0.0,4.0
 test,281474976899578_f2277_chunk_4.wav,,0.8405,Female,45-60,Bengali,large_v3_turbo,transcript_raw,gold,method.,method,and it's hard,and it s hard,4.0,1.6667,0.0,4.0
-test,281474976897517_f2194_chunk_0.wav,,0.753,Male,30-45,Sindhi,large_v3_turbo,transcript_raw,gold,Ajmer,ajmer,I do mean,i do mean,3.0,1.4,0.0,3.0
-test,281474976893816_f854_chunk_0.wav,,0.6400625,Female,18-30,Bodo,large_v3_turbo,transcript_raw,gold,Forward,forward,for the world.,for the world,3.0,1.0,0.0,3.0
-test,281474976887155_f2742_chunk_1.wav,,5.0353125,Female,18-30,Malayalam,large_v3_turbo,transcript_raw,gold,85740051518,85740051518,857 400 51518,857 400 51518,3.0,0.1818,0.0,3.0
-test,281474976893991_f3340_chunk_0.wav,,0.47075,Female,45-60,Telugu,large_v3_turbo,transcript_raw,gold,Kichidi,kichidi,Keep your day.,keep your day,3.0,1.5714,0.0,3.0
-test,281474976896582_f1500_chunk_0.wav,,0.681625,Female,60+,Tamil,large_v3_turbo,transcript_raw,gold,Visual,visual,P ella jua...,p ella jua,3.0,1.5,0.0,3.0
-test,281474976889296_f1847_chunk_1.wav,,0.5288125,Male,18-30,Urdu,large_v3_turbo,transcript_raw,gold,Amjad,amjad,I'm Jed.,i m jed,3.0,0.8,0.0,3.0
-test,281474976888231_f1490_chunk_1.wav,,1.728625,Female,60+,Tamil,large_v3_turbo,transcript_raw,gold,COVOVAX,covovax,GUO GUOBALL Wax,guo guoball wax,3.0,1.5714,0.0,3.0
-test,281474976909238_f2866_chunk_1.wav,,4.55175,Female,45-60,Punjabi,large_v3_turbo,transcript_raw,gold,377138354339 ?,377138354339,377-138-354339,377 138 354339,3.0,0.1667,0.0,3.0
-test,281474976909234_f2865_chunk_1.wav,,1.210625,Female,45-60,Punjabi,large_v3_turbo,transcript_raw,gold,PayUmoney,payumoney,pay you money,pay you money,3.0,0.4444,0.0,3.0
+test,281474976899941_f80_chunk_0.wav,,0.42675,Male,30-45,Maithili,large_v3_turbo,transcript_raw,gold,House,house,How old is it?,how old is it,4.0,2.0,0.0,4.0
 test,281474976884349_f1690_chunk_1.wav,,0.5906875,Female,18-30,Tamil,large_v3_turbo,transcript_raw,gold,Chennai,chennai,Stand and 78,stand and 78,3.0,1.4286,0.0,3.0
-test,281474976909239_f2867_chunk_1.wav,,5.020625,Female,45-60,Punjabi,large_v3_turbo,transcript_raw,gold,83354714040,83354714040,833-547-14040,833 547 14040,3.0,0.1818,0.0,3.0
+test,281474976887155_f2742_chunk_1.wav,,5.0353125,Female,18-30,Malayalam,large_v3_turbo,transcript_raw,gold,85740051518,85740051518,857 400 51518,857 400 51518,3.0,0.1818,0.0,3.0
+test,281474976887174_f3263_chunk_5.wav,,1.92,Female,18-30,Malayalam,large_v3_turbo,transcript_raw,gold,Parthasarathy Temple.,parthasarathy temple,B enthusiasts of the conquered world.,b enthusiasts of the conquered world,3.0,1.35,0.0,3.0
+test,281474976888231_f1490_chunk_1.wav,,1.728625,Female,60+,Tamil,large_v3_turbo,transcript_raw,gold,COVOVAX,covovax,GUO GUOBALL Wax,guo guoball wax,3.0,1.5714,0.0,3.0
+test,281474976888938_f2386_chunk_2.wav,,7.4673125,Female,18-30,Konkani,large_v3_turbo,transcript_raw,gold,76899233753@upi,76899233753 upi,768 99233753 at the rate of UPI.,768 99233753 at the rate of upi,3.0,1.0667,0.5,3.5
+test,281474976889296_f1847_chunk_1.wav,,0.5288125,Male,18-30,Urdu,large_v3_turbo,transcript_raw,gold,Amjad,amjad,I'm Jed.,i m jed,3.0,0.8,0.0,3.0
+test,281474976893816_f854_chunk_0.wav,,0.6400625,Female,18-30,Bodo,large_v3_turbo,transcript_raw,gold,Forward,forward,for the world.,for the world,3.0,1.0,0.0,3.0
+test,281474976893991_f3340_chunk_0.wav,,0.47075,Female,45-60,Telugu,large_v3_turbo,transcript_raw,gold,Kichidi,kichidi,Keep your day.,keep your day,3.0,1.5714,0.0,3.0
 test,281474976895330_f1883_chunk_4.wav,,0.6163125,Male,30-45,Kashmiri,large_v3_turbo,transcript_raw,gold,achievements,achievements,It's human.,it s human,3.0,0.8333,0.0,3.0
+test,281474976896582_f1500_chunk_0.wav,,0.681625,Female,60+,Tamil,large_v3_turbo,transcript_raw,gold,Visual,visual,P ella jua...,p ella jua,3.0,1.5,0.0,3.0
+test,281474976897517_f2194_chunk_0.wav,,0.753,Male,30-45,Sindhi,large_v3_turbo,transcript_raw,gold,Ajmer,ajmer,I do mean,i do mean,3.0,1.4,0.0,3.0
+test,281474976909234_f2865_chunk_1.wav,,1.210625,Female,45-60,Punjabi,large_v3_turbo,transcript_raw,gold,PayUmoney,payumoney,pay you money,pay you money,3.0,0.4444,0.0,3.0
