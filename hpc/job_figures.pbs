@@ -12,12 +12,12 @@
 # committed/scored results of BOTH datasets. Run this LAST (after the TIE and Svarah
 # jobs finish) so the combined artifact_contrast figure sees both datasets. Safe to
 # re-run any time; reads results/<ds>/, writes paper/figures/.
-#   qsub -v DATASETS=tie,svarah hpc/job_figures.pbs
+#   qsub -v DATASETS=tie,svarah,aesrc hpc/job_figures.pbs
 
 WORKDIR=${WORKDIR:-$(pwd)}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
 WHISPER_ENV=${WHISPER_ENV:-whisper}
-DATASETS=${DATASETS:-tie,svarah}
+DATASETS=${DATASETS:-tie,svarah,aesrc}
 
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
 mkdir -p "${WORKDIR}/logs"

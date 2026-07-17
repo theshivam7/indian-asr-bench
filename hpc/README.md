@@ -25,7 +25,7 @@ experiment with the right parallelism + dependency chaining, printing the job id
 
 ```bash
 # from the repo root, on a login node:
-huggingface-cli login                             # once — Svarah is a gated HF dataset
+hf auth login                             # once; Svarah is a gated HF dataset
 PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase all   # submit everything, correctly chained
 PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup       # also create missing conda envs first
 ```
@@ -88,10 +88,10 @@ Overridable training knobs: `FT_EPOCHS`, `FT_BATCH`, `FT_GRAD_ACCUM`, `FT_LR`, `
 ## Notes
 
 - **Reuse over recompute:** the raw TIE/Svarah transcripts are committed, so you
-  normally only need `job_new_models_tie` (2 new models) + `job_svarah` — not a
+  normally only need `job_new_models_tie` (2 new models) + `job_svarah`, not a
   full re-run. After a pure normalization/metric change, `job_score.pbs`
   (CPU) recomputes everything from the committed transcripts with no GPU.
-- Scripts are resumable — re-submitting picks up from the last checkpoint.
+- Scripts are resumable: re-submitting picks up from the last checkpoint.
 
 ## Adapting to SLURM
 

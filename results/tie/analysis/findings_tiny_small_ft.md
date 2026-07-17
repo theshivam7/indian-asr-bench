@@ -213,11 +213,10 @@ noise) that limit how conclusively this study's numbers can be read.
 ## 9. Recommendation: proceed to Phase 2
 
 Given (a) directionally supportive but statistically underpowered/noisy Phase 1 results, and
-(b) AESRC2020's structural advantages over TIE for exactly this question (§8, full writeup in
-`docs/AESRC2020_INDIAN_ANALYSIS.md`), **recommend proceeding to Phase 2** — pending
-confirmation of AESRC2020 licensing/access terms (unresolved, flagged in that document's
-§6). A draft outreach email requesting clarification on Svarah's full dataset access is at
-`paper/svarah_access_email.md`.
+(b) AESRC2020's structural advantages over TIE for exactly this question (§8, suitability
+analysis in local working notes), **recommend proceeding to Phase 2** — pending confirmation
+of AESRC2020 licensing/access terms. (Historical note: Phase 2 was subsequently run; see
+`results/aesrc/analysis/` for its results.)
 
 ## Appendix: file map
 

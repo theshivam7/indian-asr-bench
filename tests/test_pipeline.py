@@ -159,6 +159,14 @@ EXPECTED_SVARAH_WER = {
     "large_v3_turbo": 8.10, "parakeet": 11.73, "parakeet_ctc": 15.65, "qwen3": 11.82,
 }
 
+EXPECTED_AESRC_WER = {
+    "tiny": 13.66, "base": 9.96, "small": 7.23, "medium": 5.73, "large": 5.20,
+    "large_v3_turbo": 5.81, "parakeet": 6.26, "parakeet_ctc": 7.50, "qwen3": 5.23,
+    "tiny_hf": 17.45, "tiny_aesrc_ft": 12.64,
+    "small_hf": 7.22, "small_aesrc_ft": 5.64,
+    "medium_hf": 5.63, "medium_aesrc_ft": 4.48,
+}
+
 def _check_committed_numbers(dataset, expected):
     import pandas as pd
     summary = os.path.join(stage2_dir(dataset), "wer_summary_all_models.csv")
@@ -175,6 +183,9 @@ def test_committed_tie_numbers_regression():
 
 def test_committed_svarah_numbers_regression():
     _check_committed_numbers("svarah", EXPECTED_SVARAH_WER)
+
+def test_committed_aesrc_numbers_regression():
+    _check_committed_numbers("aesrc", EXPECTED_AESRC_WER)
 
 
 if __name__ == "__main__":
