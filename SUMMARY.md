@@ -24,9 +24,9 @@ overview; come here for the evidence.
 
 | Step | What it does | Output |
 |---|---|---|
-| Registry | `utils/registry.py` defines every model, dataset, mode, and display name. Single source of truth. | - |
+| Registry | [`utils/registry.py`](utils/registry.py) defines every model, dataset, mode, and display name. Single source of truth. | - |
 | Stage 1 | An engine driver transcribes a dataset's eval split. Committed and immutable: the reproducibility anchor. | `results/<dataset>/stage1_raw_transcripts/` |
-| Stage 2 | `normalize_and_score.py` computes per-clip WER/CER under every normalization mode. | `results/<dataset>/stage2_processed/` |
+| Stage 2 | [`normalize_and_score.py`](normalize_and_score.py) computes per-clip WER/CER under every normalization mode. | `results/<dataset>/stage2_processed/` |
 | Stage 3 | Comparisons, cluster-bootstrap statistics, error taxonomy, fine-tuning reports, charts. | `results/<dataset>/analysis/` |
 
 Any normalization or metric change re-runs Stages 2 and 3 from the committed transcripts. No re-inference needed.
@@ -35,20 +35,20 @@ Extending the benchmark:
 
 - **New dataset**: add one `DatasetSpec` to the registry. No other file changes.
 - **New model**: add one `ModelSpec`, then run its engine driver with `--model`.
-- **New metric**: add it to `utils/wer_compute.py` and surface it in Stage 2/3.
+- **New metric**: add it to [`utils/wer_compute.py`](utils/wer_compute.py) and surface it in Stage 2/3.
 
 **Decode settings**, per engine (recorded per-run in `results/<dataset>/stage1_raw_transcripts/wer_<model>_manifest.json`: model + dataset revisions, package versions, git commit, decode kwargs, host, timestamp):
 
 | Engine | Explicit settings | Everything else |
 |---|---|---|
 | openai-whisper (base/medium/large/large-v3-turbo) | `language="en"` (+ `fp16=False` on CPU) | library defaults: greedy decoding with temperature fallback (0.0 to 1.0 in 0.2 steps on quality-gate failure), `condition_on_previous_text=True`, default no-speech/compression thresholds |
-| hf_whisper (medium_hf / medium_ft, fine-tuned models) | chunked `transformers` pipeline (`utils/transcribe_hf.py`) | library defaults |
+| hf_whisper (medium_hf / medium_ft, fine-tuned models) | chunked `transformers` pipeline ([`utils/transcribe_hf.py`](utils/transcribe_hf.py)) | library defaults |
 | NeMo (parakeet / parakeet_ctc) | batch transcription, `batch_size=16` | library defaults |
 | qwen3 | `language="English"`, `max_new_tokens=512` | library defaults |
 
 openai-whisper's temperature fallback is stochastic: clips that fail the compression-ratio/log-prob gates at temperature 0 are re-decoded at sampled temperatures, so re-running Stage 1 from scratch can produce slightly different transcripts for those clips. `condition_on_previous_text=True` additionally couples 30-second windows in clips longer than 30s. Decode settings were left at community defaults deliberately: they are what practitioners run, and changing them mid-project would break comparability with completed runs. This is why the **committed Stage-1 raw CSVs are the reproducibility anchor** rather than the decode process itself.
 
-HF dataset revisions are pinned in `utils/registry.py` (`hf_revision`) and passed to `load_dataset`, so an upstream dataset update cannot silently change the benchmark. The `whisper_norm` mode uses `whisper_normalizer==0.1.0`, verified byte-identical to `openai/whisper`'s reference `EnglishTextNormalizer` on all 7,391 distinct reference/hypothesis strings in the TIE corpus.
+HF dataset revisions are pinned in [`utils/registry.py`](utils/registry.py) (`hf_revision`) and passed to `load_dataset`, so an upstream dataset update cannot silently change the benchmark. The `whisper_norm` mode uses [`whisper_normalizer==0.1.0`](https://pypi.org/project/whisper-normalizer/), verified byte-identical to [`openai/whisper`](https://github.com/openai/whisper)'s reference `EnglishTextNormalizer` on all 7,391 distinct reference/hypothesis strings in the TIE corpus.
 
 ---
 
@@ -389,7 +389,7 @@ Full per-size reports: [`finetune_comparison_tiny.md`](results/aesrc/analysis/fi
 
 Every WER number above depends on the reference field and the normalizer chosen before comparison. At its worst the combination moves a model by several points: TIE's reference swap shifts every model 2.3 to 3.5 pp, and normalizer choice alone moves the verbatim models up to 6.5 pp on Svarah. That is as much as the gap between mid-tier models, so it is documented precisely.
 
-Three normalizers do all the work (`utils/normalize.py`):
+Three normalizers do all the work ([`utils/normalize.py`](utils/normalize.py)):
 
 | Normalizer | What it does | Used by |
 |---|---|---|
@@ -421,7 +421,7 @@ All normalization is applied symmetrically to reference and hypothesis. TIE has 
 - The two most verbatim systems are exceptions: Qwen3 (+1.3 pp) and Parakeet-CTC (+0.7 pp; raw-vs-raw its sign even flips, 17.15% `hf_raw` vs 18.53% `transcript_raw`). Their punctuation-rich literal output happens to agree better with the mangled reference.
 - Reference faults are style-dependent, so they cannot be differenced out across models. Always use `transcript_clean`.
 
-**Metrics** (`utils/wer_compute.py`): WER and CER are standard substitutions + deletions + insertions over the reference word or character count. An empty hypothesis counts as all-deletions in both metrics. Confidence intervals use a speaker-clustered (TIE, AESRC) or recording-clustered (Svarah) paired bootstrap with 2,000 resamples and Holm correction across every pairwise family.
+**Metrics** ([`utils/wer_compute.py`](utils/wer_compute.py)): WER and CER are standard substitutions + deletions + insertions over the reference word or character count. An empty hypothesis counts as all-deletions in both metrics. Confidence intervals use a speaker-clustered (TIE, AESRC) or recording-clustered (Svarah) paired bootstrap with 2,000 resamples and Holm correction across every pairwise family.
 
 ---
 
@@ -485,5 +485,5 @@ Stated so the numbers above are read correctly:
 - Run the blind human-annotation pass ([`analysis/validation/`](analysis/validation/), a 91-item stratified sheet). This turns the classifier's heuristic status into measured precision and recall, and it is the highest-value task left.
 - Run the transfer matrix: evaluate the TIE-fine-tuned checkpoints on AESRC and the AESRC ones on TIE (and both on Svarah), to see whether either study's gains carry across registers or stay domain-locked.
 - Replicate both capacity studies across multiple seeds, which would bound run-to-run variance and give Tiny's large but noisy deltas (TIE -2.96 pp, AESRC -4.81 pp) the power to resolve.
-- Activate the NEER entity metric (`analysis/entity_analysis.py`) once a use-case register field is derived for Svarah. Entity-dense clips currently score far above 100% WER for spelling-convention reasons, not misrecognition.
+- Activate the NEER entity metric ([`analysis/entity_analysis.py`](analysis/entity_analysis.py)) once a use-case register field is derived for Svarah. Entity-dense clips currently score far above 100% WER for spelling-convention reasons, not misrecognition.
 - Figure out why the HF chunked pipeline scores higher WER than `openai-whisper` on 60s+ clips with identical weights.
