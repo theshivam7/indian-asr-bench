@@ -12,7 +12,7 @@ Computes, per dataset and evaluation mode:
 Resampling unit: **speakers**, when the dataset exposes a speaker id. Clips from
 one speaker share accent/microphone/room, so their errors are correlated;
 resampling clips i.i.d. understates variance and overstates significance
-(TIE: 986 clips from 280 speakers, median 3 clips/speaker). Clip-level CIs are
+(TIE: 985 scored clips from 280 speakers, median 3 clips/speaker). Clip-level CIs are
 reported alongside for transparency. Datasets without a speaker id fall back to
 the recording tag embedded in the clip ID when the registry defines
 `cluster_id_regex` (Svarah: 3232 recordings over 6656 clips), else to clip-level
