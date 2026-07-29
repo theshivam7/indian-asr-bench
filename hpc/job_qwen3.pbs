@@ -8,18 +8,24 @@
 #PBS -j oe
 #PBS -k oed
 
-WORKDIR=${WORKDIR:-$(pwd)}
+WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-QWEN3_ENV=${QWEN3_ENV:-qwen3}
-HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+QWEN3_ENV=${QWEN3_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/qwen3_env}
+# Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
+# will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
+HF_CACHE=${HF_CACHE:-${SCRATCH:-/scratch/users/ntu/$USER}/hf_cache}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
 DATASET=${DATASET:-tie}
 
 module load "${CUDA_MODULE}" 2>/dev/null || true
 
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
-conda activate "${QWEN3_ENV}"
-
+conda activate "${QWEN3_ENV}" || { echo "[FATAL] conda activate failed for '${QWEN3_ENV}'"; conda info --envs; exit 1; }
+# Conda's activation hooks don't reliably fire in a non-interactive PBS batch shell,
+# so the env's own libstdc++/libav* stay off the loader path and the system /lib64
+# copies win. That surfaces as an ImportError naming CXXABI_1.3.15 or a missing
+# libavutil, both of which read as a broken install rather than a path problem.
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 export HF_DATASETS_CACHE="${HF_CACHE}"
 export HF_HOME="${HF_CACHE}"
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"

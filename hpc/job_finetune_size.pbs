@@ -43,7 +43,9 @@ esac
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
 WHISPER_FT_ENV=${WHISPER_FT_ENV:-whisper_medium_ft}
-HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+# Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
+# will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
+HF_CACHE=${HF_CACHE:-${SCRATCH:-/scratch/users/ntu/$USER}/hf_cache}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
 
 module load "${CUDA_MODULE}" 2>/dev/null || true
@@ -52,7 +54,7 @@ export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}" XDG_CACHE_HOME="${H
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" "${WORKDIR}/models"
 cd "${WORKDIR}"
 
-conda activate "${WHISPER_FT_ENV}"
+conda activate "${WHISPER_FT_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_FT_ENV}'"; conda info --envs; exit 1; }
 export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 
 echo "--- GPU / CUDA diagnostics (${SIZE} on ${DATASET}, capacity-study fine-tune) ---"

@@ -14,7 +14,7 @@
 # has already downloaded the dataset's train/valid/test splits into HF_CACHE.
 #   qsub -v DATASET=aesrc hpc/job_speaker_overlap.pbs
 
-WORKDIR=${WORKDIR:-$(pwd)}
+WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
 WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/whisper}
 HF_CACHE=${HF_CACHE:-${SCRATCH:-/scratch/users/ntu/$USER}/hf_cache}
@@ -24,8 +24,12 @@ source "${CONDA_BASE}/etc/profile.d/conda.sh"
 export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}"
 mkdir -p "${WORKDIR}/logs"
 cd "${WORKDIR}"
-conda activate "${WHISPER_ENV}"
-
+conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
+# Conda's activation hooks don't reliably fire in a non-interactive PBS batch shell,
+# so the env's own libstdc++/libav* stay off the loader path and the system /lib64
+# copies win. That surfaces as an ImportError naming CXXABI_1.3.15 or a missing
+# libavutil, both of which read as a broken install rather than a path problem.
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 echo "=== Speaker-overlap check for dataset '${DATASET}' $(date) ==="
 python finetune/check_speaker_overlap.py --dataset "${DATASET}"
 echo "=== done $(date) ==="

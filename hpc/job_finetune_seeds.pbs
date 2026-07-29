@@ -44,7 +44,9 @@ esac
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
 WHISPER_FT_ENV=${WHISPER_FT_ENV:-whisper_medium_ft}
-HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+# Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
+# will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
+HF_CACHE=${HF_CACHE:-${SCRATCH:-/scratch/users/ntu/$USER}/hf_cache}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
 MODELS_ROOT=${MODELS_ROOT:-models}
 
@@ -54,7 +56,7 @@ export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}" XDG_CACHE_HOME="${H
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" "${WORKDIR}/${MODELS_ROOT}"
 cd "${WORKDIR}"
 
-conda activate "${WHISPER_FT_ENV}"
+conda activate "${WHISPER_FT_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_FT_ENV}'"; conda info --envs; exit 1; }
 export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 
 echo "--- GPU / CUDA diagnostics (${SIZE} on ${DATASET}, seeds ${SEEDS}) ---"
@@ -70,13 +72,24 @@ if [ -f "${BASELINE_CSV}" ]; then
 else
     echo "=== transcribe ${SIZE}_hf (pretrained, same HF pipeline) on ${DATASET} test ==="
     DATASET="${DATASET}" MODEL_NAME="${SIZE}_hf" MODEL_SOURCE="openai/whisper-${SIZE}" \
-        python finetune/evaluate_finetuned.py
-    python normalize_and_score.py --dataset "${DATASET}" --models "${SIZE}_hf"
+        python finetune/evaluate_finetuned.py \
+        || { echo "[FATAL] baseline transcription failed"; exit 1; }
+    python normalize_and_score.py --dataset "${DATASET}" --models "${SIZE}_hf" \
+        || { echo "[FATAL] baseline scoring failed"; exit 1; }
 fi
 
 echo "=== multi-seed fine-tuning: ${SIZE} on ${DATASET}, seeds ${SEEDS} $(date) ==="
 bash finetune/run_seeds.sh --size "${SIZE}" --dataset "${DATASET}" \
     --seeds "${SEEDS}" --models-root "${MODELS_ROOT}"
+STATUS=$?
+
+# Without this the trailing echo below sets the job's exit status, so a run that died
+# partway (a full disk, an OOM, a failed download) is recorded by PBS as a success and
+# leaves no signal that the seeds are missing.
+if [ "${STATUS}" -ne 0 ]; then
+    echo "[FATAL] run_seeds.sh failed with exit ${STATUS}; seeds are incomplete"
+    exit "${STATUS}"
+fi
 
 echo "=== ${SIZE} multi-seed study on ${DATASET} complete $(date) ==="
 echo "Aggregate once every size is done:"

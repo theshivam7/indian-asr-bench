@@ -14,16 +14,20 @@
 # re-run any time; reads results/<ds>/, writes paper/figures/.
 #   qsub -v DATASETS=tie,svarah,aesrc hpc/job_figures.pbs
 
-WORKDIR=${WORKDIR:-$(pwd)}
+WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-WHISPER_ENV=${WHISPER_ENV:-whisper}
+WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/whisper}
 DATASETS=${DATASETS:-tie,svarah,aesrc}
 
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
 mkdir -p "${WORKDIR}/logs"
 cd "${WORKDIR}"
-conda activate "${WHISPER_ENV}"
-
+conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
+# Conda's activation hooks don't reliably fire in a non-interactive PBS batch shell,
+# so the env's own libstdc++/libav* stay off the loader path and the system /lib64
+# copies win. That surfaces as an ImportError naming CXXABI_1.3.15 or a missing
+# libavutil, both of which read as a broken install rather than a path problem.
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 echo "=== Rebuilding paper figures for '${DATASETS}' $(date) ==="
 if [ -f paper/figures/make_paper_figures.py ]; then
     python paper/figures/make_paper_figures.py --dataset "${DATASETS}"

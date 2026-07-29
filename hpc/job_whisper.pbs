@@ -19,8 +19,10 @@
 # (it does with #PBS -V, added above). Fall back through both before $(pwd).
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-WHISPER_ENV=${WHISPER_ENV:-whisper}
-HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/whisper}
+# Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
+# will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
+HF_CACHE=${HF_CACHE:-${SCRATCH:-/scratch/users/ntu/$USER}/hf_cache}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
 MODEL=${MODEL:-medium}
 DATASET=${DATASET:-tie}
@@ -30,7 +32,7 @@ source "${CONDA_BASE}/etc/profile.d/conda.sh"
 export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}" XDG_CACHE_HOME="${HF_CACHE}"
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 cd "${WORKDIR}"
-conda activate "${WHISPER_ENV}"
+conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
 export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 
 # Fixed 2026-07-08: a broken/CPU-fallback env never crashes the job — it silently produces

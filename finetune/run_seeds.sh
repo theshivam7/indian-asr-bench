@@ -88,9 +88,21 @@ for SEED in "${SEED_ARRAY[@]}"; do
         continue
     fi
 
-    if [[ "${SKIP_TRAINED}" == "1" && -d "${OUT_DIR}" ]]; then
-        echo "  checkpoint exists, skipping training."
+    # Completion is decided by eval_results.json, which finetune_tiny_small.py writes
+    # last, after both save_model() and processor.save_pretrained() have succeeded.
+    # Directory existence is NOT a valid marker: the Trainer creates output_dir at
+    # step 0, so a walltime kill or an OOM mid-training leaves a directory with
+    # checkpoint-* subdirs and no model at the root. Skipping training on that basis
+    # sends a never-saved checkpoint to the transcription step, which then fails on a
+    # missing preprocessor_config.json after the GPU time has already been spent.
+    if [[ "${SKIP_TRAINED}" == "1" && -f "${OUT_DIR}/eval_results.json" ]]; then
+        echo "  trained checkpoint complete (${OUT_DIR}/eval_results.json), skipping training."
     else
+        if [[ -d "${OUT_DIR}" ]]; then
+            echo "  [WARN] ${OUT_DIR} exists but has no eval_results.json: partial run, retraining."
+            echo "         Stale checkpoint-* subdirectories are not removed automatically;"
+            echo "         delete the directory by hand if disk quota is tight."
+        fi
         echo "  training ..."
         python finetune/finetune_tiny_small.py \
             --dataset "${DATASET}" \

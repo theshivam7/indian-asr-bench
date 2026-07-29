@@ -24,9 +24,14 @@
 # After all models are done:
 #     python analysis/compare_efficiency.py --dataset "${DATASET}"
 
-WORKDIR=${WORKDIR:-$(pwd)}
+# PBS starts the job in $HOME, not the submit directory, so PBS_O_WORKDIR is what
+# points back at the repo. Falling through to $(pwd) alone silently runs the job from
+# $HOME, where the driver does not exist.
+WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+# Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
+# will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
+HF_CACHE=${HF_CACHE:-${SCRATCH:-/scratch/users/ntu/$USER}/hf_cache}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
 DATASET=${DATASET:-tie}
 ENGINE=${ENGINE:-whisper}
@@ -34,23 +39,45 @@ CLIPS=${CLIPS:-200}
 WARMUP=${WARMUP:-3}
 SEED=${SEED:-42}
 
+# Capture everything ourselves rather than relying on PBS -o/-k, which on this cluster
+# has silently discarded the output file. Redirecting here, before any other command,
+# means an environment failure is still recorded somewhere predictable.
+mkdir -p "${WORKDIR}/logs"
+JOBTAG="${PBS_JOBID%%.*}"
+exec >> "${WORKDIR}/logs/eff_${JOBTAG:-manual}.log" 2>&1
+
+echo "=== job start $(date) ==="
+echo "WORKDIR=${WORKDIR}"
+echo "PBS_O_WORKDIR=${PBS_O_WORKDIR:-<unset>}"
+echo "pwd at start=$(pwd)"
+echo "ENGINE=${ENGINE} MODEL=${MODEL:-<unset>} DATASET=${DATASET}"
+
 module load "${CUDA_MODULE}" 2>/dev/null || true
 
+if [ ! -f "${CONDA_BASE}/etc/profile.d/conda.sh" ]; then
+    echo "[FATAL] conda.sh not found under CONDA_BASE='${CONDA_BASE}'"
+    exit 1
+fi
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
+
+# These are prefix envs on scratch, activated by path, not by name (see
+# hpc/NSCC_RUNBOOK.md). `conda activate whisper` silently leaves you in base with no
+# torch, so the default must be the full path.
+SCRATCH_DIR=${SCRATCH:-/scratch/users/ntu/${USER}}
 
 case "${ENGINE}" in
   whisper)
-    conda activate "${WHISPER_ENV:-whisper}"
+    ENV_PATH=${WHISPER_ENV:-${SCRATCH_DIR}/envs/whisper}
     MODEL=${MODEL:-medium}
     DRIVER="whisper_asr/run_whisper.py"
     ;;
   parakeet)
-    conda activate "${PARAKEET_ENV:-parakeet}"
+    ENV_PATH=${PARAKEET_ENV:-${SCRATCH_DIR}/envs/parakeet_env}
     MODEL=${MODEL:-parakeet}
     DRIVER="parakeet/wer_parakeet.py"
     ;;
   qwen3)
-    conda activate "${QWEN3_ENV:-qwen3}"
+    ENV_PATH=${QWEN3_ENV:-${SCRATCH_DIR}/envs/qwen3_env}
     MODEL=${MODEL:-qwen3}
     DRIVER="qwen3/wer_qwen3.py"
     ;;
@@ -60,14 +87,49 @@ case "${ENGINE}" in
     ;;
 esac
 
+echo "activating env: ${ENV_PATH}"
+if [ -d "${ENV_PATH}" ]; then
+    conda activate "${ENV_PATH}" || { echo "[FATAL] conda activate failed for '${ENV_PATH}'"; exit 1; }
+else
+    # Fall back to treating it as a named env, so an installation that uses names
+    # instead of prefixes still works, but never continue silently in base.
+    conda activate "${ENV_PATH}" 2>/dev/null || {
+        echo "[FATAL] no conda env at path or by name: '${ENV_PATH}'"
+        echo "        Available environments:"
+        conda info --envs
+        exit 1
+    }
+fi
+
+# Conda's activation hooks don't reliably fire in a non-interactive PBS batch shell, so
+# the env's own libstdc++ stays off the loader path and the older system /lib64 copy
+# wins. NeMo imports IPython, which imports sqlite3, which pulls in the env's
+# libicui18n; against the system libstdc++ that fails with "version CXXABI_1.3.15 not
+# found". It reads as a broken NeMo install but is only a loader-path problem.
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+
 export HF_DATASETS_CACHE="${HF_CACHE}"
 export HF_HOME="${HF_CACHE}"
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 
-cd "${WORKDIR}"
+cd "${WORKDIR}" || { echo "[FATAL] cannot cd to WORKDIR='${WORKDIR}'"; exit 1; }
+
+# Fail loudly rather than reporting success from a later echo. Without this, a driver
+# that never ran still exits 0 and looks like a completed benchmark.
+if [ ! -f "${DRIVER}" ]; then
+    echo "[FATAL] driver '${DRIVER}' not found under $(pwd). Is WORKDIR correct?"
+    exit 1
+fi
 
 echo "=== ENV CHECK ==="
-python -c "import torch; print('torch:', torch.__version__, '| cuda:', torch.version.cuda, '| gpu:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU-ONLY')"
+echo "conda env: ${CONDA_DEFAULT_ENV:-<none active>}"
+echo "python:    $(command -v python || echo '<not found>')"
+# A failed conda activate leaves the system python on PATH, which then fails on the
+# first import. Catching it here names the real cause instead of an ImportError.
+python -c "import torch; print('torch:', torch.__version__, '| cuda:', torch.version.cuda, '| gpu:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU-ONLY')" \
+    || { echo "[FATAL] torch import failed. Is the conda env correct?"; exit 1; }
+python -c "import utils.efficiency" \
+    || { echo "[FATAL] cannot import utils.efficiency from $(pwd)"; exit 1; }
 echo "engine=${ENGINE} model=${MODEL} dataset=${DATASET} clips=${CLIPS} seed=${SEED}"
 echo "=== END ENV CHECK ==="
 
@@ -79,6 +141,14 @@ if [ "${ENGINE}" = "qwen3" ]; then
 else
   python "${DRIVER}" --model "${MODEL}" --dataset "${DATASET}" --efficiency \
       --clips "${CLIPS}" --warmup "${WARMUP}" --seed "${SEED}"
+fi
+STATUS=$?
+
+# Propagate the driver's exit code. PBS records the script's status, so swallowing a
+# failure here would report a successful job that produced no measurements.
+if [ "${STATUS}" -ne 0 ]; then
+    echo "[FATAL] benchmark failed with exit ${STATUS}"
+    exit "${STATUS}"
 fi
 
 echo "Done. Aggregate with: python analysis/compare_efficiency.py --dataset ${DATASET}"

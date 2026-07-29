@@ -14,12 +14,14 @@
 # downloads the test parquet shards (~1.7GB) into HF_CACHE; keep HF_CACHE on /scratch.
 # Fine-tuning is a separate job (hpc/job_finetune_size.pbs with DATASET=aesrc).
 
-WORKDIR=${WORKDIR:-$(pwd)}
+WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-WHISPER_ENV=${WHISPER_ENV:-whisper}
-PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
-QWEN3_ENV=${QWEN3_ENV:-qwen3}
-HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/whisper}
+PARAKEET_ENV=${PARAKEET_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/parakeet_env}
+QWEN3_ENV=${QWEN3_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/qwen3_env}
+# Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
+# will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
+HF_CACHE=${HF_CACHE:-${SCRATCH:-/scratch/users/ntu/$USER}/hf_cache}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
 
 module load "${CUDA_MODULE}" 2>/dev/null || true
@@ -34,7 +36,7 @@ echo "--- GPU / CUDA diagnostics ---"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
 
 # Stage 1 -- Whisper family (whisper env)
-conda activate "${WHISPER_ENV}"
+conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
 # Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
 # non-interactive PBS batch shell (same quirk documented in job_svarah.pbs); without
 # this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
@@ -53,7 +55,7 @@ for M in tiny base small medium large large_v3_turbo; do
 done
 
 # Stage 1 -- Parakeet TDT + CTC (parakeet env)
-conda activate "${PARAKEET_ENV}"
+conda activate "${PARAKEET_ENV}" || { echo "[FATAL] conda activate failed for '${PARAKEET_ENV}'"; conda info --envs; exit 1; }
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 for M in parakeet parakeet_ctc; do
   echo -e "\n=== AESRC Stage 1: ${M} ==="
@@ -61,13 +63,13 @@ for M in parakeet parakeet_ctc; do
 done
 
 # Stage 1 -- Qwen3 (qwen3 env)
-conda activate "${QWEN3_ENV}"
+conda activate "${QWEN3_ENV}" || { echo "[FATAL] conda activate failed for '${QWEN3_ENV}'"; conda info --envs; exit 1; }
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 echo -e "\n=== AESRC Stage 1: qwen3 ==="
 python qwen3/wer_qwen3.py --dataset aesrc
 
 # Stage 2 + 3 (CPU; whisper env has pandas/jiwer/matplotlib + whisper_normalizer)
-conda activate "${WHISPER_ENV}"
+conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 echo -e "\n=== AESRC Stage 2 + 3 ==="
 python normalize_and_score.py --dataset aesrc

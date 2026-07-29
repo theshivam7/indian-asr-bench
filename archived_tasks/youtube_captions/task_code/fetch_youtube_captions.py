@@ -27,6 +27,16 @@ import warnings
 import pandas as pd
 from tqdm import tqdm
 
+# Script, not a module: every statement below runs at import time. A repo-wide import
+# sweep would therefore start a dataset download or a network fetch on whatever machine
+# the sweep runs on, and on a shared login node that risks a fair-share violation.
+# Refuse the import rather than doing the work silently.
+if __name__ != "__main__":
+    raise ImportError(
+        "fetch_youtube_captions.py is a script and must be run, not imported: python archived_tasks/youtube_captions/task_code/fetch_youtube_captions.py"
+    )
+
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.io_helpers import load_dataset_test, results_dir, stage1_raw_dir

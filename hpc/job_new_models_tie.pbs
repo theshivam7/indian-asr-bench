@@ -12,11 +12,13 @@
 # already committed and are NOT re-run). Then rescores TIE from ALL raw transcripts
 # and rebuilds analysis.
 
-WORKDIR=${WORKDIR:-$(pwd)}
+WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-WHISPER_ENV=${WHISPER_ENV:-whisper}
-PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
-HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/whisper}
+PARAKEET_ENV=${PARAKEET_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/parakeet_env}
+# Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
+# will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
+HF_CACHE=${HF_CACHE:-${SCRATCH:-/scratch/users/ntu/$USER}/hf_cache}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
 
 module load "${CUDA_MODULE}" 2>/dev/null || true
@@ -29,7 +31,7 @@ echo "=== TIE new-models started $(date) ==="
 
 echo "--- GPU / CUDA diagnostics ---"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
-conda activate "${WHISPER_ENV}"
+conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
 # Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
 # non-interactive PBS batch shell (same quirk documented in job_finetune.pbs) —
 # without this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
@@ -40,13 +42,13 @@ python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUD
 echo -e "\n=== TIE Stage 1: whisper large-v3-turbo ==="
 python whisper_asr/run_whisper.py --model large_v3_turbo --dataset tie
 
-conda activate "${PARAKEET_ENV}"
+conda activate "${PARAKEET_ENV}" || { echo "[FATAL] conda activate failed for '${PARAKEET_ENV}'"; conda info --envs; exit 1; }
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 echo -e "\n=== TIE Stage 1: parakeet_ctc ==="
 python parakeet/wer_parakeet.py --model parakeet_ctc --dataset tie
 
 # Rescore + analyse TIE from all committed + new raw transcripts (CPU)
-conda activate "${WHISPER_ENV}"
+conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
 # Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
 # non-interactive PBS batch shell (same quirk documented in job_finetune.pbs) —
 # without this, openai-whisper's ffmpeg subprocess call silently fails per-clip.

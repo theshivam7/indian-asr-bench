@@ -5,7 +5,10 @@
 # 4.8.5). The engines cannot share one environment, so each file pins what its own
 # stack needs. Do not "reconcile" them: aligning the versions breaks one env or the
 # other. See environments/*.yaml for the full specs.
-datasets==3.6.0
+# 4.x is required to read a cache written by datasets 4.x: the List feature type it
+# introduced is unknown to 3.x, which fails with "Feature type 'List' not found".
+# Audio decoding still works without torchcodec at this version.
+datasets==4.8.5
 jiwer==3.1.0
 openai-whisper==20250625
 torch==2.5.1

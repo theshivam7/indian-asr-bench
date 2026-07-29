@@ -3,10 +3,16 @@
 Concrete, copy-paste steps for running the benchmark on NSCC. Tuned for the real
 constraints observed on the cluster:
 
-- **`$HOME` is over quota** → all heavy I/O (HF dataset + model cache, fine-tune
-  weights) must live on **`/scratch`** (petabytes free).
-- Conda envs are **prefix envs on scratch**: `/scratch/users/ntu/$USER/envs/{whisper,parakeet_env,qwen3_env}`,
-  plus the named `whisper_medium_ft` in `~/.conda/envs`.
+- **`$HOME` is quota-limited** → all heavy I/O (HF dataset + model cache, fine-tune
+  weights, the repo itself) must live on **`/scratch`** (petabytes free).
+- **Conda envs are named envs in `~/.conda/envs`**: `whisper`, `parakeet`, `qwen3`,
+  `whisper_medium_ft`. They deliberately do NOT live on scratch. Scratch is subject to
+  an automatic purge of files that have not been accessed recently, and it deletes
+  inside an env directory as readily as anywhere else. A purged env loses
+  `lib/python3.10/encodings/` and every later command dies with a bare
+  `init_fs_encoding: failed to get the Python codec of the filesystem encoding`,
+  which names neither conda nor the purge. Envs are small; keep them in home and keep
+  only data on scratch.
 - Scheduler is **PBS Pro**; GPU is on compute nodes (`cuda/11.8.0` module).
 
 ## Never run compute on the login node: always `qsub -I` first
@@ -57,27 +63,47 @@ HF_HOME=$HF_CACHE hf auth login       # or: export HF_TOKEN=hf_xxx
 
 ### Environments
 
-You already have `whisper`, `parakeet_env`, `qwen3_env` (on scratch) and
-`whisper_medium_ft` (in home). The submitter creates any that are **missing** and,
-crucially, makes sure the scoring env has `whisper_normalizer` (needed by the
-`whisper_norm` mode; older envs predate it):
+Four named envs are needed: `whisper`, `parakeet`, `qwen3`, `whisper_medium_ft`. The
+submitter creates any that are missing and makes sure the scoring env has
+`whisper_normalizer`, which the `whisper_norm` mode needs and older envs predate:
 
 ```bash
 PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup
 ```
 
-Or do it by hand (prefix envs, on scratch):
+By hand, point conda's package and pip caches at scratch first. Both default into
+`$HOME` and will exhaust the home quota partway through an install:
 
 ```bash
 source $(conda info --base)/etc/profile.d/conda.sh
-# create only what's missing:
-conda env create -p $SCRATCH/envs/whisper      -f environments/whisper.yaml    # if absent
-conda env create -p $SCRATCH/envs/parakeet_env -f environments/parakeet.yaml   # if absent
-conda env create -p $SCRATCH/envs/qwen3_env    -f environments/qwen3.yaml      # if absent
-bash finetune/setup.sh whisper_medium_ft                        # if absent
-# ensure the scoring env has the Whisper normalizer:
-conda run -p $SCRATCH/envs/whisper pip install whisper_normalizer==0.1.0
+export CONDA_PKGS_DIRS=/scratch/users/ntu/$USER/conda_pkgs
+export PIP_CACHE_DIR=/scratch/users/ntu/$USER/pip_cache
+
+conda env create -n whisper -f environments/whisper.yaml   # if absent
+bash finetune/setup.sh whisper_medium_ft                   # if absent
 ```
+
+`environments/parakeet.yaml` and `environments/qwen3.yaml` no longer solve. Channel
+drift has made their MKL / llvm-openmp / mkl_random build hashes mutually
+unsatisfiable, and the solver fails rather than picking substitutes. Build those two
+from the pip requirements instead, which is what the CI-equivalent path does:
+
+```bash
+conda create -n parakeet python=3.10 -y && conda run -n parakeet pip install -r parakeet/requirements.txt
+conda create -n qwen3    python=3.10 -y && conda run -n qwen3    pip install -r qwen3/requirements.txt
+```
+
+Verify before submitting anything, because a broken env costs a full queue wait to
+discover:
+
+```bash
+for e in whisper parakeet qwen3 whisper_medium_ft; do printf "%-18s " "$e"; conda run -n $e python -c "import torch,datasets;print('torch',torch.__version__,'datasets',datasets.__version__)"; done
+conda run -n parakeet python -c "import nemo.collections.asr; print('nemo ok')"
+```
+
+All four must report `datasets 4.8.5` or later. Version 3.x cannot read a cache that
+4.x wrote and fails with `Feature type 'List' not found`, which reads like a dataset
+problem rather than a version mismatch.
 
 ## 1. Submit in phases (one GPU job at a time)
 
@@ -110,7 +136,7 @@ After ft-aesrc finishes, run ONE scoring pass (CPU job) to score everything and 
 the pretrained-vs-fine-tuned reports under `results/aesrc/analysis/`:
 
 ```bash
-qsub -P $PROJECT -v DATASET=aesrc,WHISPER_ENV=$SCRATCH/envs/whisper hpc/job_score.pbs
+qsub -P $PROJECT -v DATASET=aesrc,WHISPER_ENV=whisper hpc/job_score.pbs
 ```
 
 Prefer to fire everything at once (queue permitting)? `bash hpc/submit_all.sh --phase all`
@@ -132,9 +158,9 @@ stages already ran inside each job. To rebuild just the cross-dataset figures or
 re-score after a code change (no GPU):
 
 ```bash
-qsub -P $PROJECT -v DATASET=tie,WHISPER_ENV=$SCRATCH/envs/whisper    hpc/job_score.pbs   # rescore + analyse TIE
-qsub -P $PROJECT -v DATASET=svarah,WHISPER_ENV=$SCRATCH/envs/whisper hpc/job_score.pbs   # rescore + analyse Svarah
-qsub -P $PROJECT -v DATASET=aesrc,WHISPER_ENV=$SCRATCH/envs/whisper  hpc/job_score.pbs   # rescore + analyse AESRC (Indian)
+qsub -P $PROJECT -v DATASET=tie,WHISPER_ENV=whisper    hpc/job_score.pbs   # rescore + analyse TIE
+qsub -P $PROJECT -v DATASET=svarah,WHISPER_ENV=whisper hpc/job_score.pbs   # rescore + analyse Svarah
+qsub -P $PROJECT -v DATASET=aesrc,WHISPER_ENV=whisper  hpc/job_score.pbs   # rescore + analyse AESRC (Indian)
 qsub -P $PROJECT -v DATASETS=tie,svarah,aesrc hpc/job_figures.pbs
 ```
 
@@ -169,8 +195,8 @@ Then commit the updated `results/**` and push (`paper/` is local-only, not track
 - **`ffmpeg: No such file or directory` during Whisper transcription**: openai-whisper
   shells out to `ffmpeg` per clip; if missing, every failing clip silently gets an
   EMPTY hypothesis (~100% WER for that clip) instead of crashing the job. Verify with
-  `conda run -p $SCRATCH/envs/whisper which ffmpeg`; if empty,
-  `conda install -p $SCRATCH/envs/whisper -c conda-forge ffmpeg`.
+  `conda run -n whisper which ffmpeg`; if empty,
+  `conda install -n whisper -c conda-forge ffmpeg`.
 - **Svarah download 401/403** happens when the HF token isn't visible to the job. Re-run
   `HF_HOME=$HF_CACHE hf auth login`, or `export HF_TOKEN=...` before submitting.
 - **`whisper_normalizer` ImportError during scoring**: run the `pip install` line
