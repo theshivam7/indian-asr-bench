@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/License-MIT-lightgrey" />
   <img src="https://img.shields.io/badge/Datasets-TIE__shorts%20+%20Svarah%20+%20AESRC-orange" />
-  <img src="https://img.shields.io/badge/Models-9%20pretrained%20+%206%20fine--tuned-blue" />
+  <img src="https://img.shields.io/badge/Models-9%20pretrained%20+%203%20fine--tuned-blue" />
   <a href="https://huggingface.co/theshivam7">
     <img src="https://img.shields.io/badge/Hugging%20Face-models%20%26%20datasets-yellow?logo=huggingface" />
   </a>
@@ -48,7 +48,7 @@ much as swapping the model itself. Full detail in [Normalization](SUMMARY.md#nor
 - Up to five normalization modes apply symmetrically to reference and hypothesis, so ranking artifacts from text cleanup are visible instead of hidden.
 - Significance testing uses a speaker- or recording-clustered paired bootstrap, Holm-corrected across every pairwise model comparison.
 - A cross-model consensus classifier flags reference/audio mismatches from agreement patterns across all nine models, without hand review.
-- A fine-tuning capacity study covers Tiny, Small, and Medium on both a speaker-matched test set (TIE) and a natively speaker-disjoint one (AESRC).
+- A fine-tuning capacity study covers Tiny, Small, and Medium on AESRC, whose test set is natively speaker-disjoint from training.
 - Every table and chart regenerates on CPU from the committed Stage-1 transcripts; no GPU or re-transcription needed.
 
 ---
@@ -75,8 +75,8 @@ language): [SUMMARY.md, Datasets](SUMMARY.md#datasets).
 | Parakeet-CTC-1.1B | 1.1B | CTC |
 | Qwen3-ASR-1.7B | 1.7B | LLM-based |
 
-All nine run as-is on all three datasets; that is the headline benchmark. Six more (Whisper
-Tiny/Small/Medium, fine-tuned separately on TIE and on AESRC) are published on the [Hugging Face
+All nine run as-is on all three datasets; that is the headline benchmark. Three more (Whisper
+Tiny/Small/Medium, fine-tuned on AESRC) are published on the [Hugging Face
 Hub](https://huggingface.co/theshivam7) and analyzed in [Fine-tuning](SUMMARY.md#fine-tuning-pretrained-vs-fine-tuned-across-sizes).
 Full model table with parameter counts and links: [SUMMARY.md, Models](SUMMARY.md#models).
 
@@ -123,7 +123,7 @@ A few things stood out across all three datasets:
 
 - Bigger is not always better: on TIE, WER falls from Tiny to Medium, then rises again at Large-v3, and a smaller model wins outright.
 - The median clip beats corpus WER by 3 to 12 pp; a small tail of severe misses, largely reference artifacts, pulls the average up.
-- Fine-tuning showed no significant gain on TIE (speaker-matched test set) but did on AESRC (speaker-disjoint test set) for Small and Medium. The null result is a property of the test setup, not of fine-tuning itself.
+- Fine-tuning showed a significant gain on AESRC (speaker-disjoint test set) for Small and Medium, real domain or accent adaptation rather than memorization.
 
 Full leaderboards, confidence intervals, significance tests, demographic breakdowns, normalization
 sensitivity, error-artifact analysis, and the complete fine-tuning study:
