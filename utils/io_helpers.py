@@ -140,6 +140,17 @@ def analysis_dir(dataset: str = "tie") -> str:
     return d
 
 
+def efficiency_dir(dataset: str = "tie") -> str:
+    """Per-model efficiency measurements: results/<dataset>/efficiency.
+
+    Kept out of stage1_raw_transcripts because these files are hardware-dependent
+    (a GPU change invalidates them) while the raw transcripts are not.
+    """
+    d = os.path.join(results_dir(dataset), "efficiency")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
 def sample_id(sample: dict, spec) -> str:
     """Extract a clean string ID for a sample.
 

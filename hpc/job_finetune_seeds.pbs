@@ -1,0 +1,83 @@
+#!/bin/bash
+#PBS -N asr_ft_seeds
+#PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
+#PBS -l walltime=24:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/
+#PBS -j oe
+#PBS -k oed
+#PBS -V
+
+# Multi-seed capacity study: train one Whisper size across N seeds, then transcribe and
+# score each seed, so the fine-tuning delta can be reported as mean +/- SD across runs.
+#
+# The single-seed study cannot separate a real effect from run-to-run noise. This job
+# closes that gap for one size; submit it once per size.
+#
+#   qsub -v SIZE=tiny                        hpc/job_finetune_seeds.pbs
+#   qsub -v SIZE=small,SEEDS=42,43,44        hpc/job_finetune_seeds.pbs
+#   qsub -v SIZE=medium,DATASET=aesrc        hpc/job_finetune_seeds.pbs
+#
+# Walltime note: 6 seeds is 6 full training runs. Tiny fits comfortably in 24h; Small and
+# especially Medium will not. For those, either raise walltime or split the seed list
+# across several submissions (the runner skips seeds that are already scored, so
+# resubmitting the same command after a walltime kill resumes rather than restarts).
+#
+# Submit serially, not in parallel: NSCC one-job GPU etiquette, and concurrent jobs would
+# race on the shared stage-1 output directory.
+#
+# After every size has finished:
+#   python analysis/compare_seeds.py --dataset ${DATASET}
+
+DATASET=${DATASET:-aesrc}
+SEEDS=${SEEDS:-42,43,44,45,46,47}
+
+if [ -z "${SIZE}" ]; then
+    echo "[FATAL] SIZE is not set. Submit with: qsub -v SIZE=tiny $0"
+    exit 1
+fi
+case "${SIZE}" in
+    tiny|small|medium) ;;
+    *) echo "[FATAL] SIZE must be 'tiny', 'small' or 'medium', got '${SIZE}'"; exit 1 ;;
+esac
+
+WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+WHISPER_FT_ENV=${WHISPER_FT_ENV:-whisper_medium_ft}
+HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
+MODELS_ROOT=${MODELS_ROOT:-models}
+
+module load "${CUDA_MODULE}" 2>/dev/null || true
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}" XDG_CACHE_HOME="${HF_CACHE}"
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" "${WORKDIR}/${MODELS_ROOT}"
+cd "${WORKDIR}"
+
+conda activate "${WHISPER_FT_ENV}"
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+
+echo "--- GPU / CUDA diagnostics (${SIZE} on ${DATASET}, seeds ${SEEDS}) ---"
+nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
+python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok); sys.exit(0 if ok else 1)" \
+    || { echo "[FATAL] CUDA not available in ${WHISPER_FT_ENV} - aborting"; exit 1; }
+
+# The pretrained HF-pipeline baseline is shared by every seed (only the fine-tune varies),
+# so it is transcribed once here rather than N times inside the loop.
+BASELINE_CSV="results/${DATASET}/stage1_raw_transcripts/wer_${SIZE}_hf_raw.csv"
+if [ -f "${BASELINE_CSV}" ]; then
+    echo "=== baseline ${SIZE}_hf already transcribed, skipping ==="
+else
+    echo "=== transcribe ${SIZE}_hf (pretrained, same HF pipeline) on ${DATASET} test ==="
+    DATASET="${DATASET}" MODEL_NAME="${SIZE}_hf" MODEL_SOURCE="openai/whisper-${SIZE}" \
+        python finetune/evaluate_finetuned.py
+    python normalize_and_score.py --dataset "${DATASET}" --models "${SIZE}_hf"
+fi
+
+echo "=== multi-seed fine-tuning: ${SIZE} on ${DATASET}, seeds ${SEEDS} $(date) ==="
+bash finetune/run_seeds.sh --size "${SIZE}" --dataset "${DATASET}" \
+    --seeds "${SEEDS}" --models-root "${MODELS_ROOT}"
+
+echo "=== ${SIZE} multi-seed study on ${DATASET} complete $(date) ==="
+echo "Aggregate once every size is done:"
+echo "    python analysis/compare_seeds.py --dataset ${DATASET}"

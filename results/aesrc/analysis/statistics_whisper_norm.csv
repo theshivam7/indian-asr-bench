@@ -1,0 +1,10 @@
+model,display,n_clips,n_clusters,cluster_unit,corpus_wer_pct,ci_lo_pct,ci_hi_pct,ci_halfwidth_pp,ci_lo_clip_pct,ci_hi_clip_pct
+large,Whisper Large-v3,1731,481,speaker,4.78,4.36,5.2,0.42,4.37,5.24
+qwen3,Qwen3-ASR-1.7B,1731,481,speaker,4.89,4.45,5.35,0.45,4.45,5.4
+medium,Whisper Medium,1731,481,speaker,5.41,4.95,5.87,0.46,4.95,5.91
+large_v3_turbo,Whisper large-v3-turbo,1731,481,speaker,5.56,5.1,6.0,0.45,5.09,6.04
+parakeet,Parakeet-TDT-0.6B-v2,1731,481,speaker,5.93,5.5,6.38,0.44,5.46,6.42
+small,Whisper Small,1731,481,speaker,6.96,6.43,7.53,0.55,6.42,7.55
+parakeet_ctc,Parakeet-CTC-1.1B,1731,481,speaker,7.13,6.66,7.62,0.48,6.64,7.7
+base,Whisper Base,1731,481,speaker,9.64,9.06,10.25,0.6,8.99,10.33
+tiny,Whisper Tiny,1731,481,speaker,13.21,12.5,13.95,0.73,12.45,14.01

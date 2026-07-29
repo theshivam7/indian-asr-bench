@@ -399,7 +399,7 @@ def main(dataset: str, mode: str) -> None:
     n_shared = len(tail["shared"])
 
     with open(os.path.join(out, f"error_analysis_{mode}.md"), "w") as f:
-        f.write(f"# Codified error analysis — {spec.display} — mode `{mode}`\n\n")
+        f.write(f"# Codified error analysis: {spec.display}, mode `{mode}`\n\n")
         f.write(f"{n_models} models, {len(cons)} common clips. Classifier thresholds: "
                 f"clip_over_run = recall>={RECALL_OVERRUN:.2f} & ratio>={RATIO_OVERRUN:.2f}; "
                 f"content_mismatch = recall<{RECALL_MISMATCH:.2f}; short_ref = reference "

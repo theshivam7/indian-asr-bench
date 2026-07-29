@@ -14,6 +14,7 @@ dataset (e.g. Svarah has no pre-normalized reference, so its hf_* modes are abse
 Usage:
     python normalize_and_score.py                 # dataset = tie (default)
     python normalize_and_score.py --dataset svarah
+    python normalize_and_score.py --dataset aesrc --models tiny_aesrc_ft_seed42,tiny_aesrc_ft_seed43
 """
 
 import argparse
@@ -121,9 +122,19 @@ def save_top20(rows: list[dict], dataset: str, model: str, mode: str) -> None:
     df.to_csv(os.path.join(stage2_dir(dataset), f"top_20_high_wer_{model}_{mode}.csv"), index=False)
 
 
-def main(dataset: str) -> None:
+def main(dataset: str, models: tuple | None = None) -> None:
+    """Score every registry model for `dataset`, or just the keys listed in `models`.
+
+    The `models` override exists for model keys that are deliberately NOT in the registry:
+    the multi-seed fine-tuning study writes one Stage-1 CSV per seed (<ft_key>_seed<N>),
+    and registering 6 seeds x 3 sizes would drag them into every registry-driven consumer
+    (compare_all, statistics, error_analysis), where they are not wanted. Scoring them by
+    name keeps them in the normal stage2 layout so analysis/compare_seeds.py can read them
+    like any other scored table.
+    """
     spec = get_dataset(dataset)
-    models = models_for_dataset(dataset)
+    explicit_models = models is not None
+    models = tuple(models) if explicit_models else models_for_dataset(dataset)
     modes = modes_for_dataset(dataset)
     s2 = stage2_dir(dataset)
 
@@ -176,9 +187,20 @@ def main(dataset: str) -> None:
     pivot = df_summary.pivot_table(index="model", columns="mode", values="corpus_wer_pct", aggfunc="first")[present_modes]
     print(pivot.to_string())
 
+    # wer_summary_all_models.* is the corpus-wide table every downstream consumer reads
+    # (compare_all, the figure scripts, SUMMARY.md). A --models run covers only the keys
+    # it was handed, so writing it here would silently replace the full summary with a
+    # partial one. Per-seed scoring leaves the canonical summary alone; the per-model
+    # stage2 CSVs it did write are what compare_seeds.py reads.
+    if explicit_models:
+        print(f"\n[normalize_and_score] scored {len(models)} explicit model(s); left "
+              f"wer_summary_all_models.* untouched (it describes the registry set).")
+        print("Done.")
+        return
+
     df_summary.to_csv(os.path.join(s2, "wer_summary_all_models.csv"), index=False)
     with open(os.path.join(s2, "wer_summary_all_models.md"), "w") as f:
-        f.write(f"# WER Summary — {spec.display} — All Models x Modes\n\n")
+        f.write(f"# WER Summary: {spec.display}, all models x modes\n\n")
         f.write("## Corpus WER (%) Matrix\n\n")
         f.write(build_md_table(pivot.reset_index()) + "\n\n")
         f.write("## Modes\n\n| Mode | Reference | Normalizer |\n|---|---|---|\n")
@@ -191,4 +213,10 @@ def main(dataset: str) -> None:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Stage 2 normalization + scoring.")
     ap.add_argument("--dataset", default="tie", help="dataset key (tie, svarah, ...)")
-    main(ap.parse_args().dataset)
+    ap.add_argument("--models", default=None,
+                    help="comma-separated model keys to score instead of the registry set. "
+                         "Used by the multi-seed study, whose per-seed keys are deliberately "
+                         "not registered (see main's docstring).")
+    _args = ap.parse_args()
+    _models = tuple(m.strip() for m in _args.models.split(",") if m.strip()) if _args.models else None
+    main(_args.dataset, _models)

@@ -129,7 +129,7 @@ def main(dataset: str, mode: str, use_spacy: bool) -> None:
     md = df[["display", "n_clips", "n_entities", "entity_recall_pct", "neer_pct"]].copy()
     md.columns = ["Model", "Use-case clips", "Entities", "Entity recall %", "NEER %"]
     with open(os.path.join(out, f"entity_neer_{mode}.md"), "w") as f:
-        f.write(f"# Named/numeric Entity Error Rate — {spec.display} (use-case register) — `{mode}`\n\n")
+        f.write(f"# Named/numeric entity error rate: {spec.display} (use-case register), `{mode}`\n\n")
         f.write("NEER = 1 − (reference entity tokens recovered in the hypothesis / total entity tokens). "
                 "Entities = digit-bearing tokens, currency, codes, UPI/emails "
                 f"(+ spaCy NER: {'on' if use_spacy else 'off'}).\n\n")

@@ -67,7 +67,7 @@ def main(dataset: str) -> None:
     test_clip_share = test_clips_overlap / len(ids["eval"]) if ids["eval"] else 0.0
 
     lines = [
-        f"# Speaker Overlap Across Splits — {spec.display} (data-leakage disclosure)",
+        f"# Speaker overlap across splits: {spec.display} (data-leakage disclosure)",
         "",
         "| Split | Clips | Unique speakers |",
         "|-------|------:|----------------:|",

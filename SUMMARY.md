@@ -12,7 +12,7 @@ overview; come here for the evidence.
 - [Results: TIE_shorts](#results-tie_shorts)
 - [Results: Svarah](#results-svarah)
 - [Results: AESRC2020 (Indian)](#results-aesrc2020-indian)
-- [Fine-tuning: pretrained vs. fine-tuned, across sizes](#fine-tuning-pretrained-vs-fine-tuned-across-sizes)
+- [Fine-tuning and split design](#fine-tuning-and-split-design)
 - [Normalization](#normalization)
 - [Error analysis](#error-analysis)
 - [Limitations](#limitations)
@@ -72,7 +72,7 @@ HF dataset revisions are pinned in [`utils/registry.py`](utils/registry.py) (`hf
 A TIE fine-tuned set (Tiny/Small/Medium) also exists and stays published on the HF Hub, but is
 archived from the main benchmark, see [Archived: TIE_shorts fine-tuning](archived_tasks/tie_finetuning/README.md).
 
-All nine pretrained models run as-is on all three datasets; that is the headline benchmark. Fine-tuning is analyzed separately: a Tiny/Small/Medium capacity study on AESRC (natively speaker-disjoint), where the fine-tuning gain is real. Fine-tuned models are excluded from the pretrained ranking tables below because they decode through a different engine (HF `transformers` rather than `openai-whisper`); their engine-controlled comparison is in [Fine-tuning](#fine-tuning-pretrained-vs-fine-tuned-across-sizes).
+All nine pretrained models run as-is on all three datasets; that is the headline benchmark. Fine-tuning is analyzed separately: a Tiny/Small/Medium capacity study on AESRC (natively speaker-disjoint), where the fine-tuning gain is real. Fine-tuned models are excluded from the pretrained ranking tables below because they decode through a different engine (HF `transformers` rather than `openai-whisper`); their engine-controlled comparison is in [Fine-tuning](#fine-tuning-and-split-design).
 
 ---
 
@@ -327,15 +327,13 @@ Statistical check: speaker-clustered paired bootstrap over 481 speakers, Holm-co
 
 ---
 
-## Fine-tuning: pretrained vs. fine-tuned, across sizes
+## Fine-tuning and split design
 
-A Tiny/Small/Medium fine-tuning capacity study ran on AESRC2020 (Indian subset), whose test
-split is natively speaker-disjoint from train. The same study also ran on TIE_shorts first; it
-showed no significant gain at any size and is archived rather than reported here, see
-[Archived: TIE_shorts fine-tuning](archived_tasks/tie_finetuning/README.md) for the full setup,
-results table, and links to the unchanged code and outputs.
+Whether in-domain fine-tuning helps is only answerable if the test split isolates the effect being claimed. That makes split design an evaluation-validity property, and the two corpora with training splits differ on it sharply.
 
-AESRC's train and test speakers are natively disjoint: 0 of the 481 test speakers show up among the 38 train speakers (see [`speaker_overlap.md`](results/aesrc/analysis/speaker_overlap.md)). So whatever gain shows up here cannot be speaker adaptation. It has to be genuine accent or domain generalization. Step-based recipe, all three sizes, engine-controlled HF-pipeline baseline, 1,731 test clips.
+**TIE_shorts cannot answer the question.** Auditing speaker identity across its official splits ([`speaker_overlap.md`](results/tie/analysis/speaker_overlap.md)) finds 280 of 280 test speakers, and 986 of 986 test clips, coming from speakers that also appear in train. There is no clip-level leakage, and this is the corpus's own released partition rather than a re-split. But every comparison it supports is speaker-matched, so a gain measured on it conflates accent and content adaptation with adaptation to those particular voices. Repairing the split in place does not work either: removing every train speaker who appears in test leaves 567 of 7,200 train clips, a roughly 13x reduction, which would confound split design with training-set size. A Tiny/Small/Medium fine-tuning study was run on TIE first and is archived rather than reported, see [Archived: TIE_shorts fine-tuning](archived_tasks/tie_finetuning/README.md).
+
+**AESRC2020 (Indian) can.** Its 481 test speakers share zero overlap with the 38 train and validation speakers ([`speaker_overlap.md`](results/aesrc/analysis/speaker_overlap.md)), so a measured gain is generalization to unseen speakers by construction. Step-based recipe, all three sizes, engine-controlled HF-pipeline baseline, 1,731 test clips.
 
 | Size | Params | HF baseline | Fine-tuned | Δ (paired, speaker-clustered) | 95% CI | p (Holm) |
 |------|:------:|:-----------:|:----------:|:------------------------------:|:------:|:--------:|
@@ -343,9 +341,19 @@ AESRC's train and test speakers are natively disjoint: 0 of the 481 test speaker
 | Whisper Small | 244M | 7.22% | 5.64% | -1.58 pp | [-2.01, -1.15] | 0.003 |
 | Whisper Medium | 769M | 5.63% | 4.48% | -1.15 pp | [-1.55, -0.77] | 0.003 |
 
-Small and Medium both come out significant. Since AESRC's train and test splits share zero speakers, this cannot be memorization. It has to be real domain or accent adaptation from the 17.5h of Indian-accent read speech in training.
+Small and Medium both come out significant, and because train and test share zero speakers this cannot be memorization. It has to be real domain or accent adaptation from the 17.5h of Indian-accent read speech in training. Fine-tuning also cuts the corpus insertion rate, the hallucination signal, at every size: 5.81% to 3.94% (Tiny), 0.95% to 0.79% (Small), 0.70% to 0.50% (Medium) of reference words.
 
 Tiny has the biggest point estimate (-4.81 pp) but also the widest CI, wide enough to cross zero. Its outputs are much noisier than the other sizes (Std Dev 103% on the HF baseline, versus 12% for Medium's), and that extra variance keeps the gain from reaching significance even though it is the largest number in the table.
+
+**These results were checked against the normalizer choice**, since this repository's own finding is that a single-normalizer result can be an artifact of the normalizer:
+
+| Size | Δ under `transcript_clean` | Δ under `whisper_norm` | Swing |
+|------|:---:|:---:|:---:|
+| Whisper Tiny | -4.81 pp | -7.14 pp | 2.33 pp |
+| Whisper Small | -1.58 pp | -1.55 pp | 0.03 pp |
+| Whisper Medium | -1.15 pp | -1.08 pp | 0.07 pp |
+
+The two significant results are normalizer-invariant, moving by at most 0.07 pp, so neither conclusion depends on the choice. Tiny is not: its estimated gain grows by half again under `whisper_norm`, because the insertion loops that dominate its variance are exactly what that normalizer strips. Tiny's null is therefore best read as unresolved rather than as evidence of no effect at that size.
 
 Full per-size reports: [`finetune_comparison_tiny.md`](results/aesrc/analysis/finetune_comparison_tiny.md), [`finetune_comparison_small.md`](results/aesrc/analysis/finetune_comparison_small.md), [`finetune_comparison_medium.md`](results/aesrc/analysis/finetune_comparison_medium.md), [full capacity summary](results/aesrc/analysis/finetune_capacity_summary.md).
 
@@ -359,12 +367,14 @@ Full per-size reports: [`finetune_comparison_tiny.md`](results/aesrc/analysis/fi
 
 Every WER number above depends on the reference field and the normalizer chosen before comparison. At its worst the combination moves a model by several points: TIE's reference swap shifts every model 2.3 to 3.5 pp, and normalizer choice alone moves the verbatim models up to 6.5 pp on Svarah. That is as much as the gap between mid-tier models, so it is documented precisely.
 
+It also reaches the conclusions, not only the numbers. Re-running the full inference stack under both normalizers changes **5 of 36 Holm-corrected pairwise verdicts on TIE**, against 0 of 36 on Svarah and 0 of 36 on AESRC. Details in [Does the normalizer change what the benchmark concludes?](#does-the-normalizer-change-what-the-benchmark-concludes) below.
+
 Three normalizers do all the work ([`utils/normalize.py`](utils/normalize.py)):
 
 | Normalizer | What it does | Used by |
 |---|---|---|
 | `minimal_clean_text` | Strip wrapping quotes, lowercase, remove punctuation. No number or possessive handling. | `*_raw` modes |
-| `normalize_text` | Unicode NFC, possessive fix (`"Bernoulli's"` to `"bernoulli s"`), ordinals and cardinals to words (`"1st"` to `"first"`), lowercase, strip punctuation, collapse whitespace. Contractions stay unexpanded on both sides so the metric does not reward a rewrite neither transcript uses. | `*_clean` modes (gold standard) |
+| `normalize_text` | Unicode NFC, possessive fix (`"Bernoulli's"` to `"bernoulli s"`), ordinals and cardinals to words (`"1st"` to `"first"`), lowercase, strip punctuation, collapse whitespace. Contractions stay unexpanded on both sides so the metric does not reward a rewrite neither transcript uses. | `*_clean` modes |
 | `whisper_normalize_text` | OpenAI's `EnglishTextNormalizer`, the widely used reference implementation. It does expand contractions. | `whisper_norm` mode |
 
 All normalization is applied symmetrically to reference and hypothesis. TIE has both a gold reference and a dataset-provided alternate, so five modes apply; Svarah and AESRC have only a gold reference, so three:
@@ -372,8 +382,8 @@ All normalization is applied symmetrically to reference and hypothesis. TIE has 
 | Mode | Reference | Normalizer | Purpose |
 |------|-----------|:-------------:|---------|
 | `transcript_raw` | gold (`Transcript` / `text`) | `minimal_clean_text` | Near-upper-bound baseline |
-| `transcript_clean` | gold (`Transcript` / `text`) | `normalize_text` | Gold standard, primary metric |
-| `whisper_norm` | gold (`Transcript` / `text`) | `whisper_normalize_text` | Cross-check against a widely used normalizer |
+| `transcript_clean` | gold (`Transcript` / `text`) | `normalize_text` | Verbatim-faithful, pre-registered primary metric |
+| `whisper_norm` | gold (`Transcript` / `text`) | `whisper_normalize_text` | Disfluency-insensitive cross-check against a widely used normalizer |
 | `hf_raw` | `Normalised_Transcript` (TIE only) | `minimal_clean_text` | Quantifies dataset normalization errors |
 | `hf_clean` | `Normalised_Transcript` (TIE only) | `normalize_text` | Dataset normalization plus our fix |
 
@@ -382,14 +392,42 @@ All normalization is applied symmetrically to reference and hypothesis. TIE has 
 | Mode | Base | Medium | Large-v3 | Parakeet | Qwen3 |
 |------|:----:|:------:|:--------:|:--------:|:-----:|
 | `transcript_raw` (minimal cleanup) | 17.91% | 15.11% | 16.31% | 15.97% | 18.15% |
-| `transcript_clean` (gold standard) | 17.53% | 14.76% | 15.93% | 15.60% | 16.66% |
+| `transcript_clean` (verbatim-faithful, primary) | 17.53% | 14.76% | 15.93% | 15.60% | 16.66% |
 | `hf_raw` (dataset's normalization, broken) | 20.24% | 18.01% | 19.14% | 18.54% | 17.99% |
 | `hf_clean` (dataset norm + our fix) | 18.07% | 15.76% | 16.94% | 16.40% | 17.61% |
 
 - `Normalised_Transcript` maps `"the 1st component"` to `"the one s t component"` (ordinals split into characters), affecting 50+ clips.
 - That inflates `hf_raw` WER by 2.7 to 3.3 pp over the gold mode for the seven Whisper and Parakeet-TDT systems.
 - The two most verbatim systems are exceptions: Qwen3 (+1.3 pp) and Parakeet-CTC (+0.7 pp; raw-vs-raw its sign even flips, 17.15% `hf_raw` vs 18.53% `transcript_raw`). Their punctuation-rich literal output happens to agree better with the mangled reference.
-- Reference faults are style-dependent, so they cannot be differenced out across models. Always use `transcript_clean`.
+- Reference faults are style-dependent, so they cannot be differenced out across models. Prefer `transcript_clean` over either `hf_*` mode: the dataset's own normalized field is demonstrably broken, which is a different question from the `transcript_clean` versus `whisper_norm` choice below.
+
+### Does the normalizer change what the benchmark concludes?
+
+`transcript_clean` and `whisper_norm` are not competing estimates of one quantity, and neither is the correct one. They answer different questions. `transcript_clean` scores against what was actually said, so faithfully transcribed disfluencies count as content. `whisper_norm` deletes fillers and hesitations first, so it measures agreement on lexical content only. `whisper_norm` therefore returns a lower WER for every system on every corpus here, which reflects leniency rather than accuracy and is not evidence that it is the better metric.
+
+Whether that choice matters was tested rather than assumed, by re-running the whole inference stack (cluster bootstrap, all 36 pairs, Holm correction) under both:
+
+| Corpus | Significant, `transcript_clean` | Significant, `whisper_norm` | Verdicts that change | WER span across 9 models |
+|---|:---:|:---:|:---:|:---:|
+| TIE_shorts | 23/36 | 24/36 | **5** | 4.5 pp |
+| Svarah | 34/36 | 34/36 | 0 | 12.7 pp |
+| AESRC2020 (Indian) | 30/36 | 30/36 | 0 | 8.4 pp |
+
+The five TIE pairs whose verdict depends on the normalizer:
+
+| Pair | `transcript_clean` | `whisper_norm` |
+|---|---|---|
+| Base vs Large-v3 | +1.59 pp, p=0.036, significant | +1.28 pp, p=0.077, not significant |
+| Base vs Qwen3 | +0.86 pp, p=0.052, not significant | +1.63 pp, p=0.036, significant |
+| large-v3-turbo vs Qwen3 | +1.31 pp, p=0.176, not significant | +2.35 pp, p=0.036, significant |
+| Parakeet-CTC vs Qwen3 | -0.22 pp, p=1.000, not significant | +0.79 pp, p=0.036, significant |
+| Parakeet-TDT vs Qwen3 | -1.07 pp, p=0.036, significant | -0.23 pp, p=1.000, not significant |
+
+The Parakeet-CTC versus Qwen3 pair reverses the sign of the difference as well as the verdict.
+
+What drives this is not the size of the WER movement. Svarah's models move most under the normalizer (mean 1.44 pp, up to 4.47 pp) and reorder nothing, because its nine systems are spread across 12.7 pp. TIE moves least (mean 0.42 pp) and flips five verdicts, because its nine systems are packed into 4.5 pp and the movement is uneven: Qwen3 gains 1.26 pp where its neighbours gain about 0.25 pp. Leaderboard fragility follows movement relative to the margins between systems, not movement alone, so a densely packed leaderboard is exactly the case where the choice of normalizer quietly decides the published result.
+
+Both modes are therefore reported throughout. Rankings under `whisper_norm` live in `results/<dataset>/analysis/statistics_whisper_norm.csv` alongside the primary-mode tables.
 
 **Metrics** ([`utils/wer_compute.py`](utils/wer_compute.py)): WER and CER are standard substitutions + deletions + insertions over the reference word or character count. An empty hypothesis counts as all-deletions in both metrics. Confidence intervals use a speaker-clustered (TIE, AESRC) or recording-clustered (Svarah) paired bootstrap with 2,000 resamples and Holm correction across every pairwise family.
 
@@ -441,7 +479,7 @@ Stated so the numbers above are read correctly:
 
 - The artifact classifier has not been validated against human judgment yet. It is backed by inter-hypothesis agreement evidence, but the blind annotation pass still needs to run.
 - Svarah can only be clustered by recording (3,232 clusters), not by its 117 true speakers, since the public release exposes no speaker IDs. True speaker clustering would widen the confidence intervals. TIE clusters are real speakers.
-- Both fine-tuning studies are one run per size, with no seed replication. On TIE no delta survives Holm correction, so read that capacity gradient as suggestive, not confirmed, and note that part of TIE's net gain is repetition-loop repair rather than uniform improvement. AESRC's Small and Medium deltas do survive, but a single seed cannot bound run-to-run variance.
+- The AESRC fine-tuning study is one run per size, with no seed replication. Small and Medium clear Holm correction and are stable across normalizers, but a single seed cannot bound run-to-run variance, and Tiny's larger point estimate is both non-significant and normalizer-sensitive. Multi-seed replication is supported by the pipeline and is the way to close this.
 - AESRC checkpoint selection uses a validation split that shares all 38 train speakers, so it measures fit, not speaker generalization. The speaker-disjoint test set is untouched during training, so the reported deltas are unaffected.
 - The AESRC mirror (`pengyizhou/accented_english`) states no license. AESRC2020 is Datatang's corpus; confirm data-use terms before any publication use.
 - Training-data contamination is possible: NPTEL lectures are public and may appear in Whisper's training data. A small probe (n=10) found no memorization signal, but it is low-powered.
@@ -453,7 +491,7 @@ Stated so the numbers above are read correctly:
 ## Future work
 
 - Run the blind human-annotation pass ([`analysis/validation/`](analysis/validation/), a 91-item stratified sheet). This turns the classifier's heuristic status into measured precision and recall, and it is the highest-value task left.
-- Run the transfer matrix: evaluate the TIE-fine-tuned checkpoints on AESRC and the AESRC ones on TIE (and both on Svarah), to see whether either study's gains carry across registers or stay domain-locked.
-- Replicate both capacity studies across multiple seeds, which would bound run-to-run variance and give Tiny's large but noisy deltas (TIE -2.96 pp, AESRC -4.81 pp) the power to resolve.
+- Replicate the AESRC capacity study across multiple seeds, which would bound run-to-run variance and give Tiny's large but noisy delta (-4.81 pp) the power to resolve.
+- Run the transfer matrix: evaluate the AESRC fine-tuned checkpoints on TIE and Svarah (and the archived TIE checkpoints on AESRC), to see whether the gains carry across registers or stay domain-locked.
 - Activate the NEER entity metric ([`analysis/entity_analysis.py`](analysis/entity_analysis.py)) once a use-case register field is derived for Svarah. Entity-dense clips currently score far above 100% WER for spelling-convention reasons, not misrecognition.
 - Figure out why the HF chunked pipeline scores higher WER than `openai-whisper` on 60s+ clips with identical weights.

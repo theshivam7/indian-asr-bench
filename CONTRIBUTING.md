@@ -51,7 +51,7 @@ dataset-agnostic.
 - Type hints on all function signatures
 - Docstrings on all public functions
 
-## Pull Request Process
+## Pull request process
 
 1. Fork the repo and create a branch: `git checkout -b feature/your-feature`
 2. Make changes, verify with `python normalize_and_score.py --dataset tie` (should reproduce committed numbers)

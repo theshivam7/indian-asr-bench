@@ -1,0 +1,84 @@
+#!/bin/bash
+#PBS -N asr_efficiency
+#PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
+#PBS -l walltime=2:00:00
+#PBS -P ${PBS_PROJECT:-your_project_id}
+#PBS -o logs/efficiency.log
+#PBS -e logs/efficiency.log
+#PBS -j oe
+#PBS -k oed
+
+# Efficiency benchmarking (RTF, latency, throughput, peak GPU memory).
+#
+# One engine per submission, because the three engines cannot share a conda env.
+# ENGINE selects which env to activate and which driver to call:
+#     qsub -v ENGINE=whisper,MODEL=medium   hpc/job_efficiency.pbs
+#     qsub -v ENGINE=parakeet,MODEL=parakeet hpc/job_efficiency.pbs
+#     qsub -v ENGINE=qwen3                   hpc/job_efficiency.pbs
+#
+# Every model MUST be measured with the same CLIPS and SEED, otherwise the runs
+# are not comparable and analysis/compare_efficiency.py will refuse to present
+# them as a single table. Request an exclusive node if the numbers are going in
+# the paper: a shared GPU makes latency meaningless.
+#
+# After all models are done:
+#     python analysis/compare_efficiency.py --dataset "${DATASET}"
+
+WORKDIR=${WORKDIR:-$(pwd)}
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
+HF_CACHE=${HF_CACHE:-${HOME}/.cache/huggingface}
+CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
+DATASET=${DATASET:-tie}
+ENGINE=${ENGINE:-whisper}
+CLIPS=${CLIPS:-200}
+WARMUP=${WARMUP:-3}
+SEED=${SEED:-42}
+
+module load "${CUDA_MODULE}" 2>/dev/null || true
+
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+
+case "${ENGINE}" in
+  whisper)
+    conda activate "${WHISPER_ENV:-whisper}"
+    MODEL=${MODEL:-medium}
+    DRIVER="whisper_asr/run_whisper.py"
+    ;;
+  parakeet)
+    conda activate "${PARAKEET_ENV:-parakeet}"
+    MODEL=${MODEL:-parakeet}
+    DRIVER="parakeet/wer_parakeet.py"
+    ;;
+  qwen3)
+    conda activate "${QWEN3_ENV:-qwen3}"
+    MODEL=${MODEL:-qwen3}
+    DRIVER="qwen3/wer_qwen3.py"
+    ;;
+  *)
+    echo "Unknown ENGINE '${ENGINE}'. Use whisper, parakeet, or qwen3." >&2
+    exit 2
+    ;;
+esac
+
+export HF_DATASETS_CACHE="${HF_CACHE}"
+export HF_HOME="${HF_CACHE}"
+mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
+
+cd "${WORKDIR}"
+
+echo "=== ENV CHECK ==="
+python -c "import torch; print('torch:', torch.__version__, '| cuda:', torch.version.cuda, '| gpu:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU-ONLY')"
+echo "engine=${ENGINE} model=${MODEL} dataset=${DATASET} clips=${CLIPS} seed=${SEED}"
+echo "=== END ENV CHECK ==="
+
+# The qwen3 driver takes no --model (single model in its registry family); passing
+# one would be an argparse error, so it is omitted for that engine only.
+if [ "${ENGINE}" = "qwen3" ]; then
+  python "${DRIVER}" --dataset "${DATASET}" --efficiency \
+      --clips "${CLIPS}" --warmup "${WARMUP}" --seed "${SEED}"
+else
+  python "${DRIVER}" --model "${MODEL}" --dataset "${DATASET}" --efficiency \
+      --clips "${CLIPS}" --warmup "${WARMUP}" --seed "${SEED}"
+fi
+
+echo "Done. Aggregate with: python analysis/compare_efficiency.py --dataset ${DATASET}"

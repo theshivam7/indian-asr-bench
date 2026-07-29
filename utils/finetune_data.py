@@ -4,6 +4,7 @@ Standard HuggingFace "Fine-Tune Whisper" recipe:
     - prepare_dataset: audio array -> log-mel input_features, transcript -> label ids
     - DataCollatorSpeechSeq2SeqWithPadding: pad features + labels, mask pad tokens with -100
     - filter_finetune_split / filter_tie_split: clip-usability filtering per dataset
+    - seed_everything: one call that seeds every RNG a training run touches
 
 Used by finetune/finetune_medium.py and finetune/finetune_tiny_small.py. Kept here so
 the training scripts stay thin, matching the project's "logic lives in utils/" structure.
@@ -21,6 +22,36 @@ from utils.io_helpers import decode_audio_value, raw_audio_column as _raw_audio_
 from utils.normalize import strip_wrapping_quotes
 
 MAX_AUDIO_SECONDS = 30
+
+
+def seed_everything(seed: int) -> None:
+    """Seed every RNG a fine-tuning run touches, before the model is built.
+
+    `Seq2SeqTrainingArguments(seed=...)` only takes effect when the Trainer is
+    constructed, which is after `from_pretrained()` and after split filtering, so
+    anything random before that point stays uncontrolled unless it is seeded here.
+    Training entrypoints call this first, and still pass seed= and data_seed= to the
+    training arguments (the Trainer reseeds at its own start, and data_seed is what
+    actually drives the sampler's shuffle order).
+
+    This deliberately does NOT set torch.backends.cudnn.deterministic: run-to-run
+    kernel nondeterminism is part of the variance the multi-seed study is meant to
+    measure, and forcing determinism would both understate that variance and change
+    the recipe relative to the single-seed runs already reported.
+
+    torch/numpy are imported inside the function to keep this module importable
+    without the GPU stack, matching the TYPE_CHECKING guard above.
+    """
+    import random
+
+    import numpy as np
+    import torch
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 def has_usable_text(transcript) -> bool:
