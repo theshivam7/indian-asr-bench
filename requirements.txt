@@ -2,7 +2,10 @@
 # Install into any Python 3.10+ environment:
 #   pip install -r requirements.txt
 
-datasets==3.6.0
+# 4.x is required to read a cache written by datasets 4.x: the List feature type it
+# introduced is unknown to 3.x, which fails with "Feature type 'List' not found".
+# Audio decoding still works without torchcodec at this version.
+datasets==4.8.5
 jiwer==3.1.0
 pandas==2.2.3
 matplotlib==3.10.3

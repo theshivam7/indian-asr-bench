@@ -41,11 +41,16 @@ export CONDA_PKGS_DIRS="${CONDA_PKGS_DIRS:-$SCRATCH/conda_pkgs}"
 CONDA_BASE="${CONDA_BASE:-$(conda info --base 2>/dev/null || echo /app/apps/miniforge3/25.3.1)}"
 CUDA_MODULE="${CUDA_MODULE:-cuda/11.8.0}"
 
-# ---- conda envs: real NSCC prefix-path envs (override if yours differ) -------
-WHISPER_ENV="${WHISPER_ENV:-$SCRATCH/envs/whisper}"
-PARAKEET_ENV="${PARAKEET_ENV:-$SCRATCH/envs/parakeet_env}"
-QWEN3_ENV="${QWEN3_ENV:-$SCRATCH/envs/qwen3_env}"
-WHISPER_FT_ENV="${WHISPER_FT_ENV:-whisper_medium_ft}"   # named env in ~/.conda/envs
+# ---- conda envs: named envs in ~/.conda/envs (override if yours differ) ------
+# Deliberately NOT on scratch. Scratch is auto-purged by inactivity, and the purge
+# deletes inside an env as readily as anywhere else; losing lib/python3.10/encodings/
+# leaves every command failing with a bare init_fs_encoding error that names neither
+# conda nor the purge. Envs are small, so they live in home and only data goes to
+# scratch. Prefix paths still work if passed explicitly.
+WHISPER_ENV="${WHISPER_ENV:-whisper}"
+PARAKEET_ENV="${PARAKEET_ENV:-parakeet}"
+QWEN3_ENV="${QWEN3_ENV:-qwen3}"
+WHISPER_FT_ENV="${WHISPER_FT_ENV:-whisper_medium_ft}"
 
 PROJECT="${PROJECT:-${PBS_PROJECT:-}}"
 
@@ -87,17 +92,36 @@ if [ "$DO_SETUP" = 1 ]; then
   source "${CONDA_BASE}/etc/profile.d/conda.sh"
   _env_ok() { conda run -p "$1" python -c "import sys" >/dev/null 2>&1 || conda run -n "$1" python -c "import sys" >/dev/null 2>&1; }
 
-  # Whisper (+ all CPU scoring/analysis) — create as a prefix env on scratch if absent.
-  _env_ok "$WHISPER_ENV" || conda env create -p "$WHISPER_ENV" -f environments/whisper.yaml
-  _env_ok "$PARAKEET_ENV" || conda env create -p "$PARAKEET_ENV" -f environments/parakeet.yaml
-  _env_ok "$QWEN3_ENV" || conda env create -p "$QWEN3_ENV" -f environments/qwen3.yaml
+  # An env may be given either as a name or as an absolute prefix path; conda needs
+  # -n for the first and -p for the second, so dispatch on the leading slash.
+  _flag() { case "$1" in /*) echo "-p" ;; *) echo "-n" ;; esac; }
+
+  # Whisper (+ all CPU scoring/analysis).
+  _env_ok "$WHISPER_ENV" || conda env create "$(_flag "$WHISPER_ENV")" "$WHISPER_ENV" -f environments/whisper.yaml
+
+  # parakeet and qwen3 are built from pip, not from their yaml. Channel drift has made
+  # the MKL / llvm-openmp / mkl_random build hashes in those two specs mutually
+  # unsatisfiable, so `conda env create -f` fails outright. The yaml files are kept as
+  # a record of the exact versions the published results were produced with.
+  _env_ok "$PARAKEET_ENV" || { conda create "$(_flag "$PARAKEET_ENV")" "$PARAKEET_ENV" python=3.10 -y \
+      && conda run "$(_flag "$PARAKEET_ENV")" "$PARAKEET_ENV" pip install -r parakeet/requirements.txt; }
+  _env_ok "$QWEN3_ENV" || { conda create "$(_flag "$QWEN3_ENV")" "$QWEN3_ENV" python=3.10 -y \
+      && conda run "$(_flag "$QWEN3_ENV")" "$QWEN3_ENV" pip install -r qwen3/requirements.txt; }
+
   _env_ok "$WHISPER_FT_ENV" || bash finetune/setup.sh "$WHISPER_FT_ENV"
 
   # CRITICAL: the scoring env must have whisper_normalizer (whisper_norm mode). Existing
   # envs predate its addition to whisper.yaml, so install it explicitly.
-  conda run -p "$WHISPER_ENV" python -c "import whisper_normalizer" 2>/dev/null \
-    || conda run -p "$WHISPER_ENV" pip install whisper_normalizer==0.1.0 \
-    || conda run -n "$WHISPER_ENV" pip install whisper_normalizer==0.1.0
+  conda run "$(_flag "$WHISPER_ENV")" "$WHISPER_ENV" python -c "import whisper_normalizer" 2>/dev/null \
+    || conda run "$(_flag "$WHISPER_ENV")" "$WHISPER_ENV" pip install whisper_normalizer==0.1.0
+
+  # datasets 3.x cannot read a cache written by 4.x and dies with "Feature type 'List'
+  # not found", which reads as a dataset problem rather than a version mismatch. Catch
+  # it here rather than after a job has queued, run, and failed.
+  for _e in "$WHISPER_ENV" "$PARAKEET_ENV" "$QWEN3_ENV" "$WHISPER_FT_ENV"; do
+    conda run "$(_flag "$_e")" "$_e" python -c "import datasets,sys; v=tuple(int(x) for x in datasets.__version__.split('.')[:1]); sys.exit(0 if v[0]>=4 else 1)" \
+      || echo "  [WARN] $_e has datasets <4: it cannot read the shared 4.x cache. Fix: conda run $(_flag "$_e") $_e pip install -U 'datasets==4.8.5'"
+  done
   echo ">>> envs ready. (Re-run without --setup, or add --phase N, to submit.)"
   [ "$PHASE" = "none" ] && exit 0
 fi

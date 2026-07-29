@@ -5,7 +5,10 @@
 # one environment. Do not "reconcile" the versions across these files.
 qwen-asr
 torch==2.5.1
-datasets==3.6.0
+# 4.x is required to read a cache written by datasets 4.x: the List feature type it
+# introduced is unknown to 3.x, which fails with "Feature type 'List' not found".
+# Audio decoding still works without torchcodec at this version.
+datasets==4.8.5
 pandas==2.2.3
 tqdm==4.67.1
 librosa==0.11.0

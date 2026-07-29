@@ -19,7 +19,10 @@ dependencies:
   - pytorch::torchaudio=2.5.1=py310_cu118
   - pip:
       - openai-whisper==20250625
-      - datasets==3.6.0
+      # 4.x is required to read a cache written by datasets 4.x: the List feature type
+      # it introduced is unknown to 3.x, which fails with "Feature type 'List' not
+      # found". Audio decoding still works without torchcodec at this version.
+      - datasets==4.8.5
       - jiwer==3.1.0
       - pandas==2.2.3
       - tqdm==4.67.1

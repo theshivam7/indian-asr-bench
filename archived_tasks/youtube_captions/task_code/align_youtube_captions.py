@@ -33,6 +33,16 @@ from collections import Counter
 import pandas as pd
 from tqdm import tqdm
 
+# Script, not a module: every statement below runs at import time. A repo-wide import
+# sweep would therefore start a dataset download or a network fetch on whatever machine
+# the sweep runs on, and on a shared login node that risks a fair-share violation.
+# Refuse the import rather than doing the work silently.
+if __name__ != "__main__":
+    raise ImportError(
+        "align_youtube_captions.py is a script and must be run, not imported: python archived_tasks/youtube_captions/task_code/align_youtube_captions.py"
+    )
+
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.normalize import normalize_text, MODES, get_reference_source

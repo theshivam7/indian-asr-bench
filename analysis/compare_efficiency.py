@@ -90,6 +90,46 @@ def check_comparability(reports: list[dict]) -> list[str]:
     if cpu_runs and len(cpu_runs) != len(reports):
         warnings.append(f"Some runs are CPU-only ({', '.join(cpu_runs)}) and some are not.")
 
+    # The three engines cannot share a conda env, so their torch builds differ by
+    # construction: the Whisper env is cu118 and the NeMo/Qwen envs are cu124. This is
+    # a disclosed property of the setup, not something to "fix" by rebuilding an env,
+    # so it is reported as a caveat to state alongside the table rather than as a
+    # blocker. Same GPU and driver, different CUDA runtime.
+    cuda_builds = distinct(lambda r: r.get("hardware", {}).get("torch_cuda") or None)
+    if len(cuda_builds) > 1:
+        by_build: dict[str, list[str]] = {}
+        for r in reports:
+            b = r.get("hardware", {}).get("torch_cuda") or "unknown"
+            by_build.setdefault(b, []).append(r.get("model_key", "?"))
+        detail = "; ".join(f"CUDA {b}: {', '.join(sorted(m))}" for b, m in sorted(by_build.items()))
+        warnings.append(
+            f"Runs span {len(cuda_builds)} CUDA runtime versions ({detail}). The engines cannot "
+            "share an environment, so this is expected; disclose it with the table rather than "
+            "treating small cross-engine timing gaps as architectural."
+        )
+
+    drivers = distinct(lambda r: r.get("hardware", {}).get("nvidia_driver") or None)
+    if len(drivers) > 1:
+        warnings.append(f"Runs span different NVIDIA drivers ({', '.join(sorted(drivers))}).")
+
+    # A matching fingerprint proves the same clip IDs were selected, not that the same
+    # audio was measured: RTF divides by audio_seconds_total, which each driver derives
+    # for itself. If one engine resolved durations differently, every RTF in the table
+    # is against a different denominator and the ranking is an artefact. Compare the
+    # totals directly, with a tolerance for float rounding.
+    totals = {r.get("model_key", "?"): r.get("metrics", {}).get("audio_seconds_total")
+              for r in reports}
+    known = {k: v for k, v in totals.items() if v}
+    if len(known) > 1:
+        lo, hi = min(known.values()), max(known.values())
+        if hi - lo > 0.5:
+            detail = ", ".join(f"{k}={v:.1f}s" for k, v in sorted(known.items()))
+            warnings.append(
+                f"Runs report different total audio despite a shared subset ({detail}). "
+                "RTF and throughput divide by this, so the models are not comparable "
+                "until the discrepancy is explained."
+            )
+
     return warnings
 
 
@@ -115,11 +155,25 @@ def to_markdown(df: pd.DataFrame, dataset: str, reports: list[dict], warnings: l
     lines = [f"# Inference efficiency: {dataset}", ""]
 
     if reports:
-        hw = reports[0].get("hardware", {})
         proto = reports[0].get("protocol", {})
+
+        # Collect across every run rather than reading reports[0]: the engines cannot
+        # share an environment, so torch and CUDA genuinely differ between them and
+        # quoting one engine's value as the table's would be wrong. Key names must match
+        # utils.efficiency.hardware_provenance exactly ("torch", "torch_cuda"), or every
+        # field silently renders as a placeholder.
+        def _values(field: str) -> list[str]:
+            seen = {str(r.get("hardware", {}).get(field)) for r in reports
+                    if r.get("hardware", {}).get(field)}
+            return sorted(seen)
+
+        def _fmt(field: str, default: str) -> str:
+            vals = _values(field)
+            return ", ".join(vals) if vals else default
+
         lines += [
-            f"Measured on {hw.get('gpu_name') or 'CPU'}, torch {hw.get('torch_version', '?')}, "
-            f"CUDA {hw.get('cuda_version', 'n/a')}.",
+            f"Measured on {_fmt('gpu_name', 'CPU')}, driver {_fmt('nvidia_driver', 'n/a')}, "
+            f"torch {_fmt('torch', 'n/a')}, CUDA {_fmt('torch_cuda', 'n/a')}.",
             "",
             f"Protocol: {proto.get('n_clips_requested', '?')} clips sampled with seed "
             f"{proto.get('seed', '?')} (fingerprint `{proto.get('subset_fingerprint', '?')}`), "

@@ -19,6 +19,16 @@ import numpy as np
 import pandas as pd
 import librosa
 
+# Script, not a module: every statement below runs at import time. A repo-wide import
+# sweep would therefore start a dataset download or a network fetch on whatever machine
+# the sweep runs on, and on a shared login node that risks a fair-share violation.
+# Refuse the import rather than doing the work silently.
+if __name__ != "__main__":
+    raise ImportError(
+        "extract_top20_audio.py is a script and must be run, not imported: python archived_tasks/audio_analysis/extract_top20_audio.py"
+    )
+
+
 REPO_ROOT = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, REPO_ROOT)
 
