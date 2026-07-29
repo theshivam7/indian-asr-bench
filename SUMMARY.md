@@ -42,7 +42,7 @@ Extending the benchmark:
 | Engine | Explicit settings | Everything else |
 |---|---|---|
 | openai-whisper (base/medium/large/large-v3-turbo) | `language="en"` (+ `fp16=False` on CPU) | library defaults: greedy decoding with temperature fallback (0.0 to 1.0 in 0.2 steps on quality-gate failure), `condition_on_previous_text=True`, default no-speech/compression thresholds |
-| hf_whisper (medium_hf / medium_ft, fine-tuned models) | chunked `transformers` pipeline ([`utils/transcribe_hf.py`](utils/transcribe_hf.py)) | library defaults |
+| hf_whisper (HF baselines and fine-tuned models, e.g. medium_hf / medium_aesrc_ft) | chunked `transformers` pipeline ([`utils/transcribe_hf.py`](utils/transcribe_hf.py)) | library defaults |
 | NeMo (parakeet / parakeet_ctc) | batch transcription, `batch_size=16` | library defaults |
 | qwen3 | `language="English"`, `max_new_tokens=512` | library defaults |
 
@@ -65,14 +65,14 @@ HF dataset revisions are pinned in [`utils/registry.py`](utils/registry.py) (`hf
 | Parakeet-TDT-0.6B-v2 | 600M | CTC + TDT | [nvidia/parakeet-tdt-0.6b-v2](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) |
 | Parakeet-CTC-1.1B | 1.1B | CTC | [nvidia/parakeet-ctc-1.1b](https://huggingface.co/nvidia/parakeet-ctc-1.1b) |
 | Qwen3-ASR-1.7B | 1.7B | LLM-based | [Qwen/Qwen3-ASR-1.7B](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) |
-| Whisper Tiny (TIE fine-tuned) | 39M | Encoder-Decoder | [theshivam7/whisper-tiny-indian-english](https://huggingface.co/theshivam7/whisper-tiny-indian-english) |
-| Whisper Small (TIE fine-tuned) | 244M | Encoder-Decoder | [theshivam7/whisper-small-indian-english](https://huggingface.co/theshivam7/whisper-small-indian-english) |
-| Whisper Medium (TIE fine-tuned) | 769M | Encoder-Decoder | [theshivam7/whisper-medium-indian-english](https://huggingface.co/theshivam7/whisper-medium-indian-english) |
 | Whisper Tiny (AESRC fine-tuned) | 39M | Encoder-Decoder | [theshivam7/whisper-tiny-aesrc-indian-english](https://huggingface.co/theshivam7/whisper-tiny-aesrc-indian-english) |
 | Whisper Small (AESRC fine-tuned) | 244M | Encoder-Decoder | [theshivam7/whisper-small-aesrc-indian-english](https://huggingface.co/theshivam7/whisper-small-aesrc-indian-english) |
 | Whisper Medium (AESRC fine-tuned) | 769M | Encoder-Decoder | [theshivam7/whisper-medium-aesrc-indian-english](https://huggingface.co/theshivam7/whisper-medium-aesrc-indian-english) |
 
-All nine pretrained models run as-is on all three datasets; that is the headline benchmark. Fine-tuning is analyzed separately: a Tiny/Small/Medium capacity study on both TIE (speaker-matched, checkpoints published on the HF Hub) and AESRC (natively speaker-disjoint), where the fine-tuning gain turns out to be real. Fine-tuned models are excluded from the pretrained ranking tables below because they decode through a different engine (HF `transformers` rather than `openai-whisper`); their engine-controlled comparison is in [Fine-tuning](#fine-tuning-pretrained-vs-fine-tuned-across-sizes).
+A TIE fine-tuned set (Tiny/Small/Medium) also exists and stays published on the HF Hub, but is
+archived from the main benchmark, see [Archived: TIE_shorts fine-tuning](archived_tasks/tie_finetuning/README.md).
+
+All nine pretrained models run as-is on all three datasets; that is the headline benchmark. Fine-tuning is analyzed separately: a Tiny/Small/Medium capacity study on AESRC (natively speaker-disjoint), where the fine-tuning gain is real. Fine-tuned models are excluded from the pretrained ranking tables below because they decode through a different engine (HF `transformers` rather than `openai-whisper`); their engine-controlled comparison is in [Fine-tuning](#fine-tuning-pretrained-vs-fine-tuned-across-sizes).
 
 ---
 
@@ -329,43 +329,13 @@ Statistical check: speaker-clustered paired bootstrap over 481 speakers, Holm-co
 
 ## Fine-tuning: pretrained vs. fine-tuned, across sizes
 
-Whisper Medium fine-tuned on TIE showed no significant gain. Two explanations fit: either Medium (769M) is already saturated by what 46.9h of TIE data can teach it (a capacity ceiling), or the dataset cannot support a fine-tuning gain at any size. To decide, we ran the same protocol on Whisper Tiny (39M) and Small (244M).
+A Tiny/Small/Medium fine-tuning capacity study ran on AESRC2020 (Indian subset), whose test
+split is natively speaker-disjoint from train. The same study also ran on TIE_shorts first; it
+showed no significant gain at any size and is archived rather than reported here, see
+[Archived: TIE_shorts fine-tuning](archived_tasks/tie_finetuning/README.md) for the full setup,
+results table, and links to the unchanged code and outputs.
 
-**Setup:**
-
-- Medium: full fine-tune via `transformers` `Seq2SeqTrainer`, bf16, epoch-based, early stopping on validation WER ([`finetune_medium.py`](finetune/finetune_medium.py)).
-- Tiny and Small: step-based recipe, `max_steps=2000`, effective batch 32, fp16, best checkpoint by validation WER ([`finetune_tiny_small.py`](finetune/finetune_tiny_small.py)). A disclosed recipe difference, not a bug.
-- Every comparison decodes fine-tuned and pretrained through the identical HF pipeline, so fine-tuning is isolated from engine effects.
-- Paired speaker-clustered bootstrap over 280 speakers, Holm-corrected across this 3-test family, kept separate from the pretrained families above.
-
-| Size | Params | Pretrained (HF) | Fine-tuned | Δ (paired) | 95% CI | p (Holm) |
-|------|:------:|:---:|:---:|:---:|:---:|:---:|
-| Whisper Tiny | 39M | 22.10% | 19.14% | -2.96 pp | [-6.35, +0.13] | 0.195 |
-| Whisper Small | 244M | 17.38% | 16.21% | -1.17 pp | [-3.97, +1.21] | 0.774 |
-| Whisper Medium | 769M | 14.42% | 14.61% | +0.20 pp | [-0.46, +1.03] | 0.774 |
-
-A capacity gradient, but not a significant one. The point gains shrink monotonically as capacity grows, exactly the shape a capacity ceiling predicts, but no delta survives Holm correction at 985 test clips.
-
-Read past the headline number:
-
-- More clips got worse than better for both smaller sizes (Tiny: 313 improved vs 326 regressed; Small: 263 vs 403).
-- The net gain mostly comes from fixing a few severe repetition loops. One Tiny clip fell from 977.8% to 55.6% WER. Fine-tuning also introduced the same pathology elsewhere: one Small clip rose from 66.2% to 445.1%.
-- Both runs show a healthy learn-then-overfit trajectory (best checkpoints at steps 600 and 800 of 2000), which rules out a no-learning explanation.
-- Absolute WER stays at 14 to 22% after fine-tuning because the domain is hard. Whisper Large-v3 scores 15.93% on TIE vs 7.11% on Svarah with identical weights.
-
-**Speaker overlap (disclosed).** 100% of test speakers, and 100% of test clips, come from speakers also seen in training ([`speaker_overlap.md`](results/tie/analysis/speaker_overlap.md), via [`check_speaker_overlap.py`](finetune/check_speaker_overlap.py)). There is no clip-level leakage, but the comparison is speaker-matched, so part of any gain reflects speaker adaptation rather than accent or content learning.
-
-**Long-clip decoding note.** On 60s+ clips the HF chunked pipeline scores much higher WER than `openai-whisper` with identical weights. This hits pretrained and fine-tuned equally, so the head-to-head stays fair, but it inflates tail metrics for HF-pipeline runs.
-
-Full methodology and per-sample breakdowns: [`findings_tiny_small_ft.md`](results/tie/analysis/findings_tiny_small_ft.md), [`finetune_comparison.md`](results/tie/analysis/finetune_comparison.md) (Medium), [`finetune_comparison_small.md`](results/tie/analysis/finetune_comparison_small.md), [`finetune_comparison_tiny.md`](results/tie/analysis/finetune_comparison_tiny.md).
-
-<p align="center">
-  <img src="results/tie/analysis/finetune_comparison.png" width="680" alt="Whisper Medium pretrained vs fine-tuned across all five modes">
-</p>
-
-#### AESRC (speaker-disjoint): the TIE null result does not replicate
-
-AESRC's train and test speakers are natively disjoint: 0 of the 481 test speakers show up among the 38 train speakers (see [`speaker_overlap.md`](results/aesrc/analysis/speaker_overlap.md)). So whatever gain shows up here cannot be speaker adaptation. It has to be genuine accent or domain generalization. Same protocol as TIE: step-based recipe, all three sizes, engine-controlled HF-pipeline baseline, 1,731 test clips.
+AESRC's train and test speakers are natively disjoint: 0 of the 481 test speakers show up among the 38 train speakers (see [`speaker_overlap.md`](results/aesrc/analysis/speaker_overlap.md)). So whatever gain shows up here cannot be speaker adaptation. It has to be genuine accent or domain generalization. Step-based recipe, all three sizes, engine-controlled HF-pipeline baseline, 1,731 test clips.
 
 | Size | Params | HF baseline | Fine-tuned | Δ (paired, speaker-clustered) | 95% CI | p (Holm) |
 |------|:------:|:-----------:|:----------:|:------------------------------:|:------:|:--------:|
@@ -373,7 +343,7 @@ AESRC's train and test speakers are natively disjoint: 0 of the 481 test speaker
 | Whisper Small | 244M | 7.22% | 5.64% | -1.58 pp | [-2.01, -1.15] | 0.003 |
 | Whisper Medium | 769M | 5.63% | 4.48% | -1.15 pp | [-1.55, -0.77] | 0.003 |
 
-Small and Medium both come out significant, and that is the opposite of what happened on TIE, where nothing survived Holm correction, not even Medium (+0.20 pp, not significant). Since AESRC's train and test splits share zero speakers, this cannot be memorization. It has to be real domain or accent adaptation from the 17.5h of Indian-accent read speech in training.
+Small and Medium both come out significant. Since AESRC's train and test splits share zero speakers, this cannot be memorization. It has to be real domain or accent adaptation from the 17.5h of Indian-accent read speech in training.
 
 Tiny has the biggest point estimate (-4.81 pp) but also the widest CI, wide enough to cross zero. Its outputs are much noisier than the other sizes (Std Dev 103% on the HF baseline, versus 12% for Medium's), and that extra variance keeps the gain from reaching significance even though it is the largest number in the table.
 
