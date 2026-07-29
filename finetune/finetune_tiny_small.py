@@ -21,7 +21,10 @@ Disclosed additions (the source script lacked these; needed for a usable, compar
     best-checkpoint selection, so training would return the LAST checkpoint (~epoch 8-9 at
     max_steps=2000 on TIE's ~7.2k-clip train set) rather than the best one — risky given the
     medium study's finding that Whisper FT best-checkpoints on this dataset arrive at epoch 1.
-  - explicit seed=42 (Trainer's own default; made explicit rather than implicit).
+  - explicit seed (--seed, default 42 = Trainer's own default; made explicit rather than
+    implicit). The seed is also applied to python/numpy/torch before the model is built
+    (utils.finetune_data.seed_everything) and passed as data_seed, so a whole run is
+    reproducible from one number. See --seed below for the multi-seed study.
   - TIE-specific filtering (empty transcript / >30s / no embedded audio) via
     utils.finetune_data.filter_tie_split — the source script assumed pre-filtered JSONL
     manifests.
@@ -54,10 +57,17 @@ Usage:
         --base-model openai/whisper-tiny --output-dir models/whisper_tiny_ft
     python finetune/finetune_tiny_small.py --dataset aesrc \\
         --base-model openai/whisper-medium --output-dir models/whisper_medium_aesrc_ft
+    python finetune/finetune_tiny_small.py --dataset aesrc --seed 43 \\
+        --base-model openai/whisper-tiny --output-dir models/whisper_tiny_aesrc_ft_seed43
 
-CLI (matches the source script's flags, plus --dataset/--base-model/--output-dir/--max-train-samples):
-    --max-steps (2000)  --lr (1e-5)  --batch-size (8)  --grad-accum (4)
+CLI (matches the source script's flags, plus --dataset/--base-model/--output-dir/--seed/--max-train-samples):
+    --max-steps (2000)  --lr (1e-5)  --batch-size (8)  --grad-accum (4)  --seed (42)
     --max-train-samples (unset)  — subset training data for a quick smoke test
+
+Multi-seed study: one seed cannot bound run-to-run variance, so each size is trained
+across several seeds and reported as mean +/- standard deviation. Drive that with
+finetune/run_seeds.sh (which also handles per-seed output dirs, transcription and
+scoring), then aggregate with analysis/compare_seeds.py.
 """
 
 from __future__ import annotations
@@ -91,6 +101,7 @@ from utils.finetune_data import (
     DataCollatorSpeechSeq2SeqWithPadding,
     filter_finetune_split,
     filter_tie_split,
+    seed_everything,
 )
 
 warnings.filterwarnings("ignore")
@@ -151,6 +162,9 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--grad-accum", type=int, default=4)
+    parser.add_argument("--seed", type=int, default=42,
+                         help="Training seed: RNG state for init order, dataloader shuffling "
+                              "and dropout. Vary it to measure run-to-run variance.")
     parser.add_argument("--max-train-samples", type=int, default=None,
                          help="Subset training data for a quick smoke test.")
     args = parser.parse_args()
@@ -158,7 +172,11 @@ def main() -> None:
     spec = get_dataset(args.dataset)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"[finetune_tiny_small] dataset={args.dataset} base_model={args.base_model} "
-          f"out={args.output_dir} device={device}")
+          f"out={args.output_dir} seed={args.seed} device={device}")
+
+    # Before from_pretrained(): see utils.finetune_data.seed_everything for why the
+    # Trainer's own seed= is not sufficient on its own.
+    seed_everything(args.seed)
 
     processor = WhisperProcessor.from_pretrained(
         args.base_model, language="English", task="transcribe"
@@ -252,7 +270,11 @@ def main() -> None:
         save_total_limit=2,
         report_to=["none"],
         dataloader_num_workers=0,
-        seed=42,
+        seed=args.seed,
+        # data_seed drives the train sampler's shuffle order. Left unset it falls back to
+        # `seed`, so the two are redundant today, but stating it keeps the data order tied
+        # to this run's seed even if the recipe later sets one of them independently.
+        data_seed=args.seed,
         load_best_model_at_end=True,
         metric_for_best_model="wer",
         greater_is_better=False,
@@ -283,6 +305,7 @@ def main() -> None:
         "dataset": args.dataset,
         "output_dir": str(args.output_dir),
         "base_model": args.base_model,
+        "seed": args.seed,
         "max_steps": args.max_steps,
         "lr": args.lr,
         "batch_size": args.batch_size,

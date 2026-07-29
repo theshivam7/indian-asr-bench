@@ -1,3 +1,9 @@
+# Parakeet (NVIDIA NeMo engine) Stage-1 transcription. GPU required.
+# Install into its OWN conda env: bash parakeet/setup.sh
+#
+# NeMo constrains datasets/soundfile more tightly than the fine-tuning stack does, so
+# these pins intentionally differ from finetune/requirements.txt. The engines cannot
+# share one environment. Do not "reconcile" the versions across these files.
 nemo_toolkit[asr]==2.3.0
 torch==2.5.1
 datasets==3.6.0

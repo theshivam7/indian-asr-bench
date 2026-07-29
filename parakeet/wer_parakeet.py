@@ -8,8 +8,11 @@ Drives both Parakeet models via the registry:
 Usage:
     python parakeet/wer_parakeet.py --model parakeet_ctc --dataset tie
     python parakeet/wer_parakeet.py --model parakeet     --dataset svarah
+    python parakeet/wer_parakeet.py --model parakeet --efficiency   # timing, not transcripts
 
-Writes results/<dataset>/stage1_raw_transcripts/wer_<model>_raw.csv.
+Writes results/<dataset>/stage1_raw_transcripts/wer_<model>_raw.csv, or with
+--efficiency, results/<dataset>/efficiency/efficiency_<model>.json (see
+utils/efficiency.py for the measurement protocol).
 Uses batch NeMo transcription (its own loop, so not utils.inference_loop), but is
 dataset-aware through the DatasetSpec.
 """
@@ -27,6 +30,9 @@ import torch
 from tqdm import tqdm
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from utils.efficiency import (DEFAULT_CLIPS, DEFAULT_SEED, DEFAULT_WARMUP, count_parameters,
+                              run_efficiency_benchmark, timed)
 
 BATCH_SIZE = 16
 CHECKPOINT_EVERY = 50
@@ -58,6 +64,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="parakeet", choices=["parakeet", "parakeet_ctc"])
     ap.add_argument("--dataset", default="tie")
+    ap.add_argument("--efficiency", action="store_true",
+                    help="measure speed/memory on a seeded clip subset instead of transcribing the split")
+    ap.add_argument("--clips", type=int, default=DEFAULT_CLIPS,
+                    help="--efficiency: number of measured clips (default %(default)s)")
+    ap.add_argument("--warmup", type=int, default=DEFAULT_WARMUP,
+                    help="--efficiency: untimed warmup clips (default %(default)s)")
+    ap.add_argument("--seed", type=int, default=DEFAULT_SEED,
+                    help="--efficiency: subset seed, keep identical across models (default %(default)s)")
     args = ap.parse_args()
 
     logging.getLogger("nemo_logger").setLevel(logging.WARNING)
@@ -78,11 +92,38 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Loading {model_id} ({MODEL_BY_KEY[model_key].display}) on {device} ...")
-    model = nemo_asr.models.ASRModel.from_pretrained(model_id)
-    if device == "cuda":
-        model = model.cuda()
-    model.eval()
-    print("Model loaded.\n")
+    load_timing: list[float] = []
+    with timed(load_timing):
+        model = nemo_asr.models.ASRModel.from_pretrained(model_id)
+        if device == "cuda":
+            model = model.cuda()
+        model.eval()
+    print(f"Model loaded in {load_timing[0]:.1f}s.\n")
+
+    if args.efficiency:
+        from utils.registry import get_dataset
+
+        eff_audio_col = get_dataset(dataset).audio_col
+
+        # Measured one clip at a time, not at BATCH_SIZE. Per-clip latency is only
+        # comparable across engines if every engine sees the same single-stream
+        # conditions, and Whisper/Qwen3 have no batched path here. Parakeet's
+        # throughput under batching is therefore strictly better than reported;
+        # `batched_throughput_available` records that so the paper does not read
+        # this as Parakeet's ceiling.
+        def transcribe_one(sample: dict) -> str:
+            return transcribe_batch(model, [sample], eff_audio_col)[0]
+
+        run_efficiency_benchmark(
+            model_key, dataset, transcribe_one,
+            n_clips=args.clips, warmup=args.warmup, seed=args.seed,
+            model_load_seconds=load_timing[0], param_count=count_parameters(model),
+            extra={"decode_kwargs": {"batch_size": 1, "engine_defaults": "nemo"},
+                   "batched_throughput_available": True,
+                   "production_batch_size": BATCH_SIZE},
+        )
+        print("\nDone.")
+        return
 
     ds, spec = load_eval(dataset)
     split = spec.splits["eval"]

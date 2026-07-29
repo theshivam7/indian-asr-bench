@@ -20,14 +20,22 @@ Output: models/whisper_medium_ft/  (best model + processor, ready for HF upload)
 
 Usage:
     python finetune/finetune_medium.py
+    python finetune/finetune_medium.py --seed 43   # same as FT_SEED=43
 
 Tunable via env vars:
     FT_EPOCHS (10)  FT_BATCH (8)  FT_GRAD_ACCUM (2)  FT_LR (1e-5)  FT_PATIENCE (2)
     FT_OUTPUT_DIR (models/whisper_medium_ft)  FT_BASE_MODEL (openai/whisper-medium)
     FT_SEED (42)  — training seed (init order, dataloader shuffling, dropout/SpecAugment)
     MAX_TRAIN_SAMPLES (unset)  — subset training data for a quick smoke test
+
+The one CLI flag, --seed, overrides FT_SEED. Everything else stays env-driven, which is
+how the PBS jobs configure this script. Note that the multi-seed study
+(finetune/run_seeds.sh, analysis/compare_seeds.py) drives the step-based recipe in
+finetune/finetune_tiny_small.py, which is what all three AESRC sizes use; this epoch-based
+script is TIE's historical medium recipe and is seeded here for parity, not extended.
 """
 
+import argparse
 import os
 import sys
 import warnings
@@ -52,11 +60,17 @@ from utils.finetune_data import (
     DataCollatorSpeechSeq2SeqWithPadding,
     make_prepare_dataset,
     filter_tie_split,
+    seed_everything,
 )
 
 warnings.filterwarnings("ignore")
 
 # --------------- Config ---------------
+_parser = argparse.ArgumentParser(description="Fine-tune Whisper Medium on TIE_shorts.")
+_parser.add_argument("--seed", type=int, default=int(os.environ.get("FT_SEED", "42")),
+                     help="Training seed (overrides FT_SEED).")
+_cli = _parser.parse_args()
+
 BASE_MODEL = os.environ.get("FT_BASE_MODEL", "openai/whisper-medium")
 REPO_ROOT = os.path.join(os.path.dirname(__file__), "..")
 OUTPUT_DIR = os.environ.get(
@@ -68,7 +82,11 @@ GRAD_ACCUM = int(os.environ.get("FT_GRAD_ACCUM", "2"))
 LR = float(os.environ.get("FT_LR", "1e-5"))
 PATIENCE = int(os.environ.get("FT_PATIENCE", "2"))
 MAX_TRAIN_SAMPLES = os.environ.get("MAX_TRAIN_SAMPLES")
-SEED = int(os.environ.get("FT_SEED", "42"))
+SEED = _cli.seed
+
+# Before from_pretrained(): the Trainer's own seed= only takes effect once the Trainer is
+# built, which is far below. See utils.finetune_data.seed_everything.
+seed_everything(SEED)
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -204,6 +222,7 @@ training_args = Seq2SeqTrainingArguments(
     save_total_limit=2,
     dataloader_num_workers=int(os.environ.get("FT_NUM_WORKERS", "4")),
     seed=SEED,
+    data_seed=SEED,   # sampler shuffle order (falls back to seed when unset; stated explicitly)
     remove_unused_columns=False,
 )
 

@@ -1,3 +1,8 @@
+# Qwen3-ASR (LLM-decoder engine) Stage-1 transcription. GPU required.
+# Install into its OWN conda env: bash qwen3/setup.sh
+#
+# Pins intentionally differ from finetune/requirements.txt; the engines cannot share
+# one environment. Do not "reconcile" the versions across these files.
 qwen-asr
 torch==2.5.1
 datasets==3.6.0

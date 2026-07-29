@@ -232,7 +232,7 @@ def main(dataset: str, mode: str, B: int) -> None:
     md_pm = df_pm[["display", "corpus_wer_pct", "ci_lo_pct", "ci_hi_pct", "ci_halfwidth_pp"]].copy()
     md_pm.columns = ["Model", "Corpus WER %", "CI low", "CI high", "±pp"]
     with open(os.path.join(out, f"statistics_{mode}.md"), "w") as f:
-        f.write(f"# Statistical significance — {spec.display} — mode `{mode}`\n\n")
+        f.write(f"# Statistical significance: {spec.display}, mode `{mode}`\n\n")
         f.write(f"Corpus WER with 95% bootstrap CI: {B} resamples, seed {SEED}, N={N} clips, "
                 f"resampled by **{unit}** ({G} clusters). Headline (chart) models only — "
                 f"the fine-tuning study is a separate hypothesis family with its own paired "
