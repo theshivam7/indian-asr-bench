@@ -1,0 +1,28 @@
+{
+  "model_key": "medium_aesrc_ft_seed46",
+  "model_id": "",
+  "engine": "",
+  "dataset": "aesrc",
+  "hf_id": "pengyizhou/accented_english",
+  "hf_revision": "4a80d8388f06368a0fa2a325770bec3492cabd3d",
+  "git_commit": "",
+  "python": "3.10.20",
+  "hostname": "x1000c2s6b0n1",
+  "timestamp_utc": "2026-07-30T08:09:23+00:00",
+  "packages": {
+    "torch": "2.5.1",
+    "datasets": "4.8.5",
+    "numpy": "1.26.4",
+    "librosa": "0.11.0",
+    "soundfile": "0.12.1",
+    "jiwer": "3.1.0",
+    "transformers": "4.46.3"
+  },
+  "elapsed_seconds": 354.7,
+  "clips_transcribed_this_run": 1731,
+  "audio_seconds_this_run": 7729.2,
+  "seconds_per_audio_second": 0.0459,
+  "decode_kwargs": {
+    "engine_defaults": "hf_whisper chunked pipeline"
+  }
+}
