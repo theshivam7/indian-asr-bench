@@ -82,11 +82,10 @@ for SEED in "${SEED_ARRAY[@]}"; do
 
     echo "--- seed ${SEED} -> ${RUN_KEY} ---"
 
-    if [[ "${SKIP_TRAINED}" == "1" && -f "${RAW_CSV}" ]]; then
-        echo "  already scored (${RAW_CSV}), skipping. Use --force to redo."
-        echo
-        continue
-    fi
+    # Each stage is skipped on its OWN completion marker. Treating the raw CSV as
+    # "seed finished" and skipping the whole iteration was wrong: transcription writes
+    # that file before scoring runs, so a seed whose scoring failed would be skipped
+    # forever on every rerun and silently drop out of the aggregate.
 
     # Completion is decided by eval_results.json, which finetune_tiny_small.py writes
     # last, after both save_model() and processor.save_pretrained() have succeeded.
@@ -111,11 +110,21 @@ for SEED in "${SEED_ARRAY[@]}"; do
             --output-dir "${OUT_DIR}"
     fi
 
-    echo "  transcribing eval split ..."
-    DATASET="${DATASET}" MODEL_NAME="${RUN_KEY}" MODEL_SOURCE="${OUT_DIR}" \
-        python finetune/evaluate_finetuned.py
+    # inference_loop writes the raw CSV only after the whole split is transcribed
+    # (partials go to a separate wer_<key>_partial.csv), so its presence is a valid
+    # completion marker for this stage on its own.
+    if [[ "${SKIP_TRAINED}" == "1" && -f "${RAW_CSV}" ]]; then
+        echo "  transcripts present (${RAW_CSV}), skipping transcription."
+    else
+        echo "  transcribing eval split ..."
+        DATASET="${DATASET}" MODEL_NAME="${RUN_KEY}" MODEL_SOURCE="${OUT_DIR}" \
+            python finetune/evaluate_finetuned.py
+    fi
 
     echo "  scoring ..."
+    # Always re-scored rather than skipped: it is CPU-only, takes seconds, and is
+    # idempotent, so there is nothing to save by guarding it and a partially scored
+    # seed would otherwise need manual repair.
     # Per-seed keys are deliberately not in the registry, so they are scored by name.
     python normalize_and_score.py --dataset "${DATASET}" --models "${RUN_KEY}"
 

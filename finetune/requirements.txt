@@ -15,3 +15,7 @@ tqdm==4.67.1
 numpy==1.26.4
 num2words==0.5.14
 tensorboard==2.18.0
+# finetune/run_seeds.sh scores each seed in THIS env, not the whisper env, and the
+# whisper_norm mode needs this package. Without it a seed trains and transcribes
+# successfully and then dies at the last step, wasting the whole run.
+whisper_normalizer==0.1.0
