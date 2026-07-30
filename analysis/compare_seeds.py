@@ -85,14 +85,24 @@ def build_rows(dataset: str, mode: str) -> list[dict]:
             continue
         base = baseline_wer(dataset, mode, size)
         seeds = sorted(tables)
-        ft_wers, deltas = [], []
+        ft_wers, deltas, used_seeds = [], [], []
         for s in seeds:
             w = corpus_wer(tables[s])
             if w is None:
                 continue
+            used_seeds.append(s)
             ft_wers.append(w)
             if base is not None:
                 deltas.append(w - base)
+
+        # Report the seeds that actually contributed, not every file on disk. A seed
+        # whose table is empty or malformed is dropped from ft_wers above, and listing
+        # it anyway would make n_seeds and the seed list disagree in the published
+        # table with nothing to explain the difference.
+        skipped = [s for s in seeds if s not in used_seeds]
+        if skipped:
+            print(f"  [WARN] {size}: seed(s) {skipped} found on disk but unreadable or "
+                  f"empty; excluded from the aggregate.")
 
         if not ft_wers:
             continue
@@ -105,12 +115,15 @@ def build_rows(dataset: str, mode: str) -> list[dict]:
             "display_name": DISPLAY.get(size, size),
             "params": MODEL_BY_KEY[f"{size}_hf"].params if f"{size}_hf" in MODEL_BY_KEY else "",
             "n_seeds": len(ft_wers),
-            "seeds": ",".join(str(s) for s in seeds),
+            "seeds": ",".join(str(s) for s in used_seeds),
             "hf_baseline_wer": round(base, 3) if base is not None else None,
             "ft_wer_mean": round(float(np.mean(ft_wers)), 3),
             "ft_wer_sd": round(float(np.std(ft_wers, ddof=1)), 3) if len(ft_wers) > 1 else None,
             "delta_pp_mean": round(float(arr.mean()), 3) if deltas else None,
-            "delta_pp_sd": round(sd, 3) if np.isfinite(sd) else None,
+            # Guarded on `deltas`, like mean/min/max above: without a baseline `arr`
+            # holds absolute WERs, and an unguarded SD would publish the spread of
+            # those under a column that claims to describe deltas.
+            "delta_pp_sd": round(sd, 3) if deltas and np.isfinite(sd) else None,
             "delta_pp_min": round(float(arr.min()), 3) if deltas else None,
             "delta_pp_max": round(float(arr.max()), 3) if deltas else None,
         })

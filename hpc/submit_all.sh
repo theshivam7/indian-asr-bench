@@ -112,8 +112,13 @@ if [ "$DO_SETUP" = 1 ]; then
 
   # CRITICAL: the scoring env must have whisper_normalizer (whisper_norm mode). Existing
   # envs predate its addition to whisper.yaml, so install it explicitly.
-  conda run "$(_flag "$WHISPER_ENV")" "$WHISPER_ENV" python -c "import whisper_normalizer" 2>/dev/null \
-    || conda run "$(_flag "$WHISPER_ENV")" "$WHISPER_ENV" pip install whisper_normalizer==0.1.0
+  # Both envs need it, not just the scoring env: run_seeds.sh scores each seed inside
+  # the fine-tuning env, so a missing package there kills a seed after its GPU time
+  # has already been spent on training and transcription.
+  for _e in "$WHISPER_ENV" "$WHISPER_FT_ENV"; do
+    conda run "$(_flag "$_e")" "$_e" python -c "import whisper_normalizer" 2>/dev/null \
+      || conda run "$(_flag "$_e")" "$_e" pip install whisper_normalizer==0.1.0
+  done
 
   # datasets 3.x cannot read a cache written by 4.x and dies with "Feature type 'List'
   # not found", which reads as a dataset problem rather than a version mismatch. Catch
