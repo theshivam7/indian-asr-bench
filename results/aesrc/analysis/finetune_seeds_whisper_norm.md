@@ -7,4 +7,5 @@ The spread below is **across-seed** variation of the delta: how much the result 
 | Size | Params | Seeds | Baseline WER | FT WER (mean) | Δ mean (pp) | Δ SD (pp) | Δ min | Δ max |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Whisper Tiny | 39M | 6 | 16.967% | 9.854% | -7.114 | 0.043 | -7.173 | -7.071 |
-| Whisper Small | 244M | 3 | 6.905% | 5.274% | -1.631 | 0.046 | -1.664 | -1.578 |
+| Whisper Small | 244M | 6 | 6.905% | 5.248% | -1.657 | 0.132 | -1.806 | -1.453 |
+| Whisper Medium | 769M | 6 | 5.259% | 4.106% | -1.153 | 0.091 | -1.236 | -0.98 |
