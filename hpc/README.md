@@ -76,6 +76,15 @@ NEER), `job_aesrc.pbs` (9 pretrained models on the AESRC Indian test split → S
 `job_finetune_size.pbs` (capacity-study fine-tune: `-v SIZE=tiny|small` for TIE,
 `-v SIZE=tiny|small|medium,DATASET=aesrc` for AESRC).
 
+```bash
+qsub -P <id> -v DATASET=tie                          hpc/job_speaker_overlap.pbs # CPU-only train/test speaker-leakage audit
+qsub -P <id> -v ENGINE=parakeet,MODEL=parakeet        hpc/job_efficiency.pbs      # RTF/latency/peak-GPU, one model per submission
+qsub -P <id> -v SIZE=tiny,DATASET=aesrc               hpc/job_finetune_seeds.pbs  # multi-seed capacity study (default: seeds 42-47)
+```
+
+`job_finetune_seeds.pbs` has its full usage (including the SEEDS-quoting gotcha) documented in its
+own header comment; see also `analysis/compare_seeds.py` to aggregate the resulting per-seed tables.
+
 ## Fine-tuning (standalone)
 
 ```bash

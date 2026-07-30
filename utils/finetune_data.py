@@ -85,8 +85,8 @@ def has_audio_array(raw_col):
 
 
 # AESRC's mirror stores every clip as fixed-format WAV (16 kHz, 16-bit, mono, 78-byte
-# header; verified corpus-wide in docs/AESRC2020_INDIAN_ANALYSIS.md), so exact duration
-# is (byte_length - header) / byte_rate, with no decoding.
+# header; verified corpus-wide in a local-only deep-dive doc, not committed), so exact
+# duration is (byte_length - header) / byte_rate, with no decoding.
 _WAV_HEADER_BYTES = 78
 _WAV_BYTES_PER_SECOND = 32000
 
