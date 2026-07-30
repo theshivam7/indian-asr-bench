@@ -1,0 +1,2 @@
+size,display_name,params,n_seeds,seeds,hf_baseline_wer,ft_wer_mean,ft_wer_sd,delta_pp_mean,delta_pp_sd,delta_pp_min,delta_pp_max
+tiny,Whisper Tiny,39M,6,"42,43,44,45,46,47",17.447,10.597,1.029,-6.85,1.029,-7.337,-4.751
