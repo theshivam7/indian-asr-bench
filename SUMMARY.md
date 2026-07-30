@@ -13,6 +13,7 @@ overview; come here for the evidence.
 - [Results: Svarah](#results-svarah)
 - [Results: AESRC2020 (Indian)](#results-aesrc2020-indian)
 - [Fine-tuning and split design](#fine-tuning-and-split-design)
+- [Inference efficiency](#inference-efficiency)
 - [Normalization](#normalization)
 - [Error analysis](#error-analysis)
 - [Limitations](#limitations)
@@ -345,21 +346,62 @@ Small and Medium both come out significant, and because train and test share zer
 
 Tiny has the biggest point estimate (-4.81 pp) but also the widest CI, wide enough to cross zero. Its outputs are much noisier than the other sizes (Std Dev 103% on the HF baseline, versus 12% for Medium's), and that extra variance keeps the gain from reaching significance even though it is the largest number in the table.
 
+**A single training run cannot separate a real effect from an unlucky seed**, so Tiny was retrained from 6 independent seeds (42-47) on the identical recipe and split, with the disjoint test set held fixed:
+
+| Size | Seeds | Δ mean (pp) | Δ SD (pp) | Δ min | Δ max |
+|------|:---:|:---:|:---:|:---:|:---:|
+| Whisper Tiny | 6 | -6.85 | 1.03 | -7.34 | -4.75 |
+
+Every one of the 6 seeds improves on the pretrained baseline, and the range never approaches zero. The single official-split run above (-4.81 pp) was simply the least favorable of the six. This is strong informal evidence of a real effect, not a formal significance claim: no seed-level significance test has been built yet, and the clip-level bootstrap CI and the seed-level spread answer different questions, so neither substitutes for the other. Full seed data: [`finetune_seeds_transcript_clean.md`](results/aesrc/analysis/finetune_seeds_transcript_clean.md).
+
 **These results were checked against the normalizer choice**, since this repository's own finding is that a single-normalizer result can be an artifact of the normalizer:
 
 | Size | Δ under `transcript_clean` | Δ under `whisper_norm` | Swing |
 |------|:---:|:---:|:---:|
-| Whisper Tiny | -4.81 pp | -7.14 pp | 2.33 pp |
+| Whisper Tiny, 1 seed (official split) | -4.81 pp | -7.14 pp | 2.33 pp |
 | Whisper Small | -1.58 pp | -1.55 pp | 0.03 pp |
 | Whisper Medium | -1.15 pp | -1.08 pp | 0.07 pp |
+| Whisper Tiny, 6-seed mean | -6.85 pp (SD 1.03) | -7.11 pp (SD 0.04) | 0.26 pp |
 
-The two significant results are normalizer-invariant, moving by at most 0.07 pp, so neither conclusion depends on the choice. Tiny is not: its estimated gain grows by half again under `whisper_norm`, because the insertion loops that dominate its variance are exactly what that normalizer strips. Tiny's null is therefore best read as unresolved rather than as evidence of no effect at that size.
+The two significant results (Small, Medium) are normalizer-invariant, as before. Tiny looked normalizer-sensitive (2.33 pp swing) on a single seed, but that swing was mostly seed noise, not a normalizer effect: across 6 seeds the mean swing shrinks to 0.26 pp, inside the range Small and Medium already show. What the 6 seeds do reveal is a striking asymmetry in *stability*: `transcript_clean`'s across-seed SD (1.03 pp) is roughly 24x `whisper_norm`'s (0.04 pp). One plausible reading is that `whisper_norm`'s aggressive normalization collapses seed-to-seed phrasing variance (disfluency and filler handling, marginal wording choices) that `transcript_clean` still counts as error — stated here as a hypothesis, not a demonstrated mechanism, since isolating it would need a per-clip diagnosis across seeds that has not been run. Full seed data under `whisper_norm`: [`finetune_seeds_whisper_norm.md`](results/aesrc/analysis/finetune_seeds_whisper_norm.md).
 
 Full per-size reports: [`finetune_comparison_tiny.md`](results/aesrc/analysis/finetune_comparison_tiny.md), [`finetune_comparison_small.md`](results/aesrc/analysis/finetune_comparison_small.md), [`finetune_comparison_medium.md`](results/aesrc/analysis/finetune_comparison_medium.md), [full capacity summary](results/aesrc/analysis/finetune_capacity_summary.md).
 
 <p align="center">
   <img src="results/aesrc/analysis/finetune_comparison_medium.png" width="680" alt="Whisper Medium pretrained vs fine-tuned on AESRC Indian">
 </p>
+
+---
+
+## Inference efficiency
+
+WER alone cannot justify a "small specialized models remain competitive" claim without a cost
+axis attached. Measured on a fixed 200-clip TIE subset (seed 42, fingerprint `46c6f70a710f`), 3
+untimed warmup clips, batch size 1, single NVIDIA A100-SXM4-40GB:
+
+| Model | Params | Arch | RTF | Lat. p50 (s) | Peak GPU (MiB) |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Whisper Small | 244M | enc-dec | 0.0379 | 0.954 | 1,095 |
+| Whisper Medium | 769M | enc-dec | 0.0798 | 1.946 | 3,207 |
+| Whisper Large-v3 | 1.5B | enc-dec | 0.1051 | 2.530 | 6,442 |
+| Parakeet-TDT-0.6B-v2 | 600M | transducer | 0.0047 | 0.091 | 2,864 |
+| Parakeet-CTC-1.1B | 1.1B | ctc | 0.0044 | 0.105 | 4,382 |
+| Qwen3-ASR-1.7B | 1.7B | llm | 0.0736 | 1.858 | 4,378 |
+
+RTF = processing time / audio duration; lower is faster. The two acoustically-grounded decoders
+(Parakeet-TDT, Parakeet-CTC) run 22-24x faster than Whisper Large-v3 at WER within 0.4-2.3 pp of
+it on TIE, and Parakeet-TDT does so at roughly a third the peak GPU memory. Within each decoder
+class, speed barely moves with parameter count; across classes it moves by two orders of
+magnitude. The RTF spread across all six models (23.9x) is far larger than the WER spread among
+them (1.25x) -- decoder class, not parameter count, is the variable that determines inference
+cost.
+
+**Scope, disclosed plainly**: this benchmark covers only 6 of the 9 models (no Tiny, Base, or
+large-v3-turbo) and only the TIE corpus -- it has not been repeated on Svarah or AESRC. The runs
+also span two CUDA runtimes (11.8 for Whisper; 12.4 for Parakeet/Qwen3, since the engines cannot
+share one conda environment); this is disclosed rather than treated as a controlled variable, though
+the RTF gaps involved are far larger than any plausible cross-runtime timing noise. Full data and
+provenance: [`efficiency_tie.md`](results/tie/analysis/efficiency_tie.md).
 
 ---
 
@@ -479,7 +521,8 @@ Stated so the numbers above are read correctly:
 
 - The artifact classifier has not been validated against human judgment yet. It is backed by inter-hypothesis agreement evidence, but the blind annotation pass still needs to run.
 - Svarah can only be clustered by recording (3,232 clusters), not by its 117 true speakers, since the public release exposes no speaker IDs. True speaker clustering would widen the confidence intervals. TIE clusters are real speakers.
-- The AESRC fine-tuning study is one run per size, with no seed replication. Small and Medium clear Holm correction and are stable across normalizers, but a single seed cannot bound run-to-run variance, and Tiny's larger point estimate is both non-significant and normalizer-sensitive. Multi-seed replication is supported by the pipeline and is the way to close this.
+- Small and Medium AESRC fine-tuning is one run per size, with no seed replication; a single seed cannot bound their run-to-run variance. Tiny has been retrained across 6 seeds (see [Fine-tuning and split design](#fine-tuning-and-split-design)): every seed improves on the pretrained baseline and the range never approaches zero, but no formal seed-level significance test exists yet, so this is reported as strong informal evidence rather than a confirmed result.
+- Inference-efficiency benchmarking covers only 6 of the 9 models and only the TIE corpus; it has not been run on Svarah or AESRC, or on Tiny/Base/large-v3-turbo.
 - AESRC checkpoint selection uses a validation split that shares all 38 train speakers, so it measures fit, not speaker generalization. The speaker-disjoint test set is untouched during training, so the reported deltas are unaffected.
 - The AESRC mirror (`pengyizhou/accented_english`) states no license. AESRC2020 is Datatang's corpus; confirm data-use terms before any publication use.
 - Training-data contamination is possible: NPTEL lectures are public and may appear in Whisper's training data. A small probe (n=10) found no memorization signal, but it is low-powered.
@@ -491,7 +534,8 @@ Stated so the numbers above are read correctly:
 ## Future work
 
 - Run the blind human-annotation pass ([`analysis/validation/`](analysis/validation/), a 91-item stratified sheet). This turns the classifier's heuristic status into measured precision and recall, and it is the highest-value task left.
-- Replicate the AESRC capacity study across multiple seeds, which would bound run-to-run variance and give Tiny's large but noisy delta (-4.81 pp) the power to resolve.
+- Replicate the AESRC capacity study across multiple seeds for Small and Medium (Tiny is done -- 6 seeds, see [Fine-tuning and split design](#fine-tuning-and-split-design)), and build a formal seed-level significance test to replace the current descriptive mean/SD treatment.
+- Extend inference-efficiency benchmarking to Tiny, Base, and large-v3-turbo, and to Svarah and AESRC.
 - Run the transfer matrix: evaluate the AESRC fine-tuned checkpoints on TIE and Svarah (and the archived TIE checkpoints on AESRC), to see whether the gains carry across registers or stay domain-locked.
 - Activate the NEER entity metric ([`analysis/entity_analysis.py`](analysis/entity_analysis.py)) once a use-case register field is derived for Svarah. Entity-dense clips currently score far above 100% WER for spelling-convention reasons, not misrecognition.
 - Figure out why the HF chunked pipeline scores higher WER than `openai-whisper` on 60s+ clips with identical weights.

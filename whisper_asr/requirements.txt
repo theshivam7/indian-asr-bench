@@ -1,10 +1,10 @@
 # Whisper (openai-whisper engine) Stage-1 transcription. GPU required.
 # Install into its OWN conda env: bash whisper_asr/setup.sh
 #
-# Pins here intentionally differ from finetune/requirements.txt (datasets 3.6.0 vs
-# 4.8.5). The engines cannot share one environment, so each file pins what its own
-# stack needs. Do not "reconcile" them: aligning the versions breaks one env or the
-# other. See environments/*.yaml for the full specs.
+# Pins here intentionally differ from finetune/requirements.txt (e.g. soundfile
+# 0.13.1 vs 0.12.1). The engines cannot share one environment, so each file pins
+# what its own stack needs. Do not "reconcile" them: aligning the versions breaks
+# one env or the other. See environments/*.yaml for the full specs.
 # 4.x is required to read a cache written by datasets 4.x: the List feature type it
 # introduced is unknown to 3.x, which fails with "Feature type 'List' not found".
 # Audio decoding still works without torchcodec at this version.

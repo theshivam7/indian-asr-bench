@@ -205,7 +205,7 @@ underpowered and partly decoding-artifact-driven at this sample size (985 test c
 is consistent with — but does not conclusively prove — a capacity-ceiling explanation for
 Medium's null result. The next-highest-value step to sharpen this finding is **more
 speaker-disjoint, professionally-transcribed Indian-accented training data**, which is
-exactly what AESRC2020 (Phase 2 candidate, see `docs/AESRC2020_INDIAN_ANALYSIS.md`) provides:
+exactly what AESRC2020 (Phase 2 candidate) provides:
 17.5h of natively speaker-disjoint Indian train data (vs. TIE's 3.8h manufactured disjoint
 subset) with clean professional labels, removing both confounds (speaker overlap AND label
 noise) that limit how conclusively this study's numbers can be read.

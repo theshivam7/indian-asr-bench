@@ -151,6 +151,21 @@ in the main HPC README, and `hpc/job_finetune_size.pbs` (`-v SIZE=tiny|small`) f
 the capacity study. AESRC fine-tuning uses the same job with `DATASET=aesrc`
 (`-v SIZE=tiny|small|medium,DATASET=aesrc`), or `--phase ft-aesrc` above for all three.
 
+Three more standalone jobs, not covered by `submit_all.sh` phases:
+
+```bash
+# Speaker-leakage disclosure (CPU-only, minutes)
+qsub -P $PROJECT -v DATASET=tie hpc/job_speaker_overlap.pbs
+
+# Inference-efficiency benchmark: one model per submission (engines can't share an env)
+qsub -P $PROJECT -v ENGINE=parakeet,MODEL=parakeet hpc/job_efficiency.pbs
+# then: python analysis/compare_efficiency.py --dataset tie
+
+# Multi-seed fine-tuning capacity study (gdev walltime cap: chunk seeds if >2h/seed at this size)
+qsub -P $PROJECT -v SIZE=tiny,DATASET=aesrc hpc/job_finetune_seeds.pbs
+# then: python analysis/compare_seeds.py --dataset aesrc
+```
+
 ## 2. After the jobs finish
 
 The committed raw transcripts + newly produced ones give you everything; the CPU

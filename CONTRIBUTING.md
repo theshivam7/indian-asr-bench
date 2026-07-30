@@ -26,7 +26,8 @@ Stage 3 `analysis/*` + `paper/figures/` → `results/<dataset>/analysis/`.
 2. Add its inference path:
    - reuse an existing engine driver if the engine matches (`whisper_asr/run_whisper.py`,
      `parakeet/wer_parakeet.py`, `qwen3/wer_qwen3.py`; all take `--model`/`--dataset`), **or**
-   - add a new `taskN_yourmodel/` (driver + `requirements.txt` + `setup.sh`) that calls
+   - add a new engine-named directory (e.g. `yourmodel/`, matching `whisper_asr/`,
+     `parakeet/`, `qwen3/`) with a driver + `requirements.txt` + `setup.sh` that calls
      `utils.inference_loop.run_transcription(model_key, dataset_key, transcribe_one)`.
 3. Run inference, then `python normalize_and_score.py --dataset <ds>` and the
    `analysis/*` scripts (all `--dataset`-aware) to regenerate every table/figure.
@@ -57,8 +58,8 @@ dataset-agnostic.
 2. Make changes, verify with `python normalize_and_score.py --dataset tie` (should reproduce committed numbers)
 3. Run the tests: `python tests/test_pipeline.py` (or `python -m pytest tests/ -q`); this pins the
    normalization/WER contracts, registry integrity, and the committed headline numbers
-4. Run a quick syntax check: `python -m py_compile utils/*.py analysis/*.py whisper_asr/*.py task*/wer_*.py`
-4. Open a PR with a clear description of what changed and why
+4. Run a quick syntax check: `python -m py_compile utils/*.py analysis/*.py whisper_asr/*.py parakeet/*.py qwen3/*.py`
+5. Open a PR with a clear description of what changed and why
 
 ## Reporting Issues
 

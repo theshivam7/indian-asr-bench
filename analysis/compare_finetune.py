@@ -107,7 +107,7 @@ DATASET_BLURBS = {
             "- **Speaker structure**: the test split's 481 speakers are fully disjoint from the 38",
             "  train/validation speakers, so the delta measures genuine speaker generalization.",
             "  The validation split shares train's speaker set, so checkpoint selection measures",
-            "  fit only (see docs/AESRC2020_INDIAN_ANALYSIS.md).",
+            "  fit only (see `results/aesrc/analysis/speaker_overlap.md`).",
         ],
     ),
 }

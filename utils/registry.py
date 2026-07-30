@@ -272,7 +272,9 @@ SVARAH = DatasetSpec(
 # Indian rows: 12,820 / 532 / 1,731. Test speakers (481) are fully disjoint from the 38
 # train and valid speakers; valid shares train's speaker set exactly, so validation WER
 # measures fit, not speaker generalization. Full population analysis (exact durations,
-# speaker structure, label sanity, licensing) in docs/AESRC2020_INDIAN_ANALYSIS.md.
+# speaker structure, label sanity, licensing) is in a local-only deep-dive doc, not
+# committed (see docs/ in .git/info/exclude) -- the load-bearing findings from it are
+# inlined above and in this spec's `license` field below.
 AESRC = DatasetSpec(
     key="aesrc",
     hf_id="pengyizhou/accented_english",
@@ -290,7 +292,7 @@ AESRC = DatasetSpec(
     subgroup_dims=(),                         # accent is constant after filtering; no other dims
     applicable_modes=("transcript_raw", "transcript_clean", "whisper_norm"),
     license="Unspecified (mirror carries no license; AESRC2020 is Datatang's corpus - "
-            "confirm data-use terms before paper use, see docs/AESRC2020_INDIAN_ANALYSIS.md)",
+            "confirm data-use terms before paper use)",
     citation="Shi et al., ICASSP 2021 (arXiv:2102.10233)",
     hf_revision="4a80d8388f06368a0fa2a325770bec3492cabd3d",  # 2026-06-29; predates all runs
     audio_undecoded=True,   # bytes-stored audio: bypass datasets' (torchcodec) decoder entirely
