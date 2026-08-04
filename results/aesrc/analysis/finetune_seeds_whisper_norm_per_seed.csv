@@ -1,0 +1,19 @@
+size,display_name,seed,hf_baseline_wer,ft_wer,delta_pp
+tiny,Whisper Tiny,42,16.967,9.885,-7.082
+tiny,Whisper Tiny,43,16.967,9.811,-7.156
+tiny,Whisper Tiny,44,16.967,9.851,-7.116
+tiny,Whisper Tiny,45,16.967,9.885,-7.082
+tiny,Whisper Tiny,46,16.967,9.794,-7.173
+tiny,Whisper Tiny,47,16.967,9.897,-7.071
+small,Whisper Small,42,6.905,5.242,-1.664
+small,Whisper Small,43,6.905,5.253,-1.652
+small,Whisper Small,44,6.905,5.327,-1.578
+small,Whisper Small,45,6.905,5.453,-1.453
+small,Whisper Small,46,6.905,5.116,-1.789
+small,Whisper Small,47,6.905,5.099,-1.806
+medium,Whisper Medium,42,5.259,4.079,-1.179
+medium,Whisper Medium,43,5.259,4.279,-0.98
+medium,Whisper Medium,44,5.259,4.102,-1.157
+medium,Whisper Medium,45,5.259,4.108,-1.151
+medium,Whisper Medium,46,5.259,4.022,-1.236
+medium,Whisper Medium,47,5.259,4.045,-1.214

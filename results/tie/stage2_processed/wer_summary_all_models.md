@@ -1,4 +1,4 @@
-# WER Summary — TIE_shorts — All Models x Modes
+# WER Summary: TIE_shorts, all models x modes
 
 ## Corpus WER (%) Matrix
 

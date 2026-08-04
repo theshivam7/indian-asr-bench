@@ -1,4 +1,4 @@
-# Speaker Overlap Across Splits (data-leakage disclosure)
+# Speaker overlap across splits: TIE_shorts (data-leakage disclosure)
 
 | Split | Clips | Unique speakers |
 |-------|------:|----------------:|
@@ -14,4 +14,4 @@
 
 ## Interpretation
 
-> **Speaker-matched fine-tuning**: 100.0% of test clips come from speakers also seen during training. The fine-tuning improvement therefore partly reflects speaker adaptation. This is disclosed, not hidden — it reflects the dataset's official splits, which we did not modify.
+> **Speaker-matched fine-tuning**: 100.0% of test clips come from speakers also seen during training. The fine-tuning improvement therefore partly reflects speaker adaptation. This is disclosed rather than hidden: it reflects the dataset's own official splits, which we did not modify.

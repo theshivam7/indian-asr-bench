@@ -1,13 +1,13 @@
-# Fine-tuning capacity summary — Tiny / Small / Medium (AESRC2020 Indian)
+# Fine-tuning capacity summary: Tiny / Small / Medium (AESRC2020 Indian)
 
 One official-split fine-tune per model size, each compared against its own
 HF-pipeline pretrained baseline.
 
 Holm-Bonferroni family = exactly these **3 official-split FT-vs-HF
-tests** (one per size) — kept separate from the headline cross-model pairwise family in
+tests** (one per size), kept separate from the headline cross-model pairwise family in
 `statistics_pairwise_transcript_clean.csv` (that family covers PRETRAINED models only;
 the fine-tuned variants run through a different decoding engine, so mixing them in would
-confound fine-tuning with an engine change — see `analysis/statistics.py`).
+confound fine-tuning with an engine change, see `analysis/statistics.py`).
 
 | Size | Params | Pretrained (openai) | HF baseline | Fine-tuned | Δ (paired, speaker-clustered) | 95% CI | p | p (Holm) | n clips | n speakers |
 |------|:------:|:--------------------:|:-----------:|:----------:|:-----------------------------:|:------:|:-:|:--------:|:-------:|:----------:|
@@ -17,7 +17,7 @@ confound fine-tuning with an engine change — see `analysis/statistics.py`).
 
 ## Pretrained capacity curve (for context; not a fine-tuning statistic)
 
-Speaker-clustered bootstrap CIs from `analysis/statistics.py:analyze()` (N=1731 clips, G=481 speakers, B=2000). Point estimates only — no Holm correction applied or needed here (these are per-model CIs, not pairwise tests).
+Speaker-clustered bootstrap CIs from `analysis/statistics.py:analyze()` (N=1731 clips, G=481 speakers, B=2000). Point estimates only , no Holm correction applied or needed here (these are per-model CIs, not pairwise tests).
 
 | Model | Params | Corpus WER | 95% CI |
 |-------|:------:|:----------:|:------:|

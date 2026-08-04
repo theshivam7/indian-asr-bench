@@ -1,4 +1,4 @@
-"""Shared Stage-1 transcription loop — dataset-aware, resumable, SIGTERM-safe.
+"""Shared Stage-1 transcription loop, dataset-aware, resumable, SIGTERM-safe.
 
 Removes the per-model script duplication. An engine driver supplies a
 ``transcribe_one(sample) -> str`` callable (capturing its loaded model + decode

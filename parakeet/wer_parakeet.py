@@ -1,5 +1,5 @@
 """
-Stage 1: ASR transcription — NVIDIA Parakeet (NeMo), batched.
+Stage 1: ASR transcription, NVIDIA Parakeet (NeMo), batched.
 
 Drives both Parakeet models via the registry:
     --model parakeet       -> Parakeet-TDT-0.6B-v2 (transducer)

@@ -8,7 +8,7 @@ dependencies:
   - python=3.10
   # Build string pinned exactly, not just the version + channel prefix: relying on
   # the pytorch:: prefix alone is untested for `conda install` on the command line
-  # (as opposed to `conda env create -f`) — pin the exact build to remove any doubt,
+  # (as opposed to `conda env create -f`), pin the exact build to remove any doubt,
   # matching parakeet.yaml's proven-working spec.
   - pytorch::pytorch=2.5.1=py3.10_cuda11.8_cudnn9.1.0_0
   - pytorch::pytorch-cuda=11.8

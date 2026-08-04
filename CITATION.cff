@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+title: >-
+  Indian-ASR-Bench: a reproducible WER benchmark for
+  Indian-English ASR
+message: >-
+  If you use this benchmark, the released checkpoints, or the
+  committed transcripts, please cite it using these metadata.
+type: software
+authors:
+  - given-names: Shivam
+    family-names: Sharma
+    affiliation: Nanyang Technological University, Singapore
+  - given-names: Changsong
+    family-names: Liu
+    affiliation: Nanyang Technological University, Singapore
+repository-code: https://github.com/theshivam7/indian-asr-bench
+url: https://huggingface.co/theshivam7
+abstract: >-
+  Nine ASR systems spanning four architecture classes, evaluated
+  on three Indian-English corpora of contrasting design
+  (TIE_shorts, Svarah, and the Indian subset of AESRC2020) under
+  one registry-driven pipeline. Reports corpus WER with
+  speaker- and recording-clustered bootstrap confidence
+  intervals and Holm-corrected paired tests, a cross-model
+  consensus classifier for reference artifacts, and a
+  fine-tuning capacity study on a natively speaker-disjoint
+  split replicated across six seeds at each of three model
+  sizes.
+keywords:
+  - automatic speech recognition
+  - word error rate
+  - Indian English
+  - benchmark
+  - reproducibility
+  - Whisper
+  - evaluation
+license: MIT
+preferred-citation:
+  type: generic
+  title: >-
+    The Evaluation Is the Bottleneck: Auditing WER Benchmarks
+    for Indian-English ASR
+  authors:
+    - given-names: Shivam
+      family-names: Sharma
+      affiliation: Nanyang Technological University, Singapore
+    - given-names: Changsong
+      family-names: Liu
+      affiliation: Nanyang Technological University, Singapore
+  year: 2026
+  url: https://github.com/theshivam7/indian-asr-bench

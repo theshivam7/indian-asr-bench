@@ -8,15 +8,15 @@ Saves to results/stage1_raw_transcripts/wer_youtube_raw.csv.
 No GPU needed. Run once; re-run normalize_and_score.py for WER.
 
 Caption types (in priority order):
-  1. manual  — human-created captions
-  2. auto    — YouTube auto-generated captions (Google ASR)
+  1. manual, human-created captions
+  2. auto   . YouTube auto-generated captions (Google ASR)
 
 caption_type column values:
-  "manual"      — human captions fetched
-  "auto"        — auto-generated captions fetched
-  "unavailable" — no English captions on this video
-  "ip_blocked"  — YouTube blocked requests; saved empty, skip and resume later
-  "error"       — other fetch error
+  "manual", human captions fetched
+  "auto", auto-generated captions fetched
+  "unavailable", no English captions on this video
+  "ip_blocked" . YouTube blocked requests; saved empty, skip and resume later
+  "error", other fetch error
 """
 
 import os
@@ -52,7 +52,7 @@ except ImportError:
     sys.exit(1)
 
 # --------------- Config ---------------
-DELAY_BETWEEN_REQUESTS = 1.5   # seconds between requests — avoids rate limiting
+DELAY_BETWEEN_REQUESTS = 1.5   # seconds between requests, avoids rate limiting
 IP_BLOCK_WAIT = 60             # seconds to wait when IP blocked before giving up
 MAX_IP_BLOCKS = 3              # stop fetching after this many IP blocks in a row
 RETRY_ON_ERROR = 2             # retries per video on non-block errors
@@ -109,7 +109,7 @@ def fetch_caption(video_id: str) -> tuple[str, str]:
             # IP blocked
             if "IpBlocked" in err_type or "IpBlocked" in err_msg or "ip_blocked" in err_msg.lower():
                 consecutive_ip_blocks += 1
-                tqdm.write(f"\n  [IP BLOCKED] #{consecutive_ip_blocks}/{MAX_IP_BLOCKS} — "
+                tqdm.write(f"\n  [IP BLOCKED] #{consecutive_ip_blocks}/{MAX_IP_BLOCKS}, "
                            f"waiting {IP_BLOCK_WAIT}s then {'retrying' if consecutive_ip_blocks < MAX_IP_BLOCKS else 'stopping'}...")
                 time.sleep(IP_BLOCK_WAIT)
                 if consecutive_ip_blocks >= MAX_IP_BLOCKS:
@@ -127,7 +127,7 @@ def fetch_caption(video_id: str) -> tuple[str, str]:
                 consecutive_ip_blocks = 0
                 return "", "unavailable"
 
-            # Other error — retry
+            # Other error, retry
             if attempt < RETRY_ON_ERROR:
                 time.sleep(3)
                 continue
@@ -211,7 +211,7 @@ for sample in tqdm(ds, desc="fetching captions"):
     if len(all_rows) % 50 == 0:
         pd.DataFrame(checkpoint_rows).to_csv(checkpoint_path, index=False)
         tqdm.write(
-            f"  [checkpoint] {len(all_rows)} done — "
+            f"  [checkpoint] {len(all_rows)} done, "
             f"manual:{stats['manual']} auto:{stats['auto']} "
             f"unavailable:{stats['unavailable']} blocked:{stats['ip_blocked']}"
         )
@@ -238,7 +238,7 @@ print(f"  Coverage    : {available}/{total} ({available/total*100:.1f}%)" if tot
 if ip_block_stop:
     print(f"\n  [NOTE] Stopped early due to IP blocking after {MAX_IP_BLOCKS} consecutive blocks.")
     print(f"         Re-run this script later to fetch remaining {stats['ip_blocked']} samples.")
-    print(f"         Checkpoint saved — already fetched samples will be skipped.")
+    print(f"         Checkpoint saved, already fetched samples will be skipped.")
 else:
     if os.path.exists(checkpoint_path):
         os.unlink(checkpoint_path)

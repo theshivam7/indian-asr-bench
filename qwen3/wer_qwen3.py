@@ -1,5 +1,5 @@
 """
-Stage 1: ASR transcription — Qwen3-ASR-1.7B (LLM-based).
+Stage 1: ASR transcription. Qwen3-ASR-1.7B (LLM-based).
 
 Usage:
     python qwen3/wer_qwen3.py --dataset tie

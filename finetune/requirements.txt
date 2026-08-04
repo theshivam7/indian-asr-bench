@@ -1,4 +1,4 @@
-# Whisper Medium fine-tuning (HF transformers) — Stage 0 training + Stage 1 HF inference.
+# Whisper Medium fine-tuning (HF transformers). Stage 0 training + Stage 1 HF inference.
 # GPU required for training/inference. Install into the 'whisper_medium_ft' conda env:
 #   bash finetune/setup.sh
 

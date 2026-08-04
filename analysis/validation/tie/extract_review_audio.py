@@ -1,6 +1,6 @@
 """Extract 16 kHz mono WAVs for the clips listed in a human-review CSV.
 
-Must run where the HF dataset cache already exists (NSCC) — TIE_shorts is too
+Must run where the HF dataset cache already exists (NSCC), TIE_shorts is too
 large to download to a laptop. Reads sample_id from --csv, loads the TIE eval
 split from the cache (no network needed once cached), writes one WAV per row
 into --out-dir, and rewrites the CSV's audio_path column to the WAVs' absolute
@@ -43,7 +43,7 @@ def main() -> None:
     missing = 0
     for cid in df["sample_id"]:
         if cid not in pos:
-            print(f"  [WARN] clip {cid} not found in the eval split — skipped")
+            print(f"  [WARN] clip {cid} not found in the eval split, skipped")
             audio_paths.append("")
             missing += 1
             continue

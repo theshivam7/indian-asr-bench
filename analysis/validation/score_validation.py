@@ -63,7 +63,7 @@ def main() -> None:
     d = labeled[labeled["label"] != "E"].copy()
     d["human_artifact"] = d["label"].isin(ARTIFACT_LABELS)
 
-    lines = [f"# Artifact-classifier validation — {args.dataset}", ""]
+    lines = [f"# Artifact-classifier validation: {args.dataset}", ""]
     lines.append(f"{len(labeled)} items labeled ({len(unsure)} 'unsure' excluded from metrics).")
     lines.append("")
 
@@ -130,7 +130,7 @@ def main() -> None:
                   f"(binary artifact), {k_cat:.2f} (4-way category).", ""]
     else:
         lines += ["## Inter-annotator agreement", "",
-                  "_No second annotator labels found (label_2 empty) — single-annotator audit._", ""]
+                  "_No second annotator labels found (label_2 empty), single-annotator audit._", ""]
 
     out = os.path.join(base, "validation_results.md")
     with open(out, "w") as f:

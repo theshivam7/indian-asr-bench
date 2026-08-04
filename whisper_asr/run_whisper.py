@@ -1,5 +1,5 @@
 """
-Stage 1: ASR transcription — Whisper family (openai-whisper engine).
+Stage 1: ASR transcription. Whisper family (openai-whisper engine).
 
 One driver for all openai-whisper checkpoints, replacing the former identical
 task1/2/3 scripts. The model set and checkpoint ids come from utils.registry.

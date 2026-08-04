@@ -1,8 +1,8 @@
 """CPU-only preflight for a dataset: run this BEFORE any GPU job.
 
-Exercises the exact code paths Stage 1 uses — adapter load (including the
+Exercises the exact code paths Stage 1 uses, adapter load (including the
 Audio(decode=False) cast and fail-early ID/schema validation in utils.datasets),
-per-sample ID extraction, and audio decode via decode_audio_value — on a handful
+per-sample ID extraction, and audio decode via decode_audio_value, on a handful
 of samples. Exits non-zero with an actionable message on the first failure, so a
 misconfigured environment dies in seconds on the login node instead of hours
 into a queued GPU job.
@@ -32,7 +32,7 @@ def main() -> int:
         import soundfile as sf
         print(f"[smoke] soundfile=={sf.__version__} (libsndfile {sf.__libsndfile_version__})")
     except ImportError:
-        print("[smoke] FATAL: soundfile not installed — required to decode bytes-stored audio.\n"
+        print("[smoke] FATAL: soundfile not installed, required to decode bytes-stored audio.\n"
               "        pip install soundfile==0.13.1")
         return 1
 
@@ -51,7 +51,7 @@ def main() -> int:
         sid = sample_id(sample, spec)
         assert sid == ids[i], (
             f"sample_id() and extract_ids() disagree at row {i}: {sid!r} != {ids[i]!r} "
-            f"— per-sample and columnar ID paths must be identical."
+            f", per-sample and columnar ID paths must be identical."
         )
         samples_arr, sr = decode_audio_value(sample[spec.audio_col], target_sr=16000)
         ref = str(sample.get(spec.gold_ref_col) or "").strip()
@@ -65,7 +65,7 @@ def main() -> int:
         if not ref:
             print(f"[smoke] WARNING: sample {i} has an empty reference (will be skipped in Stage 1).")
 
-    print(f"\n[smoke] OK — dataset '{args.dataset}' is ready for Stage 1.")
+    print(f"\n[smoke] OK, dataset '{args.dataset}' is ready for Stage 1.")
     return 0
 
 
@@ -74,5 +74,5 @@ if __name__ == "__main__":
         sys.exit(main())
     except Exception:
         traceback.print_exc()
-        print("\n[smoke] FAILED — fix the above before submitting any GPU job.")
+        print("\n[smoke] FAILED, fix the above before submitting any GPU job.")
         sys.exit(1)

@@ -5,9 +5,9 @@ registry itself lives in ``utils.registry`` (single source of truth). This modul
 implements the three normalizers and a ``normalize_for_mode`` dispatcher.
 
 Normalizers (all applied SYMMETRICALLY to both reference and hypothesis):
-    minimal  (minimal_clean_text)  — strip wrapping quotes + lowercase + remove punctuation.
-    custom   (normalize_text)      — minimal + possessive fix + number-to-words (project gold).
-    whisper  (whisper_normalize_text) — the community-standard Whisper EnglishTextNormalizer,
+    minimal  (minimal_clean_text), strip wrapping quotes + lowercase + remove punctuation.
+    custom   (normalize_text), minimal + possessive fix + number-to-words (project gold).
+    whisper  (whisper_normalize_text), the community-standard Whisper EnglishTextNormalizer,
                                         added for cross-paper comparability.
 
 Reference-source roles ("gold"/"alt") are resolved by the caller via
@@ -145,7 +145,7 @@ def minimal_clean_text(text: str) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# Whisper EnglishTextNormalizer (community standard) — lazy, cached.
+# Whisper EnglishTextNormalizer (community standard), lazy, cached.
 # Packaged by the `whisper_normalizer` PyPI wheel (no torch dependency), so it is
 # importable in the CPU-only analysis env. Only required when a `whisper` mode runs.
 # --------------------------------------------------------------------------- #

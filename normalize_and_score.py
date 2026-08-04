@@ -4,7 +4,7 @@ Stage 2: Normalization + WER/CER scoring (dataset-aware, registry-driven).
 Reads raw transcripts from  results/<dataset>/stage1_raw_transcripts/
 Writes scored results to     results/<dataset>/stage2_processed/
 
-No GPU needed. Re-run any time to change normalization/metrics — this recomputes
+No GPU needed. Re-run any time to change normalization/metrics, this recomputes
 everything from the committed raw transcripts (the immutable source of truth), so
 inference is never repeated.
 
@@ -139,7 +139,7 @@ def main(dataset: str, models: tuple | None = None) -> None:
     s2 = stage2_dir(dataset)
 
     print("=" * 70)
-    print(f"STAGE 2: Normalization + WER/CER  —  dataset: {spec.display} ({dataset})")
+    print(f"STAGE 2: Normalization + WER/CER, dataset: {spec.display} ({dataset})")
     print("=" * 70)
     print(f"Reading from: {stage1_raw_dir(dataset)}")
     print(f"Writing to:   {s2}")
@@ -180,7 +180,7 @@ def main(dataset: str, models: tuple | None = None) -> None:
     print("\n" + "=" * 70 + "\nSUMMARY (corpus WER %)\n" + "=" * 70)
     if not all_summary:
         print(f"[normalize_and_score] no raw transcripts found for any model of "
-              f"'{dataset}' under {stage1_raw_dir(dataset)} — nothing to summarize.")
+              f"'{dataset}' under {stage1_raw_dir(dataset)}, nothing to summarize.")
         return
     df_summary = pd.DataFrame(all_summary)
     present_modes = [m for m in modes if m in set(df_summary["mode"])]

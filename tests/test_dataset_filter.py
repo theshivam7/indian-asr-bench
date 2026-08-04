@@ -25,6 +25,29 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import datasets as hf_datasets
 from datasets import Audio, Dataset, Features, Value
 
+# Whether this environment can write an Audio feature into Arrow, probed rather than inferred
+# from a version number. datasets 4.x routes Audio.encode_example through torchcodec, which
+# ships with the engine stacks and not with requirements.txt; datasets 3.x needs nothing extra.
+# The production path never hits this (utils.io_helpers.raw_audio_column reads the arrow column
+# directly, precisely to bypass the Audio feature), so it is only the synthetic fixture below
+# that depends on it. Probe once so light environments skip instead of erroring at collection.
+try:
+    Dataset.from_dict(
+        {"audio": [{"bytes": b"RIFF\x00\x00\x00\x00WAVE", "path": "probe.wav"}]},
+        features=Features({"audio": Audio(sampling_rate=16000)}),
+    )
+    _CAN_ENCODE_AUDIO = True
+except ImportError:
+    _CAN_ENCODE_AUDIO = False
+except Exception:
+    _CAN_ENCODE_AUDIO = True  # a malformed-probe error still means encoding is available
+
+pytestmark = pytest.mark.skipif(
+    not _CAN_ENCODE_AUDIO,
+    reason="datasets>=4 needs torchcodec to encode Audio features; install the engine stack "
+           "(see whisper_asr/requirements.txt) to run these",
+)
+
 from utils.datasets import load_split
 from utils.finetune_data import filter_finetune_split, filter_tie_split
 from utils.io_helpers import (

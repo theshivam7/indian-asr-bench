@@ -1,6 +1,6 @@
-# Statistical significance — Svarah — mode `transcript_clean`
+# Statistical significance: Svarah, mode `transcript_clean`
 
-Corpus WER with 95% bootstrap CI: 2000 resamples, seed 42, N=6656 clips, resampled by **recording** (3232 clusters). Headline (chart) models only — the fine-tuning study is a separate hypothesis family with its own paired test in `finetune_comparison.md`. No speaker id is exposed for this dataset; resampling clusters on the recording tag embedded in the clip filename (chunks of one recording share accent/channel/session). This is not a full speaker id — one speaker can contribute several recordings — so CIs may still understate within-speaker correlation, but strictly less than clip-level resampling would. Clip-level CIs are in the CSV for comparison.
+Corpus WER with 95% bootstrap CI: 2000 resamples, seed 42, N=6656 clips, resampled by **recording** (3232 clusters). Headline (chart) models only, the fine-tuning study is a separate hypothesis family with its own paired test in `finetune_comparison.md`. No speaker id is exposed for this dataset; resampling clusters on the recording tag embedded in the clip filename (chunks of one recording share accent/channel/session). This is not a full speaker id, one speaker can contribute several recordings, so CIs may still understate within-speaker correlation, but strictly less than clip-level resampling would. Clip-level CIs are in the CSV for comparison.
 
 | Model | Corpus WER % | CI low | CI high | ±pp |
 | --- | --- | --- | --- | --- |

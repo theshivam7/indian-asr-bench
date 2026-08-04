@@ -1,4 +1,4 @@
-# WER Summary — AESRC2020 (Indian) — All Models x Modes
+# WER Summary: AESRC2020 (Indian), all models x modes
 
 ## Corpus WER (%) Matrix
 

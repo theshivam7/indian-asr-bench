@@ -1,11 +1,11 @@
-# Whisper Medium — Pretrained vs Fine-tuned
+# Whisper Medium: Pretrained vs Fine-tuned
 
 Fine-tuned on the AESRC2020 **Indian** train split (`pengyizhou/accented_english`,
 accent == INDIAN: 12,820 raw clips, 17.5h), best checkpoint selected on the
-**validation** split, evaluated on the **test** split (1,731 clips) — the same test
+**validation** split, evaluated on the **test** split (1,731 clips), the same test
 set used for every pretrained model on this dataset.
 
-**Headline comparison** is against `medium_hf` — the *pretrained* Whisper Medium run
+**Headline comparison** is against `medium_hf`, the *pretrained* Whisper Medium run
 through the **same** HuggingFace chunked pipeline as the fine-tuned model. This isolates
 the fine-tuning gain from any decoding/engine differences. The original `openai-whisper`
 number is shown as a secondary reference.

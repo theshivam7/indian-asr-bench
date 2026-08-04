@@ -23,7 +23,7 @@
 #
 # Runs FT + both post-FT HF-pipeline evals (fine-tuned and pretrained-via-HF baseline) in
 # one job so the size's engine-controlled comparison is self-contained. Submit serially
-# (afterany-chained), not in parallel — see hpc/README.md; job_whisper.pbs's fixed log
+# (afterany-chained), not in parallel, see hpc/README.md; job_whisper.pbs's fixed log
 # filename and NSCC's one-job GPU etiquette both assume one job at a time.
 
 DATASET=${DATASET:-tie}

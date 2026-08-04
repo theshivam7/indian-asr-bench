@@ -25,19 +25,19 @@ classified as:
 The short_ref guard is empirically forced, not cosmetic: on Svarah, 1371/6656
 clips are 1-2-word isolated-word elicitation items; without the guard 234 of
 them are flagged content_mismatch, yet on those clips the models DISAGREE with
-each other (inter-hyp distance ~0.89) — the signature of genuine difficulty on
+each other (inter-hyp distance ~0.89), the signature of genuine difficulty on
 decontextualized sub-second words ("tree"->"three", "left"->"lift"), the exact
 opposite of the models-agree/reference-disagrees signature that defines a
 reference artifact (TIE flagged clips: inter-hyp ~0.17).
 
 Four analyses, all reproducible from committed Stage-2 CSVs (no GPU):
 
-1. FULL-CORPUS taxonomy — shares over ALL clips (with Wilson 95% CIs), not just
+1. FULL-CORPUS taxonomy, shares over ALL clips (with Wilson 95% CIs), not just
    the worst-K tail. This is what supports corpus-level claims.
-2. ARTIFACT-ADJUSTED WER — each model's corpus WER on all common clips vs. on
+2. ARTIFACT-ADJUSTED WER, each model's corpus WER on all common clips vs. on
    the unflagged subset. Quantifies how many WER points the benchmark's own
    artifacts add to every model's score (the found-vs-curated headline).
-3. INTER-HYPOTHESIS AGREEMENT — normalized word edit distance BETWEEN model
+3. INTER-HYPOTHESIS AGREEMENT, normalized word edit distance BETWEEN model
    hypotheses vs. hypothesis-to-reference. Models that agree with each other but
    not with the reference (especially when CTC/transducer "cannot-hallucinate"
    witnesses agree with encoder-decoder models) prove the reference is at fault,
@@ -45,7 +45,7 @@ Four analyses, all reproducible from committed Stage-2 CSVs (no GPU):
    with the reference on flagged clips (a train-set contamination probe: an
    enc_dec model agreeing with a *flawed* reference more than the CTC witness
    does would suggest caption memorization).
-4. THRESHOLD SENSITIVITY — artifact share across a grid of classifier
+4. THRESHOLD SENSITIVITY, artifact share across a grid of classifier
    thresholds, showing conclusions do not hinge on the default cut-offs.
 
 The legacy worst-K tail analysis is kept (backwards-comparable with the original
@@ -199,9 +199,10 @@ def consensus_table(pool: pd.DataFrame) -> pd.DataFrame:
     cons = pool.groupby("ID").agg(
         n_models=("model", "nunique"), n_arch=("arch", "nunique"),
         recall_mean=("ref_recall", "mean"), ratio_mean=("length_ratio", "mean"),
-        wer_mean=("wer", "mean"), wer_min=("wer", "min"),
+        wer_mean=("wer", "mean"), wer_min=("wer", "min"), wer_std=("wer", "std"),
         ref_words=("ref_words", "max"),
     ).reset_index()
+    cons["wer_std"] = cons["wer_std"].fillna(0.0)
     cons["category"] = cons.apply(
         lambda r: classify(r["recall_mean"], r["ratio_mean"], r["ref_words"]), axis=1)
     return cons
@@ -259,8 +260,7 @@ def artifact_adjusted_wer(pool: pd.DataFrame, cons: pd.DataFrame) -> pd.DataFram
 def agreement_analysis(pool: pd.DataFrame, cons: pd.DataFrame) -> pd.DataFrame:
     """Per consensus-category: mean normalized inter-hypothesis distance vs.
     mean hypothesis-to-reference WER, plus per-arch-class agreement with the
-    reference. Inter-hyp distance is Levenshtein(S+D+I)/mean(word count) —
-    symmetric, comparable to WER in scale."""
+    reference. Inter-hyp distance is Levenshtein(S+D+I)/mean(word count), symmetric, comparable to WER in scale."""
     hyp = pool.pivot_table(index="ID", columns="model", values="hypothesis", aggfunc="first")
     wer = pool.pivot_table(index="ID", columns="model", values="wer", aggfunc="first")
     arch = {m: MODEL_BY_KEY[m].arch_class for m in hyp.columns}
@@ -375,7 +375,7 @@ def main(dataset: str, mode: str) -> None:
     adjusted = artifact_adjusted_wer(pool, cons)
     print("  computing inter-hypothesis agreement (pairwise edit distances) ...", flush=True)
     agree = agreement_analysis(pool, cons)
-    # Same agreement table under the NAIVE (guard-free) classification — the
+    # Same agreement table under the NAIVE (guard-free) classification, the
     # instrument audit: if the naive flags were true reference faults they would
     # show the models-agree signature; on short-ref corpora they show the opposite.
     cons_naive = cons.drop(columns=["category"]).rename(columns={"category_naive": "category"})
@@ -435,7 +435,7 @@ def main(dataset: str, mode: str) -> None:
                 "hypotheses (all pairs); `cross_arch_dist` = same, restricted to "
                 "(enc_dec|llm) x (ctc|transducer) pairs; `hyp_to_ref_wer` = mean WER "
                 "against the reference. Hypotheses that agree with each other but not "
-                "with the reference localize the fault in the reference — across "
+                "with the reference localize the fault in the reference, across "
                 "architectures that share no decoder or training objective. "
                 "`ref_wer_grounded` vs `ref_wer_free` on flagged clips is a "
                 "contamination probe (free-decoding models matching a flawed reference "

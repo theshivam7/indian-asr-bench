@@ -13,7 +13,7 @@ This folder contains the YouTube caption experiment conducted as part of the Ind
 - Clip-aligned WER: **51.88%** (transcript_clean, n=190)
 - Whisper Medium on same 190 samples: 13.67% → YouTube is **3.8× worse**
 - Low variance (std 8.35%) = consistently poor, not occasionally bad
-- Normalization has near-zero impact (<0.2 pp) — errors are content/vocabulary mismatches, not formatting
+- Normalization has near-zero impact (<0.2 pp), errors are content/vocabulary mismatches, not formatting
 
 ## Contents
 
@@ -34,6 +34,6 @@ results/
 ## How to Re-Run
 
 1. Open `task_code/fetch_youtube_captions_colab.ipynb` in Google Colab
-2. Run all cells — downloads captions with checkpoint support
+2. Run all cells, downloads captions with checkpoint support
 3. Download result → `results/wer_youtube_raw.csv`
 4. Run alignment: `python task_code/align_youtube_captions.py`
