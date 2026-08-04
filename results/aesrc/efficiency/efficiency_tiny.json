@@ -1,0 +1,62 @@
+{
+  "model_key": "tiny",
+  "model_id": "tiny",
+  "display": "Whisper Tiny",
+  "engine": "openai_whisper",
+  "arch_class": "enc_dec",
+  "params_registry": "39M",
+  "dataset": "aesrc",
+  "hf_id": "pengyizhou/accented_english",
+  "hf_revision": "4a80d8388f06368a0fa2a325770bec3492cabd3d",
+  "split": "test",
+  "timestamp_utc": "2026-08-04T07:56:00+00:00",
+  "protocol": {
+    "batch_size": 1,
+    "n_clips_requested": 200,
+    "n_warmup": 3,
+    "seed": 42,
+    "subset_fingerprint": "a0aa7f0e3d06",
+    "rtf_convention": "processing_seconds / audio_seconds; lower is faster, <1 is faster than real time",
+    "timed_region": "engine transcribe call including its audio decode and temp WAV write",
+    "gpu_memory_convention": "torch.cuda.max_memory_allocated and max_memory_reserved, peak since the post-warmup reset"
+  },
+  "model_load_seconds": 0.432,
+  "param_count": 37184640,
+  "metrics": {
+    "n_clips_timed": 200,
+    "n_clips_with_duration": 200,
+    "audio_seconds_total": 877.47,
+    "processing_seconds_total": 40.707,
+    "latency_mean_s": 0.2035,
+    "latency_p50_s": 0.2016,
+    "latency_p90_s": 0.2335,
+    "latency_p95_s": 0.2463,
+    "latency_min_s": 0.1406,
+    "latency_max_s": 0.6443,
+    "rtf": 0.0464,
+    "rtf_p50": 0.0474,
+    "throughput_audio_s_per_s": 21.556,
+    "peak_gpu_allocated_mib": 205.4,
+    "peak_gpu_reserved_mib": 244.0
+  },
+  "hardware": {
+    "hostname": "x1000c1s1b0n0",
+    "platform": "Linux-4.18.0-553.125.1.el8_10.x86_64-x86_64-with-glibc2.28",
+    "python": "3.10.20",
+    "cpu_count": 128,
+    "device": "cuda",
+    "torch": "2.5.1",
+    "torch_cuda": "11.8",
+    "cudnn": 90100,
+    "gpu_name": "NVIDIA A100-SXM4-40GB",
+    "gpu_count": 1,
+    "gpu_total_mem_mib": 40442.4,
+    "gpu_capability": "8.0",
+    "nvidia_driver": "570.124.06"
+  },
+  "per_clip_csv": "efficiency_tiny_clips.csv",
+  "decode_kwargs": {
+    "language": "en",
+    "engine_defaults": "openai-whisper"
+  }
+}
