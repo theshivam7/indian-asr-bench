@@ -334,58 +334,6 @@ Conda specs are in [`environments/`](environments/), PBS jobs and the runbook in
 
 ---
 
-## Troubleshooting
-
-Every entry below is a failure that actually occurred while building this benchmark, not a
-hypothetical.
-
-**`Feature type 'List' not found` when loading a dataset.** Your `datasets` is on 3.x and the
-cache was written by 4.x. The two are not interchangeable and the error names neither. Pin the
-version in `requirements.txt`: `pip install 'datasets==4.8.5'`.
-
-**`ImportError: To support encoding audio data, please install 'torchcodec'` when running
-pytest.** `datasets` 4.x routes `Audio` encoding through `torchcodec`, which ships with the
-engine environments rather than `requirements.txt`. The affected tests skip themselves in an
-analysis-only environment; if you want them to run, install an engine environment
-(`bash whisper_asr/setup.sh`). Nothing in the analysis pipeline needs it, because
-`utils/io_helpers.raw_audio_column` reads the arrow column directly to bypass the feature.
-
-**`conda env create -f environments/parakeet.yaml` fails to solve.** Channel drift has made the
-MKL / llvm-openmp / mkl_random build hashes in that spec and in `qwen3.yaml` mutually
-unsatisfiable. Use [`environments/resolved/`](environments/resolved/) instead, which carries the
-exact package sets captured from the cluster that produced the published results.
-
-**`torch.cuda.is_available()` returns `False` inside a job.** A pip-installed torch does not
-reliably see the GPU on an A100 cluster. The conda build string has to be pinned:
-`pytorch-2.5.1-py3.10_cuda11.8_cudnn9.1.0_0`, which `environments/resolved/whisper.explicit.txt`
-already carries. On a login node this is expected and uninformative, since login nodes have no
-GPU.
-
-**Whisper produces empty transcripts for some clips, giving ~100% WER on those.** `openai-whisper`
-shells out to `ffmpeg` per clip and a missing binary fails silently per clip rather than crashing
-the run. Check with `conda run -n whisper which ffmpeg`, and install with
-`conda install -n whisper -c conda-forge ffmpeg`.
-
-**`Disk quota exceeded` on an HPC cluster.** Three separate caches default into `$HOME`:
-`HF_HOME`/`HF_DATASETS_CACHE`, `XDG_CACHE_HOME` (openai-whisper's own cache, which does not
-follow `HF_HOME`), and `CONDA_PKGS_DIRS`. The PBS jobs redirect all three; running by hand does
-not. See [`hpc/NSCC_RUNBOOK.md`](hpc/NSCC_RUNBOOK.md).
-
-**Your cluster account gets blocked.** NSCC's fair-share monitor kills processes on login nodes
-automatically, and repeated violations can block an account. Anything that loads a model or
-decodes audio belongs in a job, including a thirty-second probe. Request an interactive node with
-`qsub -I` first.
-
-**Svarah downloads fail with 401 or 403.** It is a gated dataset. Run `hf auth login` once, or
-export `HF_TOKEN`, before submitting.
-
-**Numbers do not match the committed results.** Stage 1 decoding uses temperature fallback and is
-stochastic, so re-transcribing will not reproduce transcripts exactly. That is why Stage 1 is
-committed and treated as the anchor. Stages 2 and 3 are deterministic: if they disagree with the
-committed files, that is a real regression and CI will catch it.
-
----
-
 ## Repository structure
 
 ```
