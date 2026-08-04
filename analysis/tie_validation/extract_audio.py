@@ -7,9 +7,9 @@ into --out-dir, and rewrites the CSV's audio_path column to the WAVs' absolute
 paths.
 
 Usage (on NSCC, inside a qsub -I session, whisper_medium_ft env active):
-    python extract_review_audio.py \\
-        --csv human_review_common_high_wer.csv \\
-        --out-dir human_review_audio
+    python extract_audio.py \\
+        --csv review_sheet.csv \\
+        --out-dir audio
 """
 
 import argparse
@@ -18,13 +18,13 @@ import sys
 
 import pandas as pd
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--csv", required=True)
-    ap.add_argument("--out-dir", default="human_review_audio")
+    ap.add_argument("--out-dir", default="audio")
     args = ap.parse_args()
 
     from utils.datasets import load_eval, extract_ids
