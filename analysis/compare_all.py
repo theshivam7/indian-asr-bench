@@ -2,7 +2,7 @@
 Stage 3: cross-model comparison tables + quick-look analysis charts (dataset-aware).
 
 Model list, chart subset, display names, colours, modes and per-dataset subgroup
-breakdowns all come from utils.registry — nothing is hard-coded here. Publication
+breakdowns all come from utils.registry, nothing is hard-coded here. Publication
 figures live in paper/figures/make_paper_figures.py; these PNGs are for quick
 inspection. Grouped-bar charts colour each model by its fixed registry colour, so a
 model keeps the same colour in every figure (colour follows the entity, not rank).
@@ -78,7 +78,7 @@ def main(dataset: str) -> None:
     out_dir = analysis_dir(dataset)
 
     print("=" * 70)
-    print(f"STAGE 3: comparison — {spec.display} ({dataset})")
+    print(f"STAGE 3: comparison: {spec.display} ({dataset})")
     print("=" * 70)
 
     # ---- 1. corpus WER + CER matrix -------------------------------------------
@@ -193,7 +193,7 @@ def main(dataset: str) -> None:
                      lambda m, md: float(df_summary.loc[df_summary.model == m, md].values[0])
                      if pd.notna(df_summary.loc[df_summary.model == m, md].values[0]) else 0.0)
         ax.set_xticklabels(modes, rotation=15); ax.set_ylabel("WER (%)"); ax.legend(fontsize=8)
-        ax.set_title(f"WER by model and mode — {spec.display}")
+        ax.set_title(f"WER by model and mode: {spec.display}")
         fig.tight_layout(); fig.savefig(os.path.join(out_dir, "wer_by_model_and_mode.png")); plt.close(fig)
 
     # per-utterance distribution (small multiples)
@@ -214,8 +214,8 @@ def main(dataset: str) -> None:
             ax.set_title(MODEL_DISPLAY.get(m, m), fontsize=10); ax.grid(axis="y", alpha=0.3)
         for j in range(len(dm), len(axes)):
             axes[j].axis("off")
-        fig.supxlabel("WER (%) — bin width 5%"); fig.supylabel("% of utterances")
-        fig.suptitle(f"Per-utterance WER distribution ({PRIMARY_MODE}) — {spec.display}", fontsize=12)
+        fig.supxlabel("WER (%), bin width 5%"); fig.supylabel("% of utterances")
+        fig.suptitle(f"Per-utterance WER distribution ({PRIMARY_MODE}): {spec.display}", fontsize=12)
         fig.tight_layout(); fig.savefig(os.path.join(out_dir, "wer_distribution.png")); plt.close(fig)
 
     # by duration
@@ -224,7 +224,7 @@ def main(dataset: str) -> None:
         fig, ax = plt.subplots(figsize=(10, 6))
         _grouped_bar(ax, buckets, chart_models, lambda m, b: dur.get(b, {}).get(m, 0))
         ax.set_xticklabels(buckets); ax.set_ylabel("WER (%)"); ax.legend(fontsize=8)
-        ax.set_title(f"WER by duration ({PRIMARY_MODE}) — {spec.display}")
+        ax.set_title(f"WER by duration ({PRIMARY_MODE}): {spec.display}")
         fig.tight_layout(); fig.savefig(os.path.join(out_dir, "wer_by_duration.png")); plt.close(fig)
 
     # one chart per subgroup dim
@@ -242,11 +242,11 @@ def main(dataset: str) -> None:
         fig, ax = plt.subplots(figsize=(10, 6))
         _grouped_bar(ax, groups, chart_models, lambda m, g: gd.get(g, {}).get(m, 0))
         ax.set_xticklabels(groups, rotation=15); ax.set_ylabel("WER (%)"); ax.legend(fontsize=8)
-        ax.set_title(f"WER by {label} ({PRIMARY_MODE}) — {spec.display}")
+        ax.set_title(f"WER by {label} ({PRIMARY_MODE}): {spec.display}")
         fig.tight_layout(); fig.savefig(os.path.join(out_dir, f"wer_by_{col}.png")); plt.close(fig)
 
     # ---- 4. summary report + top20 aggregation --------------------------------
-    lines = [f"# WER Evaluation Summary — {spec.display}", "",
+    lines = [f"# WER Evaluation Summary: {spec.display}", "",
              "## Corpus WER (%) by model and mode (+ primary-mode CER)", "",
              build_md_table(df_summary), "", "## Best model per mode", ""]
     for mode in modes:

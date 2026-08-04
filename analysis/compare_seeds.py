@@ -16,10 +16,13 @@ Baseline for each size is the registry HF key (tiny_hf / small_hf / medium_hf), 
 engine-controlled baseline the single-seed study uses.
 
 Usage:
-    python analysis/compare_seeds.py --dataset aesrc
+    python analysis/compare_seeds.py --dataset aesrc --mode all   # both modes (recommended)
+    python analysis/compare_seeds.py --dataset aesrc              # primary mode only
     python analysis/compare_seeds.py --dataset aesrc --mode whisper_norm
 
-Writes results/<dataset>/analysis/finetune_seeds_<mode>.csv and .md
+Writes, per mode, results/<dataset>/analysis/:
+    finetune_seeds_<mode>.csv / .md        mean, SD, min, max per size
+    finetune_seeds_<mode>_per_seed.csv     one row per run, the evidence behind the mean
 """
 
 import argparse
@@ -38,6 +41,11 @@ from utils.registry import MODEL_BY_KEY, PRIMARY_MODE
 
 SIZES = ("tiny", "small", "medium")
 DISPLAY = {"tiny": "Whisper Tiny", "small": "Whisper Small", "medium": "Whisper Medium"}
+
+# The two modes the seed study reports: the pre-registered primary one, and the
+# community-standard normalizer it is cross-checked against. `--mode all` writes both,
+# which is the recommended way to run this; see main().
+SEED_MODES = (PRIMARY_MODE, "whisper_norm")
 
 
 def corpus_wer(path: str) -> float | None:
@@ -77,8 +85,16 @@ def baseline_wer(dataset: str, mode: str, size: str) -> float | None:
     return corpus_wer(os.path.join(stage2_dir(dataset), mode, f"wer_{key}_{mode}.csv"))
 
 
-def build_rows(dataset: str, mode: str) -> list[dict]:
-    rows = []
+def build_rows(dataset: str, mode: str) -> tuple[list[dict], list[dict]]:
+    """Returns (aggregate rows, per-seed rows).
+
+    The per-seed rows are the evidence behind the aggregate: a claim like "every one of
+    the 18 runs improved on its own baseline" is not checkable against mean/SD/min/max
+    alone, and a reader who wants to recompute the SD needs the individual deltas. They
+    cost nothing to emit, so they are written alongside rather than discarded.
+    """
+    rows: list[dict] = []
+    per_seed: list[dict] = []
     for size in SIZES:
         tables = find_seed_tables(dataset, mode, size)
         if not tables:
@@ -92,8 +108,17 @@ def build_rows(dataset: str, mode: str) -> list[dict]:
                 continue
             used_seeds.append(s)
             ft_wers.append(w)
-            if base is not None:
-                deltas.append(w - base)
+            d = (w - base) if base is not None else None
+            if d is not None:
+                deltas.append(d)
+            per_seed.append({
+                "size": size,
+                "display_name": DISPLAY.get(size, size),
+                "seed": s,
+                "hf_baseline_wer": round(base, 3) if base is not None else None,
+                "ft_wer": round(w, 3),
+                "delta_pp": round(d, 3) if d is not None else None,
+            })
 
         # Report the seeds that actually contributed, not every file on disk. A seed
         # whose table is empty or malformed is dropped from ft_wers above, and listing
@@ -127,10 +152,10 @@ def build_rows(dataset: str, mode: str) -> list[dict]:
             "delta_pp_min": round(float(arr.min()), 3) if deltas else None,
             "delta_pp_max": round(float(arr.max()), 3) if deltas else None,
         })
-    return rows
+    return rows, per_seed
 
 
-def to_markdown(rows: list[dict], dataset: str, mode: str) -> str:
+def to_markdown(rows: list[dict], per_seed: list[dict], dataset: str, mode: str) -> str:
     lines = [
         f"# Multi-seed fine-tuning: {dataset} ({mode})",
         "",
@@ -152,6 +177,25 @@ def to_markdown(rows: list[dict], dataset: str, mode: str) -> str:
             f"{fmt(r['ft_wer_mean'])}% | {fmt(r['delta_pp_mean'])} | {fmt(r['delta_pp_sd'])} | "
             f"{fmt(r['delta_pp_min'])} | {fmt(r['delta_pp_max'])} |"
         )
+    if per_seed:
+        lines += [
+            "",
+            "## Per-seed runs",
+            "",
+            "The individual runs behind the means above. Listed so the aggregate is "
+            "checkable: whether every run improved on its baseline, and how the SD was "
+            "computed, are both questions the summary table cannot answer on its own.",
+            "",
+            "| Size | Seed | Baseline WER | FT WER | Δ (pp) |",
+            "|---|:---:|:---:|:---:|:---:|",
+        ]
+        fmt = lambda v: "" if v is None else f"{v:g}"
+        for r in per_seed:
+            lines.append(
+                f"| {r['display_name']} | {r['seed']} | {fmt(r['hf_baseline_wer'])}% | "
+                f"{fmt(r['ft_wer'])}% | {fmt(r['delta_pp'])} |"
+            )
+
     lines.append("")
     single = [r for r in rows if r["n_seeds"] < 2]
     if single:
@@ -165,32 +209,49 @@ def to_markdown(rows: list[dict], dataset: str, mode: str) -> str:
     return "\n".join(lines)
 
 
-def main(dataset: str, mode: str) -> None:
-    rows = build_rows(dataset, mode)
+def run_one(dataset: str, mode: str) -> bool:
+    rows, per_seed = build_rows(dataset, mode)
     if not rows:
         print(f"[compare_seeds] no per-seed tables under {stage2_dir(dataset)}/{mode}")
         print("  Expected files named wer_<size>_%s_ft_seed<N>_%s.csv" % (dataset, mode))
         print("  Produce them with: bash finetune/run_seeds.sh --size tiny --dataset %s" % dataset)
-        return
+        return False
 
     out_dir = analysis_dir(dataset)
     csv_path = os.path.join(out_dir, f"finetune_seeds_{mode}.csv")
     md_path = os.path.join(out_dir, f"finetune_seeds_{mode}.md")
+    seed_path = os.path.join(out_dir, f"finetune_seeds_{mode}_per_seed.csv")
     pd.DataFrame(rows).to_csv(csv_path, index=False)
+    pd.DataFrame(per_seed).to_csv(seed_path, index=False)
     with open(md_path, "w") as fh:
-        fh.write(to_markdown(rows, dataset, mode))
+        fh.write(to_markdown(rows, per_seed, dataset, mode))
 
     for r in rows:
         sd = r["delta_pp_sd"]
         print(f"  {r['display_name']:16} n={r['n_seeds']}  delta {r['delta_pp_mean']} pp"
               f"  SD {sd if sd is not None else 'n/a (single seed)'}")
-    print(f"[compare_seeds] {dataset}/{mode}: {len(rows)} sizes -> {csv_path}")
+    print(f"[compare_seeds] {dataset}/{mode}: {len(rows)} sizes, {len(per_seed)} runs -> {csv_path}")
     print(f"                                       {md_path}")
+    print(f"                                       {seed_path}")
+    return True
+
+
+def main(dataset: str, mode: str) -> None:
+    # "all" writes every mode in one pass. Running one mode at a time is how the two
+    # published tables drifted apart before: re-running the default command silently
+    # left the whisper_norm table stale, with nothing in either file to show it.
+    modes = list(SEED_MODES) if mode == "all" else [mode]
+    for i, m in enumerate(modes):
+        if i:
+            print()
+        run_one(dataset, m)
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Aggregate multi-seed fine-tuning runs.")
     ap.add_argument("--dataset", default="aesrc", help="dataset key (default: aesrc)")
-    ap.add_argument("--mode", default=PRIMARY_MODE, help=f"scoring mode (default: {PRIMARY_MODE})")
+    ap.add_argument("--mode", default=PRIMARY_MODE,
+                    help=f"scoring mode, or 'all' for {' + '.join(SEED_MODES)} "
+                         f"(default: {PRIMARY_MODE})")
     args = ap.parse_args()
     main(args.dataset, args.mode)

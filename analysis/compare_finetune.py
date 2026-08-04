@@ -84,9 +84,9 @@ DATASET_BLURBS = {
         summary_label="official split",
         train_desc=[
             "Fine-tuned on the `raianand/TIE_shorts` **train** split (7,884 raw clips; ~7,200 remain",
-            "after dropping empty transcripts, clips >30s, and clips with no embedded audio — see the",
+            "after dropping empty transcripts, clips >30s, and clips with no embedded audio, see the",
             "run log for the exact realized count), best checkpoint selected on the **validation**",
-            "split, evaluated on the **test** split (986 clips) — the same test set used for every",
+            "split, evaluated on the **test** split (986 clips), the same test set used for every",
             "pretrained model in this benchmark.",
         ],
         speaker_caveat=[
@@ -100,7 +100,7 @@ DATASET_BLURBS = {
         train_desc=[
             "Fine-tuned on the AESRC2020 **Indian** train split (`pengyizhou/accented_english`,",
             "accent == INDIAN: 12,820 raw clips, 17.5h), best checkpoint selected on the",
-            "**validation** split, evaluated on the **test** split (1,731 clips) — the same test",
+            "**validation** split, evaluated on the **test** split (1,731 clips), the same test",
             "set used for every pretrained model on this dataset.",
         ],
         speaker_caveat=[
@@ -181,10 +181,10 @@ def fmt_delta(base: float, ft: float) -> tuple[str, str]:
 def run_pair(pair: dict) -> dict:
     """Generate the full pretrained-vs-fine-tuned report + charts for one model size.
 
-    Always returns a dict with key/display_name/params plus a "headline" entry — that
+    Always returns a dict with key/display_name/params plus a "headline" entry, that
     entry is a small dict of headline-comparison stats (for the cross-size capacity
     summary) if both the HF baseline and fine-tuned results were available, else None.
-    The returned stats are NOT written into this pair's own .md — they exist only to
+    The returned stats are NOT written into this pair's own .md, they exist only to
     feed finetune_capacity_summary.{md,csv} below, so medium's committed report text
     is unaffected by this addition.
     """
@@ -198,16 +198,16 @@ def run_pair(pair: dict) -> dict:
     suffix = out_stem[len("finetune_comparison"):]   # "" for medium, "_tiny"/"_small" otherwise
 
     print("=" * 70)
-    print(f"PRETRAINED vs FINE-TUNED — {display_name}")
+    print(f"PRETRAINED vs FINE-TUNED: {display_name}")
     print("=" * 70)
 
     blurb = DATASET_BLURBS[DATASET]
     lines = [
-        f"# {display_name} — Pretrained vs Fine-tuned",
+        f"# {display_name}: Pretrained vs Fine-tuned",
         "",
         *blurb["train_desc"],
         "",
-        f"**Headline comparison** is against `{baseline}` — the *pretrained* {display_name} run",
+        f"**Headline comparison** is against `{baseline}`, the *pretrained* {display_name} run",
         "through the **same** HuggingFace chunked pipeline as the fine-tuned model. This isolates",
         "the fine-tuning gain from any decoding/engine differences. The original `openai-whisper`",
         "number is shown as a secondary reference.",
@@ -226,7 +226,7 @@ def run_pair(pair: dict) -> dict:
 
     if not have[baseline] or not have[finetuned]:
         print(f"  [SKIP] {display_name}: no scored results yet for '{baseline}' and/or "
-              f"'{finetuned}' — no report written")
+              f"'{finetuned}', no report written")
         return dict(key=key, display_name=display_name, params=params, headline=None)
 
     lines += [
@@ -358,7 +358,7 @@ def run_pair(pair: dict) -> dict:
         losses = (merged[merged["delta"] < -1e-9]
                   .sort_values(["delta", "ID"], ascending=[True, True], kind="stable").head(10))
         if losses.empty:
-            lines.append("| _none_ | — | — | — |")
+            lines.append("| _none_ | n/a | n/a | n/a |")
         for _, r in losses.iterrows():
             lines.append(f"| {r['ID']} | {r['wer_base']*100:.1f}% | {r['wer_ft']*100:.1f}% | "
                          f"+{-r['delta']*100:.1f} pp |")
@@ -405,7 +405,7 @@ def run_pair(pair: dict) -> dict:
             ax.hist(wv, bins=dist_bins, weights=[100.0 / len(wv)] * len(wv),
                     alpha=0.6, label=lab, color=col, edgecolor="white")
             ax.axvline(float(pd.Series(wv).median()), color=col, linestyle="--", linewidth=1.2)
-        ax.set_xlabel("WER (%) — bin width 5%")
+        ax.set_xlabel("WER (%), bin width 5%")
         ax.set_ylabel("% of utterances")
         ax.set_title(f"{display_name}: WER distribution, pretrained vs fine-tuned ({PRIMARY_MODE})")
         ax.legend()
@@ -450,7 +450,7 @@ def main(dataset: str) -> None:
     # --------------- Cross-size capacity summary ---------------
     capacity_rows = [r for r in results if r["headline"]]
     if not capacity_rows:
-        print("\n  [SKIP] capacity summary — no size has both a HF baseline and a fine-tuned result yet")
+        print("\n  [SKIP] capacity summary: no size has both a HF baseline and a fine-tuned result yet")
         print("\nDone.")
         return
 
@@ -458,16 +458,16 @@ def main(dataset: str) -> None:
     p_holm = _holm(pvals) if len(pvals) > 1 else pvals
     summary_label = DATASET_BLURBS[dataset]["summary_label"]
     cap_lines = [
-        f"# Fine-tuning capacity summary — Tiny / Small / Medium ({summary_label})",
+        f"# Fine-tuning capacity summary: Tiny / Small / Medium ({summary_label})",
         "",
         "One official-split fine-tune per model size, each compared against its own",
         "HF-pipeline pretrained baseline.",
         "",
         f"Holm-Bonferroni family = exactly these **{len(capacity_rows)} official-split FT-vs-HF",
-        "tests** (one per size) — kept separate from the headline cross-model pairwise family in",
+        "tests** (one per size), kept separate from the headline cross-model pairwise family in",
         "`statistics_pairwise_transcript_clean.csv` (that family covers PRETRAINED models only;",
         "the fine-tuned variants run through a different decoding engine, so mixing them in would",
-        "confound fine-tuning with an engine change — see `analysis/statistics.py`).",
+        "confound fine-tuning with an engine change, see `analysis/statistics.py`).",
         "",
         "| Size | Params | Pretrained (openai) | HF baseline | Fine-tuned | Δ (paired, speaker-clustered) | 95% CI | p | p (Holm) | n clips | n speakers |",
         "|------|:------:|:--------------------:|:-----------:|:----------:|:-----------------------------:|:------:|:-:|:--------:|:-------:|:----------:|",
@@ -491,8 +491,8 @@ def main(dataset: str) -> None:
 
     # --------------- Pretrained capacity curve (tiny -> large), for context ---------------
     # analyze() is write-free (only analysis/statistics.py's main() writes files) and its
-    # `per_model` entries are UNCONDITIONAL per-model bootstrap CIs — not the pairwise/Holm
-    # family — so pulling them here does not touch or imply anything about the deferred
+    # `per_model` entries are UNCONDITIONAL per-model bootstrap CIs, not the pairwise/Holm
+    # family, so pulling them here does not touch or imply anything about the deferred
     # statistics_pairwise_*.csv regeneration flagged above.
     res = analyze(DATASET, PRIMARY_MODE)
     if res is not None:
@@ -504,7 +504,7 @@ def main(dataset: str) -> None:
                 "",
                 f"Speaker-clustered bootstrap CIs from `analysis/statistics.py:analyze()` "
                 f"(N={res['N']} clips, G={res['G']} {res['cluster_unit']}s, B=2000). Point estimates only "
-                "— no Holm correction applied or needed here (these are per-model CIs, not pairwise tests).",
+                ", no Holm correction applied or needed here (these are per-model CIs, not pairwise tests).",
                 "",
                 "| Model | Params | Corpus WER | 95% CI |",
                 "|-------|:------:|:----------:|:------:|",

@@ -9,7 +9,7 @@ extracts that window, then computes WER identically to Whisper models.
 Alignment strategy:
   - Window size = max(ref_len, int(ref_len * WINDOW_MULTIPLIER))
   - Slide word-by-word over hypothesis
-  - Score each window using Jaccard word overlap with reference (NOT WER — avoids circularity)
+  - Score each window using Jaccard word overlap with reference (NOT WER, avoids circularity)
   - Extract best-matching window
   - Compute WER on that window
 
@@ -57,7 +57,7 @@ WINDOW_MULTIPLIER = 1.5  # aligned window = ref_len * this factor
 def align_hypothesis(ref_text: str, hyp_text: str) -> str:
     """Extract the span of hyp_text that best matches ref_text by word overlap.
 
-    Uses O(M) incremental Jaccard — alignment criterion is word set overlap,
+    Uses O(M) incremental Jaccard, alignment criterion is word set overlap,
     NOT WER, so evaluation and alignment are independent.
 
     Returns the best-matching substring of hyp_text (as a string).
@@ -70,7 +70,7 @@ def align_hypothesis(ref_text: str, hyp_text: str) -> str:
     window_size = max(n_ref, int(n_ref * WINDOW_MULTIPLIER))
 
     if n_hyp <= window_size:
-        return hyp_text  # already short enough — return as-is
+        return hyp_text  # already short enough, return as-is
 
     ref_counter = Counter(ref_words)
 
@@ -152,7 +152,7 @@ print(f"Saved aligned stage1 CSV → {out_path}")
 
 print("\n" + "=" * 70)
 print("WER COMPARISON: full-video vs clip-aligned hypothesis")
-print("(computed on available samples only — 190 with captions)")
+print("(computed on available samples only, 190 with captions)")
 print("=" * 70)
 
 rows_full    = df[available].copy()
@@ -199,9 +199,9 @@ for mode in MODES:
     })
 
     print(f"\n  [{mode}]")
-    print(f"    Full video  — corpus:{stats_f['corpus_wer']*100:.2f}%  "
+    print(f"    Full video, corpus:{stats_f['corpus_wer']*100:.2f}%  "
           f"mean:{stats_f['mean_wer']*100:.2f}%  median:{stats_f['median_wer']*100:.2f}%")
-    print(f"    Clip-aligned — corpus:{stats_a['corpus_wer']*100:.2f}%  "
+    print(f"    Clip-aligned, corpus:{stats_a['corpus_wer']*100:.2f}%  "
           f"mean:{stats_a['mean_wer']*100:.2f}%  median:{stats_a['median_wer']*100:.2f}%")
 
 # ── Save comparison CSV ───────────────────────────────────────────────────────

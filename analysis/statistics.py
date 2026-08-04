@@ -4,7 +4,7 @@ Stage 3 (statistics): bootstrap confidence intervals + paired significance tests
 Computes, per dataset and evaluation mode:
 
   * a 95% bootstrap CI on each model's CORPUS WER (resampling with replacement
-    and recomputing Sum(errors)/Sum(ref_words) — NOT the mean of per-clip WER,
+    and recomputing Sum(errors)/Sum(ref_words), NOT the mean of per-clip WER,
     which is a different, tail-inflated quantity);
   * paired bootstrap significance for every model pair (identical resample
     indices for both models), with Holm–Bonferroni-adjusted p-values.
@@ -15,8 +15,7 @@ resampling clips i.i.d. understates variance and overstates significance
 (TIE: 985 scored clips from 280 speakers, median 3 clips/speaker). Clip-level CIs are
 reported alongside for transparency. Datasets without a speaker id fall back to
 the recording tag embedded in the clip ID when the registry defines
-`cluster_id_regex` (Svarah: 3232 recordings over 6656 clips), else to clip-level
-— each fallback is stated explicitly in the report.
+`cluster_id_regex` (Svarah: 3232 recordings over 6656 clips), else to clip-level, each fallback is stated explicitly in the report.
 
 Consistency guards: duplicate clip IDs raise; a model whose scored table covers
 fewer clips than the common intersection triggers a loud warning (prevents two
@@ -70,7 +69,7 @@ def _load_clip_table(dataset: str, model: str, mode: str) -> pd.DataFrame | None
     if ids.duplicated().any():
         dupes = ids[ids.duplicated()].unique()[:5].tolist()
         raise ValueError(
-            f"[statistics] {path}: {ids.duplicated().sum()} duplicate clip IDs (e.g. {dupes}) — "
+            f"[statistics] {path}: {ids.duplicated().sum()} duplicate clip IDs (e.g. {dupes}), "
             f"per-clip joins would silently misalign. Fix the dataset id column / Stage 1 output."
         )
     errs, words = zip(*(_clip_errors(r, h) for r, h in zip(df["reference"], df["hypothesis"])))
@@ -131,7 +130,7 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
         if len(t) != N:
             print(f"  [WARNING] {m}: scored table has {len(t)} clips but the cross-model "
                   f"intersection is {N}. Its standalone Stage-2 corpus WER covers a DIFFERENT "
-                  f"clip set than the numbers below — do not mix them in the paper.")
+                  f"clip set than the numbers below, do not mix them in the paper.")
 
     ref_words = tables[models[0]].loc[common, "ref_words"].to_numpy()
     E_clip = {m: tables[m].loc[common, "errors"].to_numpy() for m in models}
@@ -151,14 +150,14 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
         labels = np.array([t if isinstance(t, str) and t else f"clip:{cid}"
                            for t, cid in zip(tags, common)])
         cluster_unit = "recording"
-        print(f"  [note] '{dataset}' exposes no speaker id — clustering by the recording "
+        print(f"  [note] '{dataset}' exposes no speaker id, clustering by the recording "
               f"tag extracted from clip IDs ({spec.cluster_id_regex}); this captures "
               f"within-recording correlation but may still understate within-SPEAKER "
               f"correlation (one speaker can contribute several recordings).")
     else:
         labels = np.array([f"clip:{cid}" for cid in common])
         cluster_unit = "clip"
-        print(f"  [note] '{dataset}' exposes no speaker id — falling back to clip-level "
+        print(f"  [note] '{dataset}' exposes no speaker id, falling back to clip-level "
               f"resampling; CIs may understate within-speaker correlation.")
 
     uniq = sorted(set(labels))
@@ -218,7 +217,7 @@ def main(dataset: str, mode: str, B: int) -> None:
     out = analysis_dir(dataset)
 
     if res is None:
-        print(f"[statistics] {spec.display} / {mode}: no scored clip tables found — nothing to analyze.")
+        print(f"[statistics] {spec.display} / {mode}: no scored clip tables found, nothing to analyze.")
         return
 
     per_model, pairwise = res["per_model"], res["pairwise"]
@@ -234,7 +233,7 @@ def main(dataset: str, mode: str, B: int) -> None:
     with open(os.path.join(out, f"statistics_{mode}.md"), "w") as f:
         f.write(f"# Statistical significance: {spec.display}, mode `{mode}`\n\n")
         f.write(f"Corpus WER with 95% bootstrap CI: {B} resamples, seed {SEED}, N={N} clips, "
-                f"resampled by **{unit}** ({G} clusters). Headline (chart) models only — "
+                f"resampled by **{unit}** ({G} clusters). Headline (chart) models only, "
                 f"the fine-tuning study is a separate hypothesis family with its own paired "
                 f"test in `finetune_comparison.md`. ")
         if unit == "speaker":
@@ -244,8 +243,8 @@ def main(dataset: str, mode: str, B: int) -> None:
         elif unit == "recording":
             f.write("No speaker id is exposed for this dataset; resampling clusters on the "
                     "recording tag embedded in the clip filename (chunks of one recording share "
-                    "accent/channel/session). This is not a full speaker id — one speaker can "
-                    "contribute several recordings — so CIs may still understate within-speaker "
+                    "accent/channel/session). This is not a full speaker id, one speaker can "
+                    "contribute several recordings, so CIs may still understate within-speaker "
                     "correlation, but strictly less than clip-level resampling would. Clip-level "
                     "CIs are in the CSV for comparison.\n\n")
         else:

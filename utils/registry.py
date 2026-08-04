@@ -1,11 +1,11 @@
-"""Central registry — the single source of truth for the benchmark.
+"""Central registry, the single source of truth for the benchmark.
 
 Everything the pipeline needs to know about **models**, **datasets**, and
 **evaluation modes** lives here and *only* here. Every other module imports from
 this file; no model list, dataset id, mode name, display string, colour, or
 metadata-column list is defined anywhere else.
 
-This module is deliberately **pure Python** — it imports nothing heavy
+This module is deliberately **pure Python**, it imports nothing heavy
 (no torch / datasets / whisper / jiwer). Both the CPU-only analysis pipeline and
 the GPU inference scripts can import it safely.
 
@@ -172,7 +172,7 @@ class DatasetSpec:
     #                               recover a resampling-cluster tag when no speaker column exists.
     #                               Used by analysis/statistics.py as the bootstrap cluster unit.
     #                               Document per dataset what the tag actually is (recording vs
-    #                               speaker) — the statistics report states it verbatim.
+    #                               speaker), the statistics report states it verbatim.
     audio_undecoded: bool = False  # True -> adapter casts audio_col to Audio(decode=False) on load,
     #                               so accessing it yields the raw {"bytes","path"} storage dict and
     #                               datasets' decode machinery (torchcodec-mandatory in datasets>=4,
@@ -257,7 +257,7 @@ SVARAH = DatasetSpec(
     # Verified 2026-07-03: 3232 distinct tags over 6656 clips, each tag demographically
     # consistent (never >1 gender/age/native-language), chunks of one recording share it.
     # This is a RECORDING id, not a speaker id (the Svarah paper reports 117 speakers),
-    # so recording-level resampling still understates within-speaker correlation — but it
+    # so recording-level resampling still understates within-speaker correlation, but it
     # is strictly less anti-conservative than clip-level.
     cluster_id_regex=r"_(f\d+)_chunk",
     verified=True,
@@ -291,8 +291,8 @@ AESRC = DatasetSpec(
     },
     subgroup_dims=(),                         # accent is constant after filtering; no other dims
     applicable_modes=("transcript_raw", "transcript_clean", "whisper_norm"),
-    license="Unspecified (mirror carries no license; AESRC2020 is Datatang's corpus - "
-            "confirm data-use terms before paper use)",
+    license="Unspecified (mirror carries no license; AESRC2020 is Datatang's corpus. "
+            "Data-use for this study confirmed through our advisor)",
     citation="Shi et al., ICASSP 2021 (arXiv:2102.10233)",
     hf_revision="4a80d8388f06368a0fa2a325770bec3492cabd3d",  # 2026-06-29; predates all runs
     audio_undecoded=True,   # bytes-stored audio: bypass datasets' (torchcodec) decoder entirely

@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing.
 
-## Ways to Contribute
+## Ways to contribute
 
 - **Bug reports**: open a GitHub issue with the error message and steps to reproduce
 - **New model evaluations**: add a new task directory following the existing pattern
@@ -18,10 +18,10 @@ three dataset-namespaced stages: Stage 1 inference → `results/<dataset>/stage1
 (immutable, committed), Stage 2 `normalize_and_score.py` → `results/<dataset>/stage2_processed/`,
 Stage 3 `analysis/*` + `paper/figures/` → `results/<dataset>/analysis/`.
 
-## Adding a New Model
+## Adding a new model
 
 1. Append one `ModelSpec` to `MODEL_SPECS` in `utils/registry.py` (key, display,
-   engine, `model_id`, conda env, `arch_class`, params, a colourblind-safe colour
+   engine, `model_id`, conda env, `arch_class`, params, a colorblind-safe color
    validated with the dataviz palette checker, and sort order).
 2. Add its inference path:
    - reuse an existing engine driver if the engine matches (`whisper_asr/run_whisper.py`,
@@ -39,14 +39,14 @@ The transcription output must land at
 does this for you) and be committed: raw transcripts are the immutable source of
 truth, so any later normalization/metric change recomputes without re-inference.
 
-## Adding a New Dataset
+## Adding a new dataset
 
 Append one `DatasetSpec` to `utils/registry.py` (HF id, canonical column map,
 subgroup dims, applicable modes). No other file changes; the adapter
 (`utils/datasets.py`) validates the schema and everything after Stage 1 is
 dataset-agnostic.
 
-## Code Style
+## Code style
 
 - Python 3.10+, PEP 8
 - Type hints on all function signatures
@@ -61,7 +61,7 @@ dataset-agnostic.
 4. Run a quick syntax check: `python -m py_compile utils/*.py analysis/*.py whisper_asr/*.py parakeet/*.py qwen3/*.py`
 5. Open a PR with a clear description of what changed and why
 
-## Reporting Issues
+## Reporting issues
 
 Please include:
 - Python version and OS

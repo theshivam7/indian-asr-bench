@@ -4,7 +4,7 @@ See PROTOCOL.md. Reads the full-corpus consensus table written by
 analysis/error_analysis.py plus the per-model Stage-2 tables, draws the four
 strata (seeded), and writes into analysis/validation/<dataset>/:
 
-    validation_manifest.csv   item -> clip ID, stratum, predicted category (KEY — do not
+    validation_manifest.csv   item -> clip ID, stratum, predicted category (KEY, do not
                               show to the annotator)
     annotation_sheet.csv      item, audio file, reference, empty label/notes columns
                               (randomized order, blind)
@@ -51,7 +51,7 @@ def main() -> None:
 
     cons_path = os.path.join(analysis_dir(args.dataset), f"error_analysis_full_{args.mode}.csv")
     if not os.path.exists(cons_path):
-        sys.exit(f"[validation] {cons_path} not found — run analysis/error_analysis.py first.")
+        sys.exit(f"[validation] {cons_path} not found, run analysis/error_analysis.py first.")
     cons = pd.read_csv(cons_path)
     cons["ID"] = cons["ID"].astype(str)
 
@@ -132,7 +132,7 @@ def main() -> None:
     missing = 0
     for item, cid in zip(manifest["item"], manifest["ID"]):
         if cid not in pos:
-            print(f"  [WARN] clip {cid} not found in the eval split — skipped")
+            print(f"  [WARN] clip {cid} not found in the eval split, skipped")
             missing += 1
             continue
         audio_to_wav_16k(ds[pos[cid]][dspec.audio_col], os.path.join(audio_dir, f"{item}.wav"))

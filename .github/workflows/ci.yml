@@ -1,0 +1,98 @@
+name: CI
+
+# Guards the two properties this repository claims: that the committed numbers are the
+# numbers the code produces, and that Stage 2 rebuilds exactly from the committed Stage-1
+# transcripts. Both are CPU-only and need no GPU, no dataset download and no HF token,
+# because Stage 1 is committed. That is the whole point of the pipeline split.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: tests (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install analysis dependencies
+        # requirements.txt is the CPU-only Stage 2/3 set. The engine stacks (torch, NeMo,
+        # Qwen3) are deliberately absent: every module that needs torch imports it lazily,
+        # so nothing here pulls a multi-gigabyte wheel.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Byte-compile every tracked source file
+        run: |
+          python -m py_compile $(git ls-files '*.py')
+
+      - name: Run the test suite
+        # Pins the normalization and WER contracts, registry integrity, the committed
+        # headline numbers, and the multi-seed aggregation guards.
+        run: pytest tests/ -q
+
+  reproducibility:
+    name: stage 2 rebuilds from committed stage 1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install analysis dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Re-score every dataset from the committed transcripts
+        run: |
+          for ds in tie svarah aesrc; do
+            echo "::group::normalize_and_score --dataset $ds"
+            python normalize_and_score.py --dataset "$ds"
+            echo "::endgroup::"
+          done
+
+      - name: Re-aggregate the multi-seed study
+        run: python analysis/compare_seeds.py --dataset aesrc --mode all
+
+      - name: Assert the committed scores are exactly what the code produces
+        # Scoring is deterministic, so any diff means the committed results and the code
+        # have drifted apart. Restricted to CSVs: the .md reports carry prose that is edited
+        # by hand, and PNGs differ on matplotlib metadata alone.
+        run: |
+          if ! git diff --exit-code --stat -- \
+              'results/*/stage2_processed/**/*.csv' \
+              'results/*/analysis/finetune_seeds_*.csv'; then
+            echo "::error::Committed scores do not match a fresh run from the committed Stage-1 transcripts."
+            echo "Regenerate with: python normalize_and_score.py --dataset <ds>"
+            git diff --stat -- 'results/*/stage2_processed/**/*.csv' 'results/*/analysis/finetune_seeds_*.csv'
+            exit 1
+          fi
+          echo "Stage 2 rebuilt byte-identical for all three datasets."

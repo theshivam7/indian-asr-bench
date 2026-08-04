@@ -2,7 +2,7 @@
 """Fine-tune Whisper on a registry dataset using a step-based training recipe.
 
 Adapted from an externally supplied reference script (`step4_train_whisper.py`) for the
-tiny/small capacity study — see results/tie/analysis/findings_tiny_small_ft.md. Kept
+tiny/small capacity study, see results/tie/analysis/findings_tiny_small_ft.md. Kept
 faithful to the source script's structure and hyperparameters; the substantive changes are
 the data source (TIE_shorts via HF, not local JSONL+wav manifests) and the disclosed
 additions below, needed for this to produce a model our pipeline can evaluate.
@@ -11,7 +11,7 @@ Recipe (verbatim from the source script): STEP-based training (not epoch-based, 
 finetune/finetune_medium.py's medium study), max_steps=2000, warmup_steps=100,
 lr=1e-5, batch=8, grad_accum=4 (effective batch 32), fp16, eval/save every 200 steps,
 greedy predict_with_generate, checkpoint-selection WER computed with OpenAI's
-EnglishTextNormalizer — NOT this project's `transcript_clean` normalizer used by
+EnglishTextNormalizer, NOT this project's `transcript_clean` normalizer used by
 finetune.py's medium study. This is a disclosed recipe difference, not a bug; see the
 findings report for the full list of deltas vs the medium recipe (effective batch 32 vs
 16, fp16 vs bf16, no SpecAugment, no early stopping, different selection-metric normalizer).
@@ -19,14 +19,14 @@ findings report for the full list of deltas vs the medium recipe (effective batc
 Disclosed additions (the source script lacked these; needed for a usable, comparable model):
   - load_best_model_at_end + metric_for_best_model="wer": the source script has no
     best-checkpoint selection, so training would return the LAST checkpoint (~epoch 8-9 at
-    max_steps=2000 on TIE's ~7.2k-clip train set) rather than the best one — risky given the
+    max_steps=2000 on TIE's ~7.2k-clip train set) rather than the best one, risky given the
     medium study's finding that Whisper FT best-checkpoints on this dataset arrive at epoch 1.
   - explicit seed (--seed, default 42 = Trainer's own default; made explicit rather than
     implicit). The seed is also applied to python/numpy/torch before the model is built
     (utils.finetune_data.seed_everything) and passed as data_seed, so a whole run is
     reproducible from one number. See --seed below for the multi-seed study.
   - TIE-specific filtering (empty transcript / >30s / no embedded audio) via
-    utils.finetune_data.filter_tie_split — the source script assumed pre-filtered JSONL
+    utils.finetune_data.filter_tie_split, the source script assumed pre-filtered JSONL
     manifests.
   - trainer.save_model()/processor.save_pretrained() to the output dir root: the source
     script left only rolling `checkpoint-N` dirs; our downstream eval (evaluate_finetuned.py)
@@ -35,17 +35,17 @@ Disclosed additions (the source script lacked these; needed for a usable, compar
     script only clears forced_decoder_ids and suppress_tokens, but never sets language/task on
     generation_config. Since the base checkpoints are multilingual (not .en), an unset
     generation_config.language leaves generate() free to fall back to language
-    auto-detection during predict_with_generate eval — which could silently corrupt the
+    auto-detection during predict_with_generate eval, which could silently corrupt the
     very WER metric checkpoint selection depends on. This is the one place we deviate from
     "keep the recipe verbatim": it's the standard step in every published Whisper
     fine-tuning recipe (including finetune_medium.py's own medium study) and its absence risks the
     whole run's checkpoint selection, not just a cosmetic recipe difference.
 
 Datasets: --dataset selects any registry dataset with train+validation splits.
-    tie   (default) — loads TIE_shorts directly, preserving the original capacity-study
+    tie   (default), loads TIE_shorts directly, preserving the original capacity-study
           code path byte-for-byte (TIE's validation split has no duration column, so it
           cannot go through the adapter's schema validation).
-    aesrc — loads via utils.datasets.load_split, which applies the registry's
+    aesrc, loads via utils.datasets.load_split, which applies the registry's
           accent == "INDIAN" filter and schema/ID validation. All three sizes
           (tiny/small/medium) use this same recipe on AESRC. Note: AESRC's validation
           split shares the train split's 38 speakers, so checkpoint-selection WER
@@ -62,7 +62,7 @@ Usage:
 
 CLI (matches the source script's flags, plus --dataset/--base-model/--output-dir/--seed/--max-train-samples):
     --max-steps (2000)  --lr (1e-5)  --batch-size (8)  --grad-accum (4)  --seed (42)
-    --max-train-samples (unset)  — subset training data for a quick smoke test
+    --max-train-samples (unset), subset training data for a quick smoke test
 
 Multi-seed study: one seed cannot bound run-to-run variance, so each size is trained
 across several seeds and reported as mean +/- standard deviation. Drive that with

@@ -101,6 +101,15 @@ Overridable training knobs: `FT_EPOCHS`, `FT_BATCH`, `FT_GRAD_ACCUM`, `FT_LR`, `
   full re-run. After a pure normalization/metric change, `job_score.pbs`
   (CPU) recomputes everything from the committed transcripts with no GPU.
 - Scripts are resumable: re-submitting picks up from the last checkpoint.
+- **Run provenance:** each Stage-1 run writes
+  `results/<dataset>/stage1_raw_transcripts/wer_<model>_manifest.json` recording the
+  pinned dataset revision, package versions, host, timing and the code commit. The
+  commit comes from `GIT_COMMIT`, which `submit_all.sh` resolves on the login node and
+  forwards, because `git` is not on PATH on every compute node. Manifests written
+  before that was added carry an empty `git_commit`; for those runs, provenance is the
+  commit that added the transcript to git history. If you submit a job by hand rather
+  than through `submit_all.sh`, pass `-v GIT_COMMIT=$(git rev-parse HEAD),...` so the
+  field is not blank.
 
 ## Adapting to SLURM
 

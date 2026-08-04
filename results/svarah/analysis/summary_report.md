@@ -1,4 +1,4 @@
-# WER Evaluation Summary — Svarah
+# WER Evaluation Summary: Svarah
 
 ## Corpus WER (%) by model and mode (+ primary-mode CER)
 

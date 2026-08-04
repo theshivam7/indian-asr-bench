@@ -1,4 +1,4 @@
-# WER Evaluation Summary — AESRC2020 (Indian)
+# WER Evaluation Summary: AESRC2020 (Indian)
 
 ## Corpus WER (%) by model and mode (+ primary-mode CER)
 

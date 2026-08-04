@@ -30,7 +30,7 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 # --------------------------------------------------------------------------- #
-# Normalization contract (applied symmetrically to ref + hyp — must not drift).
+# Normalization contract (applied symmetrically to ref + hyp, must not drift).
 # --------------------------------------------------------------------------- #
 def test_custom_normalizer_contract():
     assert normalize_text("1st") == "first"                # ordinal -> word
@@ -86,7 +86,7 @@ def test_corpus_cer_and_diagnostics():
 
 
 # --------------------------------------------------------------------------- #
-# Registry integrity — the single source of truth must stay self-consistent.
+# Registry integrity, the single source of truth must stay self-consistent.
 # --------------------------------------------------------------------------- #
 def test_registry_integrity():
     assert registry.PRIMARY_MODE in registry.ALL_MODES
@@ -144,7 +144,7 @@ def test_dataset_modes_reference_valid_roles():
 
 
 # --------------------------------------------------------------------------- #
-# Regression gate — committed headline corpus-WER values (transcript_clean).
+# Regression gate, committed headline corpus-WER values (transcript_clean).
 # Skips gracefully if Stage 2 outputs aren't present.
 # --------------------------------------------------------------------------- #
 EXPECTED_TIE_WER = {

@@ -61,7 +61,7 @@ def has_usable_text(transcript) -> bool:
 def within_duration(dur, max_seconds: float = MAX_AUDIO_SECONDS) -> bool:
     # Fail closed on missing/unparseable duration: keeping such a clip risks pairing
     # 30s-truncated audio (the feature extractor's hard cap) with its full, untruncated
-    # transcript. Fixed 2026-07-08 during the tiny/small capacity-study audit — historical
+    # transcript. Fixed 2026-07-08 during the tiny/small capacity-study audit, historical
     # runs (medium's official/disjoint/size-matched fine-tunes) predate this fix and are
     # documented as-run.
     try:
@@ -187,9 +187,8 @@ def make_prepare_dataset(processor, raw_audio_column):
     """Return a `.map(..., input_columns=["Transcript"], with_indices=True)` function.
 
     raw_audio_column is the dataset's raw arrow "audio" ChunkedArray (utils.io_helpers.
-    raw_audio_column). We pull each row's audio by index directly from arrow storage —
-    bypassing datasets' Audio feature/decode entirely (datasets>=4.0 mandates torchcodec
-    for that, a fragile torch/ffmpeg ABI dependency) — then resample to 16 kHz.
+    raw_audio_column). We pull each row's audio by index directly from arrow storage, bypassing datasets' Audio feature/decode entirely (datasets>=4.0 mandates torchcodec
+    for that, a fragile torch/ffmpeg ABI dependency), then resample to 16 kHz.
     input_columns=["Transcript"] keeps .map() from formatting the "audio" column at all
     while building each row, same trick already used for the .filter() calls above.
     """
@@ -236,7 +235,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             labels_batch.attention_mask.ne(1), -100
         )
 
-        # If BOS was prepended by the tokenizer, drop it — the model prepends it itself.
+        # If BOS was prepended by the tokenizer, drop it, the model prepends it itself.
         if (labels[:, 0] == self.decoder_start_token_id).all().cpu().item():
             labels = labels[:, 1:]
 

@@ -1,5 +1,5 @@
 """
-Stage 3 (entity analysis): Named/numeric Entity Error Rate — Svarah use-cases only.
+Stage 3 (entity analysis): Named/numeric Entity Error Rate. Svarah use-cases only.
 
 Svarah's use-case register (grocery orders, digital payments, government services)
 is entity-dense: amounts, UPI IDs, bank/account numbers, brand and scheme names.
@@ -16,7 +16,7 @@ a recall-based measure that needs no alignment.
 Applicable ONLY where DatasetSpec.neer_register_col is set. Currently DORMANT for
 both datasets: TIE has no entity-dense register (academic prose, and its reference
 artifacts would confound the measure), and the HF Svarah mirror exposes no use-case
-register column (see the SVARAH spec note in utils/registry.py) — the script exits
+register column (see the SVARAH spec note in utils/registry.py), the script exits
 with that explanation until a register field is derived.
 
 Reads  results/<dataset>/stage2_processed/<mode>/wer_<model>_<mode>.csv

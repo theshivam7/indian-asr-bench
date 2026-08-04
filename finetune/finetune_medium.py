@@ -5,7 +5,7 @@ Full fine-tuning (all 769M params) following the standard HuggingFace Whisper re
 with the correctness + best-practice details that prevent the common pitfalls:
 
   - Train on `train`, select checkpoint on `validation`, NEVER touch `test`  (no clip-level
-    leakage; note the dataset's official splits share speakers — see check_speaker_overlap.py)
+    leakage; note the dataset's official splits share speakers, see check_speaker_overlap.py)
   - Targets = `Transcript` (gold ground truth, matches the benchmark)
   - Filter clips > 30s (feature extractor truncates audio to 30s; longer clips would
     pair truncated audio with full transcripts)
@@ -25,8 +25,8 @@ Usage:
 Tunable via env vars:
     FT_EPOCHS (10)  FT_BATCH (8)  FT_GRAD_ACCUM (2)  FT_LR (1e-5)  FT_PATIENCE (2)
     FT_OUTPUT_DIR (models/whisper_medium_ft)  FT_BASE_MODEL (openai/whisper-medium)
-    FT_SEED (42)  — training seed (init order, dataloader shuffling, dropout/SpecAugment)
-    MAX_TRAIN_SAMPLES (unset)  — subset training data for a quick smoke test
+    FT_SEED (42), training seed (init order, dataloader shuffling, dropout/SpecAugment)
+    MAX_TRAIN_SAMPLES (unset), subset training data for a quick smoke test
 
 The one CLI flag, --seed, overrides FT_SEED. Everything else stays env-driven, which is
 how the PBS jobs configure this script. Note that the multi-seed study
@@ -118,7 +118,7 @@ model.generation_config.forced_decoder_ids = None
 model.config.forced_decoder_ids = None
 model.config.suppress_tokens = []
 
-# Gradient checkpointing is incompatible with the kv-cache — disable cache for training.
+# Gradient checkpointing is incompatible with the kv-cache, disable cache for training.
 model.config.use_cache = False
 
 # SpecAugment regularization (helps on the small ~3k-sample dataset).
@@ -144,12 +144,12 @@ if MAX_TRAIN_SAMPLES:
 # filter()/select() above may apply a lazy indices overlay instead of physically reordering
 # the underlying arrow table. flatten_indices() materializes a fresh, physically-ordered
 # table so the raw arrow "audio" access below (by row index) is guaranteed to line up
-# correctly. (The no-audio filter already ran earlier, before subset selection — see above.)
+# correctly. (The no-audio filter already ran earlier, before subset selection, see above.)
 train_ds = train_ds.flatten_indices()
 eval_ds = eval_ds.flatten_indices()
 
 # Read audio straight from arrow storage (bypassing datasets.Audio's decode entirely, which
-# datasets>=4.0 mandates torchcodec for — a fragile torch/ffmpeg ABI dependency on HPC).
+# datasets>=4.0 mandates torchcodec for, a fragile torch/ffmpeg ABI dependency on HPC).
 keep_remove = train_ds.column_names
 print("Extracting features (this caches to disk) ...")
 prepare_train = make_prepare_dataset(processor, raw_audio_column(train_ds))

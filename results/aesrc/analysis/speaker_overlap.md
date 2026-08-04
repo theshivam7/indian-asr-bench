@@ -1,4 +1,4 @@
-# Speaker Overlap Across Splits — AESRC2020 (Indian) (data-leakage disclosure)
+# Speaker overlap across splits: AESRC2020 (Indian) (data-leakage disclosure)
 
 | Split | Clips | Unique speakers |
 |-------|------:|----------------:|
@@ -14,4 +14,4 @@
 
 ## Interpretation
 
-> No speaker overlap between train and test — the fine-tuning gain reflects genuine generalization to unseen speakers.
+> No speaker overlap between train and test, so the fine-tuning gain reflects genuine generalization to unseen speakers.

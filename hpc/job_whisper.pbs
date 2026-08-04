@@ -35,7 +35,7 @@ cd "${WORKDIR}"
 conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
 export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 
-# Fixed 2026-07-08: a broken/CPU-fallback env never crashes the job — it silently produces
+# Fixed 2026-07-08: a broken/CPU-fallback env never crashes the job, it silently produces
 # an all-empty-hypothesis, near-100%-WER transcript CSV that "completes successfully". Fail
 # fast instead (same guard as hpc/job_finetune_size.pbs).
 echo "--- GPU / CUDA diagnostics (${MODEL} on ${DATASET}) ---"

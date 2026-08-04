@@ -32,3 +32,25 @@ logs/
 
 # Fine-tuned model checkpoints (too large for git; uploaded to Hugging Face instead)
 models/
+
+# NSCC collector output: contains project id, uid, quota, internal hostnames.
+# Kept locally under docs/nscc/ which is git-excluded.
+nscc_final/
+nscc_final.tar.gz
+
+# Local-only, never published. Duplicated in .git/info/exclude, but that file is NOT
+# versioned and does not survive a fresh clone, so the protection lives here too.
+#   paper/   manuscript, figures, review notes
+#   docs/    NSCC account records, audit scripts, working notes
+paper/
+docs/
+
+# Per-seed top-20 dumps. normalize_and_score.py writes one per model x mode, which for the
+# 18-run seed sweep is 54 debug files nothing reads. The 9-model ones are kept: compare_all.py
+# consumes those.
+results/*/stage2_processed/top_20_high_wer_*_seed*.csv
+
+# Regenerated figure in vector form. Nothing references it and matplotlib gives its
+# clip-path ids fresh names each run, so tracking it produces a 300-line diff on every
+# regeneration. The PNG that README embeds is byte-reproducible and stays tracked.
+results/benchmark_overview.svg

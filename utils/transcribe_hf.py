@@ -4,7 +4,7 @@ Analogue of utils/transcribe.py (which uses the openai-whisper package). Used fo
 fine-tuned Whisper Medium model and the same-engine pretrained baseline (medium_hf).
 
 We use transformers' ASR pipeline with chunk_length_s=30 so clips longer than Whisper's
-30s receptive field are windowed automatically — matching how openai-whisper's
+30s receptive field are windowed automatically, matching how openai-whisper's
 model.transcribe() handles long audio. Without this, generate() would silently truncate
 anything past 30s.
 """
@@ -19,7 +19,7 @@ from transformers import (
 from utils.io_helpers import decode_audio_value
 
 CHUNK_LENGTH_S = 30
-# Leave stride at the pipeline default (chunk_length_s / 6 on each side) — symmetric
+# Leave stride at the pipeline default (chunk_length_s / 6 on each side), symmetric
 # left+right context overlap is what gives correct word boundaries when stitching chunks.
 
 
@@ -66,7 +66,7 @@ def transcribe_sample_hf(pipe, sample: dict, audio_value: dict) -> str:
 
     audio_value is the raw arrow "audio" struct for this row (utils.io_helpers.
     raw_audio_column(ds)[idx].as_py()), passed explicitly rather than read from
-    sample["audio"] — the caller strips "audio" from sample so plain dataset iteration
+    sample["audio"], the caller strips "audio" from sample so plain dataset iteration
     never triggers datasets.Audio's decode (which needs torchcodec).
 
     Returns the raw (unnormalized) transcription string. Mirrors the error-handling

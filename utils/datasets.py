@@ -1,4 +1,4 @@
-"""Dataset adapter — the only dataset-specific code in the pipeline.
+"""Dataset adapter, the only dataset-specific code in the pipeline.
 
 `load_eval(dataset_key)` (and `load_split`) return the HF split plus its
 DatasetSpec, after validating that every column the spec declares actually exists
@@ -47,7 +47,7 @@ def extract_ids(ds, spec) -> list[str]:
 
     Reads the id column straight from arrow storage. If it is a struct column
     (Svarah: id_col == audio_col, storage {"bytes","path"}), pull the "path"
-    field columnar-wise — loading ds[id_col] would decode/copy every audio blob.
+    field columnar-wise, loading ds[id_col] would decode/copy every audio blob.
     Must stay consistent with utils.io_helpers.sample_id (basename of path).
     """
     import os
@@ -68,21 +68,21 @@ def _validate_data(spec, ds) -> None:
     first sample whose audio cannot be decoded.
     """
     if len(ds) == 0:
-        raise ValueError(f"[datasets] '{spec.key}' split loaded 0 samples — wrong split name or gated access?")
+        raise ValueError(f"[datasets] '{spec.key}' split loaded 0 samples, wrong split name or gated access?")
 
     ids = extract_ids(ds, spec)
     n_empty = sum(1 for i in ids if not i)
     if n_empty:
         raise ValueError(
             f"[datasets] '{spec.key}': {n_empty}/{len(ids)} samples have an EMPTY id "
-            f"(id_col='{spec.id_col}') — checkpoint resume and Stage-2/3 joins would silently break."
+            f"(id_col='{spec.id_col}'), checkpoint resume and Stage-2/3 joins would silently break."
         )
     if len(set(ids)) != len(ids):
         from collections import Counter
         dupes = [k for k, c in Counter(ids).most_common(5) if c > 1]
         raise ValueError(
             f"[datasets] '{spec.key}': {len(ids) - len(set(ids))} DUPLICATE ids in "
-            f"id_col='{spec.id_col}' (e.g. {dupes}) — per-clip joins in statistics/error analysis "
+            f"id_col='{spec.id_col}' (e.g. {dupes}), per-clip joins in statistics/error analysis "
             f"would misalign. Pick a unique id column in the DatasetSpec."
         )
 
@@ -92,7 +92,7 @@ def _validate_data(spec, ds) -> None:
         samples, sr = decode_audio_value(ds[0][spec.audio_col])
         if len(samples) == 0 or sr <= 0:
             raise ValueError(f"[datasets] '{spec.key}': probe decode of sample 0 returned no audio "
-                             f"(sr={sr}) — check soundfile install / audio codec.")
+                             f"(sr={sr}), check soundfile install / audio codec.")
         print(f"  Probe decode OK: sample 0 -> {len(samples)/sr:.2f}s @ {sr}Hz")
     print(f"  Data checks OK: {len(ids)} samples, ids unique + non-empty")
 

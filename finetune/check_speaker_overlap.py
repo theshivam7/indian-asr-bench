@@ -50,7 +50,7 @@ def main(dataset: str) -> None:
                  f"nothing to check.")
 
     print("=" * 70)
-    print(f"SPEAKER OVERLAP CHECK (data-leakage pre-flight) — {spec.display}")
+    print(f"SPEAKER OVERLAP CHECK (data-leakage pre-flight): {spec.display}")
     print("=" * 70)
 
     ids = {role: speaker_ids(dataset, spec, role) for role in roles}
@@ -94,12 +94,12 @@ def main(dataset: str) -> None:
         lines.append(
             f"> **Speaker-matched fine-tuning**: {test_clip_share * 100:.1f}% of test clips come from "
             "speakers also seen during training. The fine-tuning improvement therefore partly reflects "
-            "speaker adaptation. This is disclosed, not hidden — it reflects the dataset's official splits, "
-            "which we did not modify."
+            "speaker adaptation. This is disclosed rather than hidden: it reflects the dataset's own "
+            "official splits, which we did not modify."
         )
     else:
         lines.append(
-            "> No speaker overlap between train and test — the fine-tuning gain reflects genuine "
+            "> No speaker overlap between train and test, so the fine-tuning gain reflects genuine "
             "generalization to unseen speakers."
         )
     lines.append("")

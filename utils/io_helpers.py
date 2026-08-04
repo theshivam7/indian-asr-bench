@@ -8,12 +8,12 @@ import pandas as pd
 
 # `datasets` is only needed for Stage 1 transcription (loading the audio). It is imported
 # lazily inside load_dataset_test() so the CPU-only Stage 2/3 pipeline (normalize_and_score.py,
-# analysis/) — which only uses the CSV/markdown helpers below — does not require the heavy
+# analysis/), which only uses the CSV/markdown helpers below, does not require the heavy
 # (GPU-side) `datasets`/`torch` stack just to recompute WER or draw charts.
 
 # Resolve the HF cache from any of the common env vars so manual runs and PBS jobs
 # agree. Defaulting to $HOME/.cache fills the (small) HOME quota on HPC clusters, so
-# honour HF_DATASETS_CACHE / HF_CACHE / HF_HOME first — point any of them at scratch.
+# honour HF_DATASETS_CACHE / HF_CACHE / HF_HOME first, point any of them at scratch.
 HF_CACHE = (
     os.environ.get("HF_DATASETS_CACHE")
     or os.environ.get("HF_CACHE")
@@ -43,7 +43,7 @@ def raw_audio_column(ds):
 
     Indexing this (``raw_audio_column(ds)[i].as_py()``) returns a plain Python dict read
     straight from arrow storage, with NO involvement of datasets' Audio feature/decode
-    machinery — so it works regardless of the exact nested array shape the dataset happens
+    machinery, so it works regardless of the exact nested array shape the dataset happens
     to store, and never touches torchcodec. Pair with input_columns=[...] (excluding
     "audio") on .map()/.filter() and row index access so audio is never auto-decoded during
     normal iteration either.
@@ -55,7 +55,7 @@ def decode_audio_value(audio_value: dict, target_sr: int | None = None) -> tuple
     """Return (mono float32 samples, sample_rate) from a raw (undecoded) audio struct.
 
     raianand/TIE_shorts stores audio pre-decoded as {"array": [...], "sampling_rate": N,
-    "path": ...}, so we read that array directly — bypassing datasets>=4.0's Audio feature,
+    "path": ...}, so we read that array directly, bypassing datasets>=4.0's Audio feature,
     which mandates torchcodec (a fragile torch/ffmpeg ABI triple) for any decode/encode/cast.
     The {bytes}/{path} branch is a soundfile fallback for datasets stored as encoded files.
     `.reshape(-1)` flattens whatever nesting the stored array actually has (e.g. a (1, N)
@@ -157,7 +157,7 @@ def sample_id(sample: dict, spec) -> str:
     Usually spec.id_col is a plain string column. Some datasets (Svarah) have no
     separate id/filename field, so id_col points at the same HF column as
     audio_col; with audio_undecoded specs that column yields the raw
-    {"bytes", "path"} storage dict — take the path's basename (stable across cache
+    {"bytes", "path"} storage dict, take the path's basename (stable across cache
     locations and runs). Must stay consistent with utils.datasets.extract_ids.
     Raises rather than returning an empty ID: a blank ID silently corrupts
     checkpoint-resume and every downstream per-clip join.
@@ -168,13 +168,13 @@ def sample_id(sample: dict, spec) -> str:
     sid = str(val)
     if not sid:
         raise ValueError(f"sample_id: empty id from column '{spec.id_col}' "
-                         f"(dataset '{spec.key}') — refusing to emit a blank ID.")
+                         f"(dataset '{spec.key}'), refusing to emit a blank ID.")
     return sid
 
 
 def audio_to_wav_16k(audio_value, wav_path: str) -> None:
     """Decode any raw audio value ({array,...} or {bytes,path}) to a 16 kHz mono
-    int16 WAV file — the single audio path shared by all Stage-1 engines."""
+    int16 WAV file, the single audio path shared by all Stage-1 engines."""
     import wave
 
     samples, _ = decode_audio_value(audio_value, target_sr=16000)
@@ -240,7 +240,7 @@ _MANIFEST_PACKAGES = ("torch", "datasets", "numpy", "librosa", "soundfile", "jiw
 
 def write_run_manifest(model_key: str, dataset_key: str, spec=None, extra: dict | None = None) -> str:
     """Write wer_<model>_manifest.json beside the raw CSV: everything needed to
-    reproduce (or audit) a Stage-1 run — model/dataset identity, pinned dataset
+    reproduce (or audit) a Stage-1 run, model/dataset identity, pinned dataset
     revision, package versions, git commit, host, timestamp, and engine-specific
     decode parameters (via `extra`). Costs nothing; answers every 'which version
     produced this?' question later."""
@@ -256,11 +256,24 @@ def write_run_manifest(model_key: str, dataset_key: str, spec=None, extra: dict 
             versions[pkg] = metadata.version(pkg)
         except metadata.PackageNotFoundError:
             pass
-    try:
-        commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_PROJECT_ROOT,
-                                capture_output=True, text=True, timeout=10).stdout.strip()
-    except Exception:
-        commit = ""
+    # GIT_COMMIT wins when set, because `git` is not on PATH on every compute node and
+    # this field was silently empty in every manifest written before that was noticed:
+    # capture_output=True swallows the error, a non-zero exit leaves stdout empty, and
+    # the bare `except` never fires. So check the return code and say so on failure
+    # rather than publishing a blank provenance field that looks deliberate.
+    commit = os.environ.get("GIT_COMMIT", "").strip()
+    if not commit:
+        try:
+            proc = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_PROJECT_ROOT,
+                                  capture_output=True, text=True, timeout=10)
+            if proc.returncode == 0:
+                commit = proc.stdout.strip()
+            else:
+                print(f"[manifest] git rev-parse failed (rc={proc.returncode}): "
+                      f"{proc.stderr.strip()[:120]}; set GIT_COMMIT to record provenance")
+        except Exception as exc:
+            print(f"[manifest] cannot run git ({exc.__class__.__name__}: {exc}); "
+                  f"set GIT_COMMIT to record provenance")
     from utils.registry import MODEL_BY_KEY, get_dataset
 
     mspec = MODEL_BY_KEY.get(model_key)

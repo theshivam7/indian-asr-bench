@@ -35,10 +35,10 @@ echo "=== Svarah pipeline started $(date) on $(hostname) ==="
 echo "--- GPU / CUDA diagnostics ---"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
 
-# Stage 1 — Whisper family (base / medium / large / large-v3-turbo)
+# Stage 1. Whisper family (base / medium / large / large-v3-turbo)
 conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
 # Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
-# non-interactive PBS batch shell (same quirk documented in job_finetune.pbs) —
+# non-interactive PBS batch shell (same quirk documented in job_finetune.pbs)
 # without this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok, '| device count:', torch.cuda.device_count()); sys.exit(0 if ok else 1)" \
@@ -54,7 +54,7 @@ for M in base medium large large_v3_turbo; do
   python whisper_asr/run_whisper.py --model "${M}" --dataset svarah
 done
 
-# Stage 1 — Parakeet TDT + CTC (parakeet env)
+# Stage 1. Parakeet TDT + CTC (parakeet env)
 conda activate "${PARAKEET_ENV}" || { echo "[FATAL] conda activate failed for '${PARAKEET_ENV}'"; conda info --envs; exit 1; }
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 for M in parakeet parakeet_ctc; do
@@ -62,7 +62,7 @@ for M in parakeet parakeet_ctc; do
   python parakeet/wer_parakeet.py --model "${M}" --dataset svarah
 done
 
-# Stage 1 — Qwen3 (qwen3 env)
+# Stage 1. Qwen3 (qwen3 env)
 conda activate "${QWEN3_ENV}" || { echo "[FATAL] conda activate failed for '${QWEN3_ENV}'"; conda info --envs; exit 1; }
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
 echo -e "\n=== Svarah Stage 1: qwen3 ==="

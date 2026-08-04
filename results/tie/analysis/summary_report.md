@@ -1,4 +1,4 @@
-# WER Evaluation Summary — TIE_shorts
+# WER Evaluation Summary: TIE_shorts
 
 ## Corpus WER (%) by model and mode (+ primary-mode CER)
 

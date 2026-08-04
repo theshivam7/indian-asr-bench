@@ -4,7 +4,7 @@ Extract audio clips for top 20 highest WER samples per model (transcript_clean).
 Saves WAV files to: audio_analysis/clips/{model}/
 Filename: {rank:02d}_WER{wer_pct:.0f}_{region}_{class}_{id}.wav
 
-Uses HuggingFace streaming — downloads only the 34 needed clips, not full dataset.
+Uses HuggingFace streaming, downloads only the 34 needed clips, not full dataset.
 Deduplicates: same ID across models saved once per model folder.
 
 Usage:
@@ -71,7 +71,7 @@ print(f"Unique IDs to fetch: {len(all_needed_ids)}")
 # Print reference sheets before loading dataset
 for model, df in model_tops.items():
     print(f"\n{'='*80}")
-    print(f"TOP 20 HIGH WER — Whisper {model.upper()} (transcript_clean)")
+    print(f"TOP 20 HIGH WER. Whisper {model.upper()} (transcript_clean)")
     print("="*80)
     for i, (_, r) in enumerate(df.iterrows(), 1):
         print(f"\n#{i:2d}  WER={r['wer']*100:.1f}%  {r['Native_Region']}/{r['Speech_Class']}"

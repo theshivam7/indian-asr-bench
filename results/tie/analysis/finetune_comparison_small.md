@@ -1,12 +1,12 @@
-# Whisper Small — Pretrained vs Fine-tuned
+# Whisper Small: Pretrained vs Fine-tuned
 
 Fine-tuned on the `raianand/TIE_shorts` **train** split (7,884 raw clips; ~7,200 remain
-after dropping empty transcripts, clips >30s, and clips with no embedded audio — see the
+after dropping empty transcripts, clips >30s, and clips with no embedded audio, see the
 run log for the exact realized count), best checkpoint selected on the **validation**
-split, evaluated on the **test** split (986 clips) — the same test set used for every
+split, evaluated on the **test** split (986 clips), the same test set used for every
 pretrained model in this benchmark.
 
-**Headline comparison** is against `small_hf` — the *pretrained* Whisper Small run
+**Headline comparison** is against `small_hf`, the *pretrained* Whisper Small run
 through the **same** HuggingFace chunked pipeline as the fine-tuned model. This isolates
 the fine-tuning gain from any decoding/engine differences. The original `openai-whisper`
 number is shown as a secondary reference.

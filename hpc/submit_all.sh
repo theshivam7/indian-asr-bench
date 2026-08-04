@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Indian-ASR-Bench — NSCC (ASPIRE2A / PBS Pro) submitter.
+# Indian-ASR-Bench, NSCC (ASPIRE2A / PBS Pro) submitter.
 #
 # Tuned for the real cluster layout: conda envs live as PREFIX envs on /scratch,
 # and $HOME is quota-limited, so ALL heavy I/O (HF dataset + model cache, fine-tune
@@ -21,11 +21,11 @@
 #     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup       # create/verify envs only
 #     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase all   # submit 1+2, chained by afterok
 #
-# Phases write to separate results dirs — safe to submit while another phase runs:
+# Phases write to separate results dirs, safe to submit while another phase runs:
 #     PROJECT=<id> bash hpc/submit_all.sh --phase 2
 #     PROJECT=<id> bash hpc/submit_all.sh --phase 3
 #
-# Svarah is a GATED HF dataset — authenticate ONCE (writes token under HF cache):
+# Svarah is a GATED HF dataset, authenticate ONCE (writes token under HF cache):
 #     export HF_CACHE=/scratch/users/ntu/$USER/hf_cache
 #     HF_HOME=$HF_CACHE huggingface-cli login          # or: export HF_TOKEN=hf_xxx
 # ============================================================================
@@ -35,7 +35,7 @@ set -euo pipefail
 SCRATCH="${SCRATCH:-/scratch/users/ntu/$USER}"
 WORKDIR="${WORKDIR:-$(pwd)}"
 HF_CACHE="${HF_CACHE:-$SCRATCH/hf_cache}"
-# conda's own package/repodata cache defaults to $HOME/.conda/pkgs — redirect it too,
+# conda's own package/repodata cache defaults to $HOME/.conda/pkgs, redirect it too,
 # or `conda install`/`conda env create` fail with the same HOME disk-quota error.
 export CONDA_PKGS_DIRS="${CONDA_PKGS_DIRS:-$SCRATCH/conda_pkgs}"
 CONDA_BASE="${CONDA_BASE:-$(conda info --base 2>/dev/null || echo /app/apps/miniforge3/25.3.1)}"
@@ -142,6 +142,16 @@ VARS="${VARS},WHISPER_ENV=${WHISPER_ENV},PARAKEET_ENV=${PARAKEET_ENV},QWEN3_ENV=
 # Keep fine-tune model weights off HOME (quota): write them onto scratch.
 VARS="${VARS},FT_OUTPUT_DIR=${SCRATCH}/models/whisper_medium_ft"
 [ -n "${HF_TOKEN:-}" ] && VARS="${VARS},HF_TOKEN=${HF_TOKEN}"
+# Resolve the commit HERE, on the login node, and forward it: utils.io_helpers stamps it
+# into every Stage-1 manifest, and `git` is not on PATH on every compute node. Without
+# this the manifests' git_commit field is silently blank, which is how every run before
+# this change lost its code provenance.
+GIT_COMMIT="$(git -C "${WORKDIR:-.}" rev-parse HEAD 2>/dev/null || true)"
+if [ -n "${GIT_COMMIT}" ]; then
+  VARS="${VARS},GIT_COMMIT=${GIT_COMMIT}"
+else
+  echo "WARNING: could not resolve a git commit; Stage-1 manifests will have no provenance." >&2
+fi
 
 qsub_job() { qsub -P "$PROJECT" -v "$VARS" "$@"; }
 

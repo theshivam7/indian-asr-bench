@@ -1,4 +1,4 @@
-# WER Summary — Svarah — All Models x Modes
+# WER Summary: Svarah, all models x modes
 
 ## Corpus WER (%) Matrix
 
