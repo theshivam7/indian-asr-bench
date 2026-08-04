@@ -60,7 +60,7 @@ much as swapping the model itself. Full detail in [Normalization](SUMMARY.md#nor
 - Significance testing uses a speaker- or recording-clustered paired bootstrap, Holm-corrected across every pairwise model comparison, and is run under both normalizers rather than only the primary one.
 - A cross-model consensus classifier flags reference/audio mismatches from agreement patterns across all nine models, without hand review.
 - Split design is treated as an evaluation-validity property: TIE's official splits are shown to be speaker-entangled, and the fine-tuning capacity study (Tiny, Small, Medium) runs on AESRC, whose test set is natively speaker-disjoint from training.
-- Inference cost sits next to accuracy: real-time factor, latency percentiles and peak GPU memory for all nine models, timed on one fixed 200-clip TIE subset under an identical protocol, so speed comparisons are like-for-like rather than anecdotal.
+- Inference cost sits next to accuracy: real-time factor, latency percentiles and peak GPU memory for all nine models on all three corpora, timed on one fixed 200-clip subset per corpus under an identical protocol, so speed comparisons are like-for-like rather than anecdotal.
 - Every table and chart regenerates on CPU from the committed Stage-1 transcripts; no GPU or re-transcription needed.
 
 ---
@@ -171,7 +171,8 @@ A few things stood out across all three datasets:
 - The normalizer changes conclusions, not just numbers: 5 of 36 Holm-corrected pairwise verdicts on TIE flip depending on which normalizer is used, against 0 of 36 on either curated corpus. What drives it is how tightly the leaderboard is packed, not how far WER moves.
 - Fine-tuning helps at every model size on AESRC's speaker-disjoint test set, so the gain is generalization to unseen speakers rather than memorization. The same question is unanswerable on TIE, whose official splits put every test speaker in training.
 - The fine-tuning gain shrinks as the pretrained model grows: -39.3% relative at Tiny, -22.8% at Small, -21.7% at Medium. A bigger pretrained model has less WER left to recover.
-- Cost separates these systems far more than accuracy does: real-time factor spans 23.9x across the nine, against 1.32x for TIE corpus WER. What predicts inference cost is decoder class, not parameter count. See [Inference efficiency](SUMMARY.md#inference-efficiency) in SUMMARY.md.
+- Cost separates these systems far more than accuracy does: real-time factor spans 23.9x across the nine on TIE, against 1.32x for TIE corpus WER. What predicts inference cost is decoder class, not parameter count, and that holds on all three corpora.
+- But cost is a property of the corpus too, not just the model. The same spread is 12.3x on Svarah and 11.5x on AESRC, because short clips amortize fixed per-clip overhead badly and the fastest models suffer most. Two orderings invert between corpora. See [Inference efficiency](SUMMARY.md#inference-efficiency) in SUMMARY.md.
 
 Fine-tuning, all three sizes retrained from 6 seeds each on AESRC's speaker-disjoint test set
 (`transcript_clean`; all 18 runs improve on their own baseline, and so do all 18 under the Whisper

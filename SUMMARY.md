@@ -380,39 +380,53 @@ Full per-size reports: [`finetune_comparison_tiny.md`](results/aesrc/analysis/fi
 ## Inference efficiency
 
 WER alone cannot justify a "small specialized models remain competitive" claim without a cost
-axis attached. Measured on a fixed 200-clip TIE subset (seed 42, fingerprint `46c6f70a710f`), 3
-untimed warmup clips, batch size 1, single NVIDIA A100-SXM4-40GB:
+axis attached. All 9 models are measured on all 3 corpora: one seeded 200-clip subset per corpus,
+3 untimed warmup clips, batch size 1, single NVIDIA A100-SXM4-40GB. RTF = processing time / audio
+duration; lower is faster.
 
-| Model | Params | Arch | RTF | Lat. p50 (s) | Peak GPU (MiB) |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Parakeet-CTC-1.1B | 1.1B | ctc | 0.0044 | 0.105 | 4,382 |
-| Parakeet-TDT-0.6B-v2 | 600M | transducer | 0.0047 | 0.091 | 2,864 |
-| Whisper Tiny | 39M | enc-dec | 0.0214 | 0.485 | 227 |
-| Whisper large-v3-turbo | 809M | enc-dec | 0.0252 | 0.500 | 3,361 |
-| Whisper Base | 74M | enc-dec | 0.0267 | 0.650 | 385 |
-| Whisper Small | 244M | enc-dec | 0.0379 | 0.954 | 1,095 |
-| Qwen3-ASR-1.7B | 1.7B | llm | 0.0736 | 1.858 | 4,378 |
-| Whisper Medium | 769M | enc-dec | 0.0798 | 1.946 | 3,207 |
-| Whisper Large-v3 | 1.5B | enc-dec | 0.1051 | 2.530 | 6,442 |
+| Model | Params | Arch | RTF TIE | RTF Svarah | RTF AESRC | Peak GPU (MiB) |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Parakeet-CTC-1.1B | 1.1B | ctc | 0.0044 | 0.0176 | 0.0200 | 4,382 |
+| Parakeet-TDT-0.6B-v2 | 600M | transducer | 0.0047 | 0.0121 | 0.0127 | 2,864 |
+| Whisper Tiny | 39M | enc-dec | 0.0214 | 0.0477 | 0.0464 | 227 |
+| Whisper large-v3-turbo | 809M | enc-dec | 0.0252 | 0.0511 | 0.0629 | 3,361 |
+| Whisper Base | 74M | enc-dec | 0.0267 | 0.0498 | 0.0593 | 385 |
+| Whisper Small | 244M | enc-dec | 0.0379 | 0.0722 | 0.0814 | 1,095 |
+| Qwen3-ASR-1.7B | 1.7B | llm | 0.0736 | 0.0929 | 0.0798 | 4,378 |
+| Whisper Medium | 769M | enc-dec | 0.0798 | 0.1191 | 0.1195 | 3,207 |
+| Whisper Large-v3 | 1.5B | enc-dec | 0.1051 | 0.1488 | 0.1457 | 6,442 |
 
-RTF = processing time / audio duration; lower is faster. The two acoustically-grounded decoders
-(Parakeet-TDT, Parakeet-CTC) run 22-24x faster than Whisper Large-v3, and on TIE they land within
-half a point of its WER in either direction (TDT 15.60% against Large-v3's 15.93%, CTC 16.45%).
-Parakeet-TDT does it at 44% of Large-v3's peak GPU memory. Inside the encoder-decoder class speed
-does track size (4.9x from Tiny to Large-v3), but class outweighs it: the 600M transducer is 4.6x
-faster than the 39M encoder-decoder, the smallest model in the study. The RTF spread
-across the nine models (23.9x) is far larger than the TIE WER spread among them (1.32x) -- decoder
-class, not parameter count, is the variable that determines inference cost. The clearest single
-case is large-v3-turbo: 11x the parameters of Whisper Base and still faster than it, because the
-distilled model carries only four decoder layers. It is also 4.2x faster than the Large-v3 it was
-distilled from. Cost tracks decoder depth, not size.
+Peak GPU is the TIE run; it varies by under 15% across corpora. Rows are ordered by TIE RTF.
 
-**Scope, disclosed plainly**: all 9 models are now measured, but only on the TIE corpus -- it has
-not been repeated on Svarah or AESRC. The runs
-also span two CUDA runtimes (11.8 for Whisper; 12.4 for Parakeet/Qwen3, since the engines cannot
-share one conda environment); this is disclosed rather than treated as a controlled variable, though
-the RTF gaps involved are far larger than any plausible cross-runtime timing noise. Full data and
-provenance: [`efficiency_tie.md`](results/tie/analysis/efficiency_tie.md).
+**What holds on all three corpora.** A Parakeet variant is always fastest and Whisper Large-v3
+always slowest. Inside the encoder-decoder class, speed tracks size everywhere. And decoder class
+outweighs parameter count everywhere: the 600M Parakeet-TDT beats the 39M Whisper Tiny by 3.7-4.6x,
+and Qwen3-ASR at 1.7B beats Whisper Medium at 769M. On TIE the two Parakeet decoders also land
+within half a point of Large-v3's WER in either direction (TDT 15.60% against 15.93%, CTC 16.45%),
+so the speed comes at no accuracy cost there.
+
+**What does not transfer: the magnitudes.** The RTF spread across the nine models is 23.9x on TIE
+but 12.3x on Svarah and 11.5x on AESRC, and the Parakeet-to-Large-v3 gap falls from 22-24x to
+7-12x. Clip length is the mechanism: the subsets average 24.9 s per clip on TIE against 4.7 s
+(Svarah) and 4.4 s (AESRC), and per-clip overhead that does not scale with audio is a much larger
+share of a fast model's budget. Every model's RTF degrades on short clips, and the fastest degrade
+most (Parakeet-CTC 4.0-4.6x worse, Whisper Large-v3 only 1.4x), which compresses the spread.
+
+Two orderings invert with it. Parakeet-CTC is the fastest model on TIE but Parakeet-TDT is fastest
+on both curated corpora. And large-v3-turbo beats Whisper Base on TIE despite 11x the parameters,
+yet is slower than Base on both Svarah and AESRC. The earlier claim that turbo's four decoder
+layers make it faster than Base is therefore TIE-specific, not general. A single-corpus RTF is not
+a portable property of a model.
+
+**Scope, disclosed plainly**: measured on 200-clip subsets rather than full corpora, at batch size
+1. The Parakeet engines support batching, so their reported gaps are lower bounds on the advantage
+a batched server would show. The runs span two CUDA runtimes (11.8 for Whisper; 12.4 for
+Parakeet/Qwen3, since the engines cannot share one conda environment); this is disclosed rather
+than treated as a controlled variable, though the gaps involved are far larger than any plausible
+cross-runtime timing noise. All 27 runs used one A100-SXM4-40GB and one driver. Full data:
+[`efficiency_tie.md`](results/tie/analysis/efficiency_tie.md),
+[`efficiency_svarah.md`](results/svarah/analysis/efficiency_svarah.md),
+[`efficiency_aesrc.md`](results/aesrc/analysis/efficiency_aesrc.md).
 
 ---
 
@@ -589,7 +603,7 @@ Stated so the numbers above are read correctly:
 - The human review that validates the artifact classifier ([Classifier validation](#classifier-validation-human-review)) is a single annotator working non-blind: the reviewer could see every model's hypothesis while correcting the reference, which risks anchoring the correction toward what the models already say. This was a deliberate tradeoff for diagnostic depth (seeing all 5 hypotheses side by side is what makes per-clip cause attribution possible at all), not an oversight, but it means the review supports "here is why these hard clips are hard," not a formally blind-validated precision/recall claim for the classifier. It also covers only a targeted 49-clip "hardest for strong models" sample, not a random one, so it cannot be used to estimate a reference-fault rate for the corpus as a whole.
 - Svarah can only be clustered by recording (3,232 clusters), not by its 117 true speakers, since the public release exposes no speaker IDs. True speaker clustering would widen the confidence intervals. TIE clusters are real speakers.
 - All three AESRC fine-tuning sizes have now been retrained across 6 seeds each (see [Fine-tuning and split design](#fine-tuning-and-split-design)): every seed improves on the pretrained baseline and none of the three ranges approaches zero, but no formal seed-level significance test exists yet, so this is reported as strong informal evidence rather than a confirmed result.
-- Inference-efficiency benchmarking now covers all 9 models but only the TIE corpus; it has not been run on Svarah or AESRC. The nine runs also span six compute nodes: same A100-SXM4-40GB model, same driver (570.124.06), but not the same physical GPU.
+- Inference-efficiency benchmarking covers all 9 models on all 3 corpora, but on 200-clip subsets rather than full corpora and at batch size 1. The Parakeet engines support batching, so their measured cost advantage is a lower bound. The 27 runs share the A100-SXM4-40GB model and driver 570.124.06 but were spread across compute nodes, not pinned to one physical GPU.
 - AESRC checkpoint selection uses a validation split that shares all 38 train speakers, so it measures fit, not speaker generalization. The speaker-disjoint test set is untouched during training, so the reported deltas are unaffected.
 - The AESRC mirror (`pengyizhou/accented_english`) states no license and AESRC2020 is Datatang's corpus. Access and permission to use it for this research were confirmed through our advisor. Redistribution or commercial use beyond this study would still need separately clarified terms.
 - Training-data contamination is possible: NPTEL lectures are public and may appear in Whisper's training data. A small probe (n=10) found no memorization signal, but it is low-powered.
@@ -604,7 +618,7 @@ Stated so the numbers above are read correctly:
 - Turn the descriptive 49-clip human review into a formal, random or stratified, blind validation pass, to get an actual reference-fault rate for the corpus instead of a description of why the hardest clips are hard. The current review deliberately traded blindness for being able to see all 5 hypotheses per clip; a blind pass would need the reverse trade.
 - Build a formal seed-level significance test to replace the current descriptive mean/SD treatment of the 6-seed study. All three sizes now have 6 seeds ([Fine-tuning and split design](#fine-tuning-and-split-design)), so the data is there; what is missing is a test that treats the run, not the clip, as the sampling unit.
 - Explain Tiny's single anomalous seed. Under `transcript_clean` five of Tiny's six seeds land inside a 0.12 pp band and seed 42 alone sits 2.5 pp away, while under `whisper_norm` that same seed is unremarkable. A per-clip diff between seed 42 and its siblings would show which error class the normalizer is absorbing.
-- Extend inference-efficiency benchmarking to Svarah and AESRC. All 9 models are now measured on TIE, so what is missing is whether the RTF ordering holds on corpora with different clip-length distributions.
+- Measure batched throughput for the Parakeet engines. Every number reported is single-stream at batch size 1, which is the setting where per-clip latency is defined but not the one a production server runs in; the current figures understate Parakeet's advantage by an unknown margin.
 - Run the transfer matrix: evaluate the AESRC fine-tuned checkpoints on TIE and Svarah (and the archived TIE checkpoints on AESRC), to see whether the gains carry across registers or stay domain-locked.
 - Activate the NEER entity metric ([`analysis/entity_analysis.py`](analysis/entity_analysis.py)) once a use-case register field is derived for Svarah. Entity-dense clips currently score far above 100% WER for spelling-convention reasons, not misrecognition.
 - Figure out why the HF chunked pipeline scores higher WER than `openai-whisper` on 60s+ clips with identical weights.
