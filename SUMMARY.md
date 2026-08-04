@@ -385,23 +385,29 @@ untimed warmup clips, batch size 1, single NVIDIA A100-SXM4-40GB:
 
 | Model | Params | Arch | RTF | Lat. p50 (s) | Peak GPU (MiB) |
 |---|:---:|:---:|:---:|:---:|:---:|
+| Parakeet-CTC-1.1B | 1.1B | ctc | 0.0044 | 0.105 | 4,382 |
+| Parakeet-TDT-0.6B-v2 | 600M | transducer | 0.0047 | 0.091 | 2,864 |
+| Whisper Tiny | 39M | enc-dec | 0.0214 | 0.485 | 227 |
+| Whisper large-v3-turbo | 809M | enc-dec | 0.0252 | 0.500 | 3,361 |
+| Whisper Base | 74M | enc-dec | 0.0267 | 0.650 | 385 |
 | Whisper Small | 244M | enc-dec | 0.0379 | 0.954 | 1,095 |
+| Qwen3-ASR-1.7B | 1.7B | llm | 0.0736 | 1.858 | 4,378 |
 | Whisper Medium | 769M | enc-dec | 0.0798 | 1.946 | 3,207 |
 | Whisper Large-v3 | 1.5B | enc-dec | 0.1051 | 2.530 | 6,442 |
-| Parakeet-TDT-0.6B-v2 | 600M | transducer | 0.0047 | 0.091 | 2,864 |
-| Parakeet-CTC-1.1B | 1.1B | ctc | 0.0044 | 0.105 | 4,382 |
-| Qwen3-ASR-1.7B | 1.7B | llm | 0.0736 | 1.858 | 4,378 |
 
 RTF = processing time / audio duration; lower is faster. The two acoustically-grounded decoders
-(Parakeet-TDT, Parakeet-CTC) run 22-24x faster than Whisper Large-v3 at WER within 0.4-2.3 pp of
-it on TIE, and Parakeet-TDT does so at roughly a third the peak GPU memory. Within each decoder
-class, speed barely moves with parameter count; across classes it moves by two orders of
-magnitude. The RTF spread across all six models (23.9x) is far larger than the WER spread among
-them (1.25x) -- decoder class, not parameter count, is the variable that determines inference
-cost.
+(Parakeet-TDT, Parakeet-CTC) run 22-24x faster than Whisper Large-v3, and on TIE they land within
+half a point of its WER in either direction (TDT 15.60% against Large-v3's 15.93%, CTC 16.45%).
+Parakeet-TDT does it at 44% of Large-v3's peak GPU memory. Within each decoder class, speed barely
+moves with parameter count; across classes it moves by two orders of magnitude. The RTF spread
+across the nine models (23.9x) is far larger than the TIE WER spread among them (1.32x) -- decoder
+class, not parameter count, is the variable that determines inference cost. The clearest single
+case is large-v3-turbo: 11x the parameters of Whisper Base and still faster than it, because the
+distilled model carries only four decoder layers. It is also 4.2x faster than the Large-v3 it was
+distilled from. Cost tracks decoder depth, not size.
 
-**Scope, disclosed plainly**: this benchmark covers only 6 of the 9 models (no Tiny, Base, or
-large-v3-turbo) and only the TIE corpus -- it has not been repeated on Svarah or AESRC. The runs
+**Scope, disclosed plainly**: all 9 models are now measured, but only on the TIE corpus -- it has
+not been repeated on Svarah or AESRC. The runs
 also span two CUDA runtimes (11.8 for Whisper; 12.4 for Parakeet/Qwen3, since the engines cannot
 share one conda environment); this is disclosed rather than treated as a controlled variable, though
 the RTF gaps involved are far larger than any plausible cross-runtime timing noise. Full data and
@@ -515,7 +521,63 @@ Implications:
 - Median WER (11.1% for Medium on TIE) is a more honest estimate of typical quality than corpus WER (14.8%). The gap is the rare-but-severe tail.
 - Rankings are unaffected because every model hits the same artifacts. Absolute numbers are inflated by roughly 0.6 pp on TIE, 0.35 pp on Svarah, and under 0.1 pp on AESRC.
 
-**Classifier validation:** the classifier is a heuristic, not ground truth. A blind, stratified human-annotation protocol (annotators see only audio and reference) is implemented in [`analysis/validation/`](analysis/validation/); see [`PROTOCOL.md`](analysis/validation/PROTOCOL.md). Results pending the annotation pass.
+#### Classifier validation (human review)
+
+The classifier above is a heuristic, not ground truth. To check it, a human transcribed the true
+content of the 49 TIE clips with WER > 40% on at least 3 of 4 strong models (Large, Parakeet-TDT,
+Parakeet-CTC, Qwen3), listening to the audio directly rather than trusting either the dataset
+reference or any model. Every model hypothesis and the original dataset reference were then scored
+against that corrected transcript, under the same `transcript_clean` normalization used everywhere
+else in this report, so the before/after numbers are directly comparable. Full sheet and per-row
+notes: [`analysis/tie_validation/`](analysis/tie_validation/).
+
+**Headline result.** Mean WER on these 49 clips is 64.8% against the original dataset reference and
+17.0% against the corrected one, a 47.8 pp drop (95% bootstrap CI on the mean drop: 40.4 to 55.9 pp;
+Wilcoxon signed-rank p < 1e-8). Every model shows the same pattern individually, all significant
+after Holm correction (Large -43.7 pp, Parakeet -51.8 pp, Parakeet-CTC -50.3 pp, Qwen3 -50.7 pp,
+Medium -42.2 pp; all p<sub>Holm</sub> < 1e-7). 48 of 49 clips improve. The one exception (a list of
+Gujarat place names) is also the one clip independently judged a genuine model failure below, not a
+reference problem, which is the result the classification predicts.
+
+**Cause, per clip, judged from the corrected transcript:** 46 of 49 clips are reference error (a
+dropped clause, a wrong number, a mangled technical term, or in 5 cases a reference that describes a
+different segment of the lecture entirely), 2 are genuine model failures, 1 stays unresolved (a fast
+equation dictation that even the corrected transcript can't fully settle). This directly confirms the
+inter-hypothesis-agreement argument above: the `-2aOCNaOiLs` example cited there (reference misses
+"okay, let us do that") is one of these 49 clips, and the human review independently reaches the same
+verdict, reference error, for it.
+
+Other findings from the review:
+
+- **Technical vocabulary drives a lot of this.** TIE is lecture content (physics, chemistry, CS,
+  structural engineering), and references regularly mangle domain terms: "idempotence" becomes
+  nonsense, "singlet state" becomes "simplest state", "resolution" becomes "solution". 14 of 49 clips
+  show this pattern.
+- **Some reference errors flip the meaning, not just the wording.** One reference drops the word "no",
+  turning "there is no functional dependency" into "there is a functional dependency", the opposite
+  claim. Two of the five models make the identical mistake, which reads less like coincidence and more
+  like a genuinely hard word to catch, an audio-difficulty explanation rather than 3 independent errors.
+- **Cross-model convergence on missing content.** On 3 clips, 3 to 4 of the 5 independently-trained
+  models all add the same phrase that appears in neither the reference nor the corrected transcript
+  (for example "thing, anyway" before a word in one clip). Independent models agreeing with each other
+  against both ground-truth attempts is suggestive that something was missed in transcription, though
+  it is not conclusive on its own: models that share an architecture family could in principle share an
+  error mode too, so this is flagged in the sheet for a second listen rather than treated as settled.
+- **Model-level pattern:** Medium comes out cleanest against the corrected reference (mean WER 15.1%,
+  only 2 of 49 clips still wrong) and Large the worst (20.9%, 8 of 49). Large is also the model named
+  individually most often (13 of 22 model-specific notes) for a distinct failure mode, degenerate
+  repetition loops (for example repeating "0" ten times, or a place name six times), rather than the
+  more ordinary mishearing seen in the other four models.
+
+**Scope, read carefully:** this sample is not random. It was built by requiring several strong models
+to already agree a clip is hard, specifically to find and diagnose reference problems, not to estimate
+what fraction of errors on the full TIE corpus are reference-caused. The 47.8 pp drop describes why
+these 49 particular clips are hard; it does not imply corpus-wide WER would fall by anything close to
+that if every reference were fixed, since most clips were never flagged as hard in the first place. The
+review is also a single annotator working non-blind (the reviewer could see every model's hypothesis
+while correcting the reference), which was a deliberate choice to prioritize diagnostic depth over a
+formal blind protocol; see [Limitations](#limitations) for what that trades away and what a
+future blind pass would need to look like.
 
 ---
 
@@ -523,10 +585,10 @@ Implications:
 
 Stated so the numbers above are read correctly:
 
-- The artifact classifier has not been validated against human judgment yet. It is backed by inter-hypothesis agreement evidence, but the blind annotation pass still needs to run.
+- The human review that validates the artifact classifier ([Classifier validation](#classifier-validation-human-review)) is a single annotator working non-blind: the reviewer could see every model's hypothesis while correcting the reference, which risks anchoring the correction toward what the models already say. This was a deliberate tradeoff for diagnostic depth (seeing all 5 hypotheses side by side is what makes per-clip cause attribution possible at all), not an oversight, but it means the review supports "here is why these hard clips are hard," not a formally blind-validated precision/recall claim for the classifier. It also covers only a targeted 49-clip "hardest for strong models" sample, not a random one, so it cannot be used to estimate a reference-fault rate for the corpus as a whole.
 - Svarah can only be clustered by recording (3,232 clusters), not by its 117 true speakers, since the public release exposes no speaker IDs. True speaker clustering would widen the confidence intervals. TIE clusters are real speakers.
 - All three AESRC fine-tuning sizes have now been retrained across 6 seeds each (see [Fine-tuning and split design](#fine-tuning-and-split-design)): every seed improves on the pretrained baseline and none of the three ranges approaches zero, but no formal seed-level significance test exists yet, so this is reported as strong informal evidence rather than a confirmed result.
-- Inference-efficiency benchmarking covers only 6 of the 9 models and only the TIE corpus; it has not been run on Svarah or AESRC, or on Tiny/Base/large-v3-turbo.
+- Inference-efficiency benchmarking now covers all 9 models but only the TIE corpus; it has not been run on Svarah or AESRC. The nine runs also span six compute nodes: same A100-SXM4-40GB model, same driver (570.124.06), but not the same physical GPU.
 - AESRC checkpoint selection uses a validation split that shares all 38 train speakers, so it measures fit, not speaker generalization. The speaker-disjoint test set is untouched during training, so the reported deltas are unaffected.
 - The AESRC mirror (`pengyizhou/accented_english`) states no license and AESRC2020 is Datatang's corpus. Access and permission to use it for this research were confirmed through our advisor. Redistribution or commercial use beyond this study would still need separately clarified terms.
 - Training-data contamination is possible: NPTEL lectures are public and may appear in Whisper's training data. A small probe (n=10) found no memorization signal, but it is low-powered.
@@ -537,10 +599,11 @@ Stated so the numbers above are read correctly:
 
 ## Future work
 
-- Run the blind human-annotation pass ([`analysis/validation/`](analysis/validation/), a 91-item stratified sheet). This turns the classifier's heuristic status into measured precision and recall, and it is the highest-value task left.
+- Confirm the handful of clips the human review flagged as still uncertain even after correction (flagged in the review sheet's `reviewer_notes` column): a couple of specific numbers and technical terms where the corrected transcript itself is disputed, and 3 clips where several models independently agree on content that is in neither ground-truth attempt.
+- Turn the descriptive 49-clip human review into a formal, random or stratified, blind validation pass, to get an actual reference-fault rate for the corpus instead of a description of why the hardest clips are hard. The current review deliberately traded blindness for being able to see all 5 hypotheses per clip; a blind pass would need the reverse trade.
 - Build a formal seed-level significance test to replace the current descriptive mean/SD treatment of the 6-seed study. All three sizes now have 6 seeds ([Fine-tuning and split design](#fine-tuning-and-split-design)), so the data is there; what is missing is a test that treats the run, not the clip, as the sampling unit.
 - Explain Tiny's single anomalous seed. Under `transcript_clean` five of Tiny's six seeds land inside a 0.12 pp band and seed 42 alone sits 2.5 pp away, while under `whisper_norm` that same seed is unremarkable. A per-clip diff between seed 42 and its siblings would show which error class the normalizer is absorbing.
-- Extend inference-efficiency benchmarking to Tiny, Base, and large-v3-turbo, and to Svarah and AESRC.
+- Extend inference-efficiency benchmarking to Svarah and AESRC. All 9 models are now measured on TIE, so what is missing is whether the RTF ordering holds on corpora with different clip-length distributions.
 - Run the transfer matrix: evaluate the AESRC fine-tuned checkpoints on TIE and Svarah (and the archived TIE checkpoints on AESRC), to see whether the gains carry across registers or stay domain-locked.
 - Activate the NEER entity metric ([`analysis/entity_analysis.py`](analysis/entity_analysis.py)) once a use-case register field is derived for Svarah. Entity-dense clips currently score far above 100% WER for spelling-convention reasons, not misrecognition.
 - Figure out why the HF chunked pipeline scores higher WER than `openai-whisper` on 60s+ clips with identical weights.
