@@ -398,8 +398,9 @@ untimed warmup clips, batch size 1, single NVIDIA A100-SXM4-40GB:
 RTF = processing time / audio duration; lower is faster. The two acoustically-grounded decoders
 (Parakeet-TDT, Parakeet-CTC) run 22-24x faster than Whisper Large-v3, and on TIE they land within
 half a point of its WER in either direction (TDT 15.60% against Large-v3's 15.93%, CTC 16.45%).
-Parakeet-TDT does it at 44% of Large-v3's peak GPU memory. Within each decoder class, speed barely
-moves with parameter count; across classes it moves by two orders of magnitude. The RTF spread
+Parakeet-TDT does it at 44% of Large-v3's peak GPU memory. Inside the encoder-decoder class speed
+does track size (4.9x from Tiny to Large-v3), but class outweighs it: the 600M transducer is 4.6x
+faster than the 39M encoder-decoder, the smallest model in the study. The RTF spread
 across the nine models (23.9x) is far larger than the TIE WER spread among them (1.32x) -- decoder
 class, not parameter count, is the variable that determines inference cost. The clearest single
 case is large-v3-turbo: 11x the parameters of Whisper Base and still faster than it, because the
