@@ -13,10 +13,11 @@ fi
 # the same working PyTorch 2.5.1 CUDA wheel as the native-engine environments.
 # This also repairs an environment left half-created by an interrupted install.
 conda install -n "${ENV_NAME}" -y "conda-forge::ffmpeg" -c conda-forge
-conda run -n "${ENV_NAME}" python -m pip install -r throughput/requirements-whisper.txt
-conda run -n "${ENV_NAME}" python -m pip check
+conda run --no-capture-output -n "${ENV_NAME}" \
+  python -m pip install -r throughput/requirements-whisper.txt
+conda run --no-capture-output -n "${ENV_NAME}" python -m pip check
 conda run -n "${ENV_NAME}" ffmpeg -version >/dev/null
-conda run -n "${ENV_NAME}" python -c \
+conda run --no-capture-output -n "${ENV_NAME}" python -c \
   "import torch, transformers; assert torch.version.cuda; print('torch', torch.__version__, 'cuda', torch.version.cuda, 'transformers', transformers.__version__)"
 
 echo "Ready: conda activate ${ENV_NAME}"
