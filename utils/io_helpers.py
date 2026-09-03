@@ -151,6 +151,19 @@ def efficiency_dir(dataset: str = "tie") -> str:
     return d
 
 
+def throughput_dir(dataset: str = "tie") -> str:
+    """Saturated/offline throughput measurements: results/<dataset>/throughput.
+
+    This is separate from ``efficiency_dir`` because the two protocols answer
+    different questions: efficiency is batch-1 single-stream latency, whereas
+    throughput sweeps batch sizes on pre-staged audio to find the fastest valid
+    operating point.
+    """
+    d = os.path.join(results_dir(dataset), "throughput")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
 def sample_id(sample: dict, spec) -> str:
     """Extract a clean string ID for a sample.
 

@@ -1,0 +1,122 @@
+#!/bin/bash
+#PBS -N asr_throughput
+# `normal` is NSCC's routing queue; the 8-hour request routes this full sweep to
+# an eligible production GPU execution queue instead of the 2-hour gdev queue.
+#PBS -q normal
+#PBS -l select=1:ngpus=1:ncpus=8:mem=64gb
+#PBS -l place=excl
+#PBS -l walltime=08:00:00
+#PBS -j oe
+#PBS -k oed
+
+set -u
+
+WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
+SCRATCH_DIR=${SCRATCH:-/scratch/users/ntu/${USER}}
+HF_CACHE=${HF_CACHE:-${SCRATCH_DIR}/hf_cache}
+ENGINE=${ENGINE:?submit with -v ENGINE=whisper|parakeet|qwen3}
+MODEL=${MODEL:?submit with -v MODEL=<registry_key>}
+DATASETS=${DATASETS:-tie:svarah:aesrc}
+CLIPS=${CLIPS:-512}
+BATCH_SIZES=${BATCH_SIZES:-1,2,4,8,16,32,64,128}
+WARMUP_BATCHES=${WARMUP_BATCHES:-3}
+REPEATS=${REPEATS:-3}
+SEED=${SEED:-42}
+TELEMETRY_MS=${TELEMETRY_MS:-250}
+
+mkdir -p "${WORKDIR}/logs" "${HF_CACHE}" "${SCRATCH_DIR}/tmp"
+JOBTAG_RAW=${PBS_JOBID:-manual}
+JOBTAG=${JOBTAG_RAW%%.*}
+exec >> "${WORKDIR}/logs/throughput_${ENGINE}_${MODEL}_${JOBTAG:-manual}.log" 2>&1
+
+echo "=== throughput job start $(date -Is) ==="
+echo "host=$(hostname) workdir=${WORKDIR} engine=${ENGINE} model=${MODEL} datasets=${DATASETS}"
+echo "clips=${CLIPS} batches=${BATCH_SIZES} warmups=${WARMUP_BATCHES} repeats=${REPEATS} seed=${SEED}"
+
+if [ -n "${CUDA_MODULE:-}" ]; then
+    module load "${CUDA_MODULE}" || exit 1
+fi
+
+CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null)}
+if [ ! -f "${CONDA_BASE}/etc/profile.d/conda.sh" ]; then
+    echo "[FATAL] conda.sh not found under ${CONDA_BASE}"
+    exit 1
+fi
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+
+case "${ENGINE}" in
+  whisper)
+    ENV_NAME=${WHISPER_THROUGHPUT_ENV:-whisper_throughput}
+    DRIVER=throughput/run_whisper_hf.py
+    ;;
+  parakeet)
+    ENV_NAME=${PARAKEET_ENV:-parakeet}
+    DRIVER=throughput/run_parakeet.py
+    ;;
+  qwen3)
+    ENV_NAME=${QWEN3_ENV:-qwen3}
+    DRIVER=throughput/run_qwen3.py
+    ;;
+  *)
+    echo "[FATAL] unknown ENGINE=${ENGINE}"
+    exit 2
+    ;;
+esac
+
+conda activate "${ENV_NAME}" || {
+    echo "[FATAL] cannot activate conda environment '${ENV_NAME}'"
+    conda info --envs
+    exit 1
+}
+export PATH="${CONDA_PREFIX}/bin:${PATH}"
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+export HF_HOME="${HF_CACHE}"
+export HF_DATASETS_CACHE="${HF_CACHE}/datasets"
+export XDG_CACHE_HOME="${HF_CACHE}/xdg"
+export TMPDIR="${SCRATCH_DIR}/tmp"
+export TOKENIZERS_PARALLELISM=false
+export OMP_NUM_THREADS=${PBS_NCPUS:-8}
+export MKL_NUM_THREADS=${PBS_NCPUS:-8}
+export NUMEXPR_NUM_THREADS=${PBS_NCPUS:-8}
+export PYTHONHASHSEED=0
+
+cd "${WORKDIR}" || exit 1
+test -f "${DRIVER}" || { echo "[FATAL] missing ${DRIVER}"; exit 1; }
+GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse HEAD 2>/dev/null || true)}
+if [ -z "${GIT_COMMIT}" ]; then
+    echo "[FATAL] GIT_COMMIT is unavailable; submit via hpc/submit_throughput.sh"
+    exit 1
+fi
+export GIT_COMMIT
+
+echo "=== environment ==="
+command -v python
+python --version
+python -c "import torch; assert torch.cuda.is_available(); p=torch.cuda.get_device_properties(0); mib=p.total_memory/2**20; assert torch.cuda.device_count()==1,(torch.cuda.device_count(),'visible GPUs'); assert 'A100' in p.name and 39000<=mib<=41500,(p.name,mib); print('torch',torch.__version__,'cuda',torch.version.cuda,'gpu',p.name,'memory_mib',round(mib,1))" || exit 1
+python -c "from importlib.metadata import version; expected={'torch':'2.5.1','datasets':'4.8.5','pandas':'2.2.3','numpy':'1.26.4','soundfile':'0.13.1','librosa':'0.11.0','jiwer':'4.0.0','num2words':'0.5.14'}; actual={k:version(k) for k in expected}; assert actual==expected,(actual,expected); print('shared versions',actual)" || exit 1
+case "${ENGINE}" in
+  whisper)  command -v ffmpeg >/dev/null || { echo "[FATAL] ffmpeg is required by the Transformers audio pipeline"; exit 1; }
+            python -c "from importlib.metadata import version; assert version('transformers')=='4.57.6'; import transformers; print('transformers',transformers.__version__)" || exit 1 ;;
+  parakeet) python -c "from importlib.metadata import version; assert version('nemo_toolkit')=='2.3.0'; import nemo.collections.asr; print('NeMo',version('nemo_toolkit'))" || exit 1 ;;
+  qwen3)    python -c "from importlib.metadata import version; assert version('qwen-asr')=='0.0.6' and version('transformers')=='4.57.6'; import qwen_asr; print('qwen-asr',version('qwen-asr'),'transformers',version('transformers'))" || exit 1 ;;
+esac
+nvidia-smi --query-gpu=name,uuid,memory.total,driver_version --format=csv,noheader || exit 1
+nvidia-smi --query-gpu=utilization.gpu,utilization.memory,memory.used,power.draw,clocks.sm --format=csv,noheader,nounits >/dev/null || exit 1
+echo "git commit: ${GIT_COMMIT}"
+
+# Colon avoids PBS's comma separator for the qsub -v variable list.
+IFS=':' read -r -a DATASET_LIST <<< "${DATASETS}"
+for DATASET in "${DATASET_LIST[@]}"; do
+    echo "=== ${MODEL} / ${DATASET} start $(date -Is) ==="
+    python "${DRIVER}" \
+      --model "${MODEL}" \
+      --dataset "${DATASET}" \
+      --clips "${CLIPS}" \
+      --batch-sizes "${BATCH_SIZES}" \
+      --warmup-batches "${WARMUP_BATCHES}" \
+      --repeats "${REPEATS}" \
+      --seed "${SEED}" \
+      --telemetry-ms "${TELEMETRY_MS}" || exit $?
+done
+
+echo "=== throughput job complete $(date -Is) ==="

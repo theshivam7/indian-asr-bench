@@ -52,9 +52,18 @@ single phase on its own, use `--phase 1|2` instead of `all`.
 | conda env | created from | used by |
 |-----------|--------------|---------|
 | `whisper` | `environments/whisper.yaml` | Whisper inference **+ all CPU scoring/analysis/figures** (has `whisper_normalizer`) |
-| `parakeet` | `environments/parakeet.yaml` | Parakeet-TDT / Parakeet-CTC (NeMo) |
-| `qwen3` | `environments/qwen3.yaml` | Qwen3-ASR |
+| `parakeet` | `bash parakeet/setup.sh` | Parakeet-TDT / Parakeet-CTC (NeMo) |
+| `qwen3` | `bash qwen3/setup.sh` | Qwen3-ASR |
 | `whisper_medium_ft` | `bash finetune/setup.sh` | fine-tuning (HF `transformers`, `datasets==4.8.5`) |
+| `whisper_throughput` | `bash throughput/setup_whisper.sh` | batched Whisper throughput only |
+
+Before the first throughput submission (and after pulling dependency changes),
+refresh the two existing native-engine environments:
+
+```bash
+conda run -n parakeet pip install -r parakeet/requirements.txt
+conda run -n qwen3 pip install -r qwen3/requirements.txt
+```
 
 ## Individual jobs
 
@@ -81,6 +90,28 @@ qsub -P <id> -v DATASET=tie                          hpc/job_speaker_overlap.pbs
 qsub -P <id> -v ENGINE=parakeet,MODEL=parakeet        hpc/job_efficiency.pbs      # RTF/latency/peak-GPU, one model per submission
 qsub -P <id> -v SIZE=tiny,DATASET=aesrc               hpc/job_finetune_seeds.pbs  # multi-seed capacity study (default: seeds 42-47)
 ```
+
+For the separate quality-gated offline batch sweep across all nine pretrained
+systems and all three datasets:
+
+```bash
+# first update the NSCC checkout from the repository root
+git fetch origin
+git pull --ff-only origin main
+git status --short
+
+# one-time environment setup / refresh
+bash throughput/setup_whisper.sh
+conda run -n parakeet pip install -r parakeet/requirements.txt
+conda run -n qwen3 pip install -r qwen3/requirements.txt
+
+# submit nine exclusive-A100 jobs through NSCC's normal routing queue
+export PROJECT=<nscc_project_id>
+bash hpc/submit_throughput.sh
+```
+
+See [`INFERENCE_EFFICIENCY_PROTOCOL.md`](../INFERENCE_EFFICIENCY_PROTOCOL.md) for
+the fixed workload, batch sweep, quality gate, metrics, and claim boundaries.
 
 `job_finetune_seeds.pbs` has its full usage (including the SEEDS-quoting gotcha) documented in its
 own header comment; see also `analysis/compare_seeds.py` to aggregate the resulting per-seed tables.

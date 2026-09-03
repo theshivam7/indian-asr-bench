@@ -298,16 +298,25 @@ resumes rather than restarts. The across-seed spread is reported separately from
 within-run bootstrap CI, because they measure different things and pooling them would
 misstate both.
 
-### Benchmark inference cost (GPU)
+### Benchmark inference efficiency (GPU)
 
-Real-time factor, latency percentiles, throughput and peak GPU memory, measured on a
-seeded clip subset so every model sees identical audio.
+Batch-1 real-time factor, latency percentiles, latency-bound throughput and peak
+GPU memory, measured on a seeded clip subset so every model sees identical audio.
 
 ```bash
 python whisper_asr/run_whisper.py --model medium   --dataset tie --efficiency
 python parakeet/wer_parakeet.py   --model parakeet --dataset tie --efficiency
 python qwen3/wer_qwen3.py                          --dataset tie --efficiency
 python analysis/compare_efficiency.py              --dataset tie   # merge into one table
+```
+
+Those commands measure **batch-1 single-stream latency**, not maximum GPU
+throughput. The quality-gated batch sweep used for saturated/offline throughput is
+documented in [INFERENCE_EFFICIENCY_PROTOCOL.md](INFERENCE_EFFICIENCY_PROTOCOL.md):
+
+```bash
+PROJECT=<nscc_project_id> bash hpc/submit_throughput.sh
+python analysis/compare_throughput.py --dataset tie --require-complete
 ```
 
 Keep `--clips` and `--seed` identical across models. The aggregator refuses to present
@@ -329,6 +338,7 @@ Individual jobs, if you prefer to drive them yourself:
 | Fine-tune one size | `qsub -P <id> -v SIZE=tiny,DATASET=aesrc hpc/job_finetune_size.pbs` |
 | Seed sweep | `qsub -P <id> -v SIZE=tiny hpc/job_finetune_seeds.pbs` |
 | Efficiency | `qsub -P <id> -v ENGINE=whisper,MODEL=medium hpc/job_efficiency.pbs` |
+| Offline throughput | `PROJECT=<id> bash hpc/submit_throughput.sh` |
 
 Conda specs are in [`environments/`](environments/), PBS jobs and the runbook in
 [`hpc/`](hpc/). All reported runs used a single NVIDIA A100-40GB (NSCC ASPIRE2A).
@@ -344,6 +354,7 @@ indian-asr-bench/
 ├── whisper_asr/         Whisper transcription driver (--efficiency for speed/memory)
 ├── parakeet/            NeMo Parakeet transcription driver (--efficiency)
 ├── qwen3/               Qwen3-ASR transcription driver (--efficiency)
+├── throughput/          quality-gated batched-throughput drivers and Whisper environment
 ├── finetune/            fine-tuning, multi-seed runner, evaluation scripts
 ├── analysis/            Stage 3: comparisons, statistics, error analysis, efficiency, seeds
 │   └── tie_validation/  human review of TIE's 49 hardest clips, validates the artifact classifier
@@ -351,7 +362,7 @@ indian-asr-bench/
 ├── hpc/                 PBS job scripts + NSCC runbook
 ├── environments/        conda env specs per engine
 ├── scripts/             smoke test
-├── tests/               pytest suite (41 tests)
+├── tests/               pytest regression suite
 └── archived_tasks/      exploratory work SUMMARY.md still cites (TIE fine-tuning, YouTube captions)
 ```
 

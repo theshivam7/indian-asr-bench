@@ -3,7 +3,8 @@
 #
 # Pins intentionally differ from finetune/requirements.txt; the engines cannot share
 # one environment. Do not "reconcile" the versions across these files.
-qwen-asr
+qwen-asr==0.0.6
+transformers==4.57.6
 torch==2.5.1
 # 4.x is required to read a cache written by datasets 4.x: the List feature type it
 # introduced is unknown to 3.x, which fails with "Feature type 'List' not found".
@@ -15,3 +16,4 @@ librosa==0.11.0
 numpy==1.26.4
 num2words==0.5.14
 soundfile==0.13.1
+jiwer==4.0.0
