@@ -106,6 +106,7 @@ conda run -n parakeet pip install -r parakeet/requirements.txt
 conda run -n qwen3 pip install -r qwen3/requirements.txt
 
 # submit nine exclusive-A100 jobs through NSCC's normal routing queue
+# (g1: 1 GPU, 16 CPUs, 110 GB host RAM, 8-hour limit per job)
 export PROJECT=<nscc_project_id>
 bash hpc/submit_throughput.sh
 ```

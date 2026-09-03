@@ -71,9 +71,9 @@ EXPECTED_PROTOCOL = {
     "quality_gate_repeat_outputs": "identical_hypothesis_hashes",
     "throughput_tie_rule": "smallest_batch_within_1pct_of_maximum_median_rtfx",
     "cpu_thread_limits": {
-        "OMP_NUM_THREADS": "8",
-        "MKL_NUM_THREADS": "8",
-        "NUMEXPR_NUM_THREADS": "8",
+        "OMP_NUM_THREADS": "16",
+        "MKL_NUM_THREADS": "16",
+        "NUMEXPR_NUM_THREADS": "16",
     },
 }
 

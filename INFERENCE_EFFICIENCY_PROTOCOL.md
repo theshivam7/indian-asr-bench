@@ -42,7 +42,8 @@ Primary sources:
 ## Pre-registered workload and timing rules
 
 - Hardware: one exclusive A100 40 GB node (`place=excl`), one GPU per process.
-  CPU math-library threads are fixed to the 8 CPUs requested from PBS.
+  NSCC's `g1` route allocates 16 CPUs and 110 GB host RAM for this one-GPU job;
+  CPU math-library threads are fixed to those 16 allocated CPUs for every model.
 - Dataset: 512 evaluation clips with non-empty normalized references and duration
   of at most 30 seconds,
   selected with NumPy seed 42. The short-form limit prevents Whisper alone from

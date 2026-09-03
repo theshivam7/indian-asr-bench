@@ -3,7 +3,9 @@
 # `normal` is NSCC's routing queue; the 8-hour request routes this full sweep to
 # an eligible production GPU execution queue instead of the 2-hour gdev queue.
 #PBS -q normal
-#PBS -l select=1:ngpus=1:ncpus=8:mem=64gb
+# g1 normalizes one-GPU jobs to this full-node CPU/RAM allocation. Request it
+# explicitly so the registered host resources and the executed job agree.
+#PBS -l select=1:ngpus=1:ncpus=16:mem=110gb
 #PBS -l place=excl
 #PBS -l walltime=08:00:00
 #PBS -j oe
@@ -75,9 +77,13 @@ export HF_DATASETS_CACHE="${HF_CACHE}/datasets"
 export XDG_CACHE_HOME="${HF_CACHE}/xdg"
 export TMPDIR="${SCRATCH_DIR}/tmp"
 export TOKENIZERS_PARALLELISM=false
-export OMP_NUM_THREADS=${PBS_NCPUS:-8}
-export MKL_NUM_THREADS=${PBS_NCPUS:-8}
-export NUMEXPR_NUM_THREADS=${PBS_NCPUS:-8}
+if [ "${PBS_NCPUS:-16}" -ne 16 ]; then
+    echo "[FATAL] protocol requires 16 allocated CPUs; PBS_NCPUS=${PBS_NCPUS:-unset}"
+    exit 1
+fi
+export OMP_NUM_THREADS=16
+export MKL_NUM_THREADS=16
+export NUMEXPR_NUM_THREADS=16
 export PYTHONHASHSEED=0
 
 cd "${WORKDIR}" || exit 1
