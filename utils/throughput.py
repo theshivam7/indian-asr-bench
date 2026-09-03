@@ -508,6 +508,7 @@ def run_throughput_benchmark(
             "model_load_seconds": round(float(model_load_seconds), 3),
             "parameter_count": count_parameters(model),
             "git_commit": _git_commit(),
+            "source_sha256": os.environ.get("SOURCE_SHA256", "").strip(),
             "workload": workload,
             "protocol": {
                 "scenario": "offline_saturated_throughput",
@@ -598,6 +599,10 @@ def run_throughput_benchmark(
                     processing_seconds = time.perf_counter() - trial_start
                     telemetry = sampler.stop()
                     sampler = None
+                    if telemetry.get("telemetry_samples", 0) < 1:
+                        raise RuntimeError(
+                            "nvidia-smi produced no GPU telemetry samples"
+                        )
                     trial = summarize_trial(
                         processing_seconds,
                         batch_latencies,

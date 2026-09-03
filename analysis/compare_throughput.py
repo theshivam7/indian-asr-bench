@@ -19,9 +19,16 @@ from utils.registry import CHART_MODELS, MODEL_BY_KEY, get_dataset
 from utils.throughput import PROTOCOL_VERSION, select_best_entry
 
 EXPECTED_RUNTIME = {
-    "huggingface_transformers_whisper_pipeline": ("transformers", "4.57.6"),
-    "nvidia_nemo_native_transcribe": ("nemo_toolkit", "2.3.0"),
-    "qwen_asr_transformers_backend": ("qwen-asr", "0.0.6"),
+    "huggingface_transformers_whisper_pipeline": {
+        "transformers": "4.57.6",
+        "accelerate": "1.12.0",
+        "safetensors": "0.6.2",
+    },
+    "nvidia_nemo_native_transcribe": {"nemo_toolkit": "2.3.0"},
+    "qwen_asr_transformers_backend": {
+        "qwen-asr": "0.0.6",
+        "transformers": "4.57.6",
+    },
 }
 
 EXPECTED_MODEL = {
@@ -128,12 +135,12 @@ def validate(results: list[dict], dataset: str, require_complete: bool) -> None:
         if runtime not in EXPECTED_RUNTIME:
             errors.append(f"{r['_path']}: unexpected runtime {runtime!r}")
         else:
-            package, expected = EXPECTED_RUNTIME[runtime]
-            actual = r.get("software", {}).get(package)
-            if actual != expected:
-                errors.append(
-                    f"{r['_path']}: {package}={actual!r}, expected {expected!r}"
-                )
+            for package, expected in EXPECTED_RUNTIME[runtime].items():
+                actual = r.get("software", {}).get(package)
+                if actual != expected:
+                    errors.append(
+                        f"{r['_path']}: {package}={actual!r}, expected {expected!r}"
+                    )
         model_key = r.get("model_key")
         if model_key not in EXPECTED_MODEL:
             errors.append(f"{r['_path']}: unexpected model key {model_key!r}")
@@ -235,10 +242,22 @@ def validate(results: list[dict], dataset: str, require_complete: bool) -> None:
         errors.append("protocol requires exactly one CUDA-visible GPU per process")
     if len(drivers) != 1:
         errors.append(f"NVIDIA driver versions differ: {drivers}")
+    require_same(
+        "PyTorch CUDA runtime",
+        [r.get("hardware", {}).get("torch_cuda") for r in results],
+    )
+    require_same("cuDNN runtime", [r.get("hardware", {}).get("cudnn") for r in results])
+    if any(not r.get("hardware", {}).get("torch_cuda") for r in results):
+        errors.append("PyTorch CUDA runtime is missing")
+    if any(not r.get("hardware", {}).get("cudnn") for r in results):
+        errors.append("cuDNN runtime is missing")
     require_same("torch version", [r.get("software", {}).get("torch") for r in results])
     commits = {r.get("git_commit") for r in results}
     if len(commits) != 1 or not next(iter(commits), ""):
         errors.append(f"git commits are missing or differ: {commits}")
+    source_digests = {r.get("source_sha256") for r in results}
+    if len(source_digests) != 1 or not next(iter(source_digests), ""):
+        errors.append(f"source checksums are missing or differ: {source_digests}")
     if require_complete:
         present = {r.get("model_key") for r in results}
         missing = sorted(set(CHART_MODELS) - present)
@@ -340,6 +359,7 @@ def aggregate(results: list[dict], dataset: str) -> pd.DataFrame:
                 "runtime_package": _runtime_package(r),
                 "workload_fingerprint": r["workload"]["ordered_workload_fingerprint"],
                 "git_commit": r.get("git_commit"),
+                "source_sha256": r.get("source_sha256"),
             }
         )
     order = {m: MODEL_BY_KEY[m].order for m in CHART_MODELS}

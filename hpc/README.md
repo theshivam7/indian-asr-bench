@@ -100,7 +100,7 @@ git fetch origin
 git pull --ff-only origin main
 git status --short
 
-# one-time environment setup / refresh
+# one-time environment setup / refresh (also repairs a partial environment)
 bash throughput/setup_whisper.sh
 conda run -n parakeet pip install -r parakeet/requirements.txt
 conda run -n qwen3 pip install -r qwen3/requirements.txt

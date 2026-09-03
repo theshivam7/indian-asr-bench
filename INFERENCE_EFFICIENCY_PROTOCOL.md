@@ -44,6 +44,8 @@ Primary sources:
 - Hardware: one exclusive A100 40 GB node (`place=excl`), one GPU per process.
   NSCC's `g1` route allocates 16 CPUs and 110 GB host RAM for this one-GPU job;
   CPU math-library threads are fixed to those 16 allocated CPUs for every model.
+  The submitter requires the same PyTorch CUDA and cuDNN build in all three
+  environments, and the result validator checks them again.
 - Dataset: 512 evaluation clips with non-empty normalized references and duration
   of at most 30 seconds,
   selected with NumPy seed 42. The short-form limit prevents Whisper alone from
@@ -88,7 +90,8 @@ Secondary/reproducibility metrics: model-load time, mean power, approximate GPU
 energy per pass, Wh per transcribed audio hour, audio seconds per GPU joule, GPU
 name/UUID context, total VRAM, driver, CUDA/Torch/runtime
 versions, node, git commit, OOM point, model ID, precision, attention backend,
-language, token limit, and timestamp setting.
+language, token limit, timestamp setting, and a compute-node-verified SHA-256 of
+the runtime source files.
 
 ## Quality gate
 

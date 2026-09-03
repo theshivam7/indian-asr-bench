@@ -9,9 +9,8 @@
 #PBS -l place=excl
 #PBS -l walltime=08:00:00
 #PBS -j oe
-#PBS -k oed
 
-set -u
+set -euo pipefail
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 SCRATCH_DIR=${SCRATCH:-/scratch/users/ntu/${USER}}
@@ -25,6 +24,7 @@ WARMUP_BATCHES=${WARMUP_BATCHES:-3}
 REPEATS=${REPEATS:-3}
 SEED=${SEED:-42}
 TELEMETRY_MS=${TELEMETRY_MS:-250}
+SOURCE_SHA256=${SOURCE_SHA256:?submit via hpc/submit_throughput.sh}
 
 mkdir -p "${WORKDIR}/logs" "${HF_CACHE}" "${SCRATCH_DIR}/tmp"
 JOBTAG_RAW=${PBS_JOBID:-manual}
@@ -88,6 +88,21 @@ export PYTHONHASHSEED=0
 
 cd "${WORKDIR}" || exit 1
 test -f "${DRIVER}" || { echo "[FATAL] missing ${DRIVER}"; exit 1; }
+
+source_digest() {
+    {
+        find utils throughput -maxdepth 1 -type f \
+          \( -name '*.py' -o -name '*.txt' -o -name '*.sh' \) -print0
+        printf '%s\0' hpc/job_throughput.pbs parakeet/requirements.txt qwen3/requirements.txt
+    } | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}'
+}
+ACTUAL_SOURCE_SHA256=$(source_digest)
+if [ "${ACTUAL_SOURCE_SHA256}" != "${SOURCE_SHA256}" ]; then
+    echo "[FATAL] benchmark source changed after submission"
+    echo "submitted=${SOURCE_SHA256} current=${ACTUAL_SOURCE_SHA256}"
+    exit 1
+fi
+
 GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse HEAD 2>/dev/null || true)}
 if [ -z "${GIT_COMMIT}" ]; then
     echo "[FATAL] GIT_COMMIT is unavailable; submit via hpc/submit_throughput.sh"
@@ -102,13 +117,13 @@ python -c "import torch; assert torch.cuda.is_available(); p=torch.cuda.get_devi
 python -c "from importlib.metadata import version; expected={'torch':'2.5.1','datasets':'4.8.5','pandas':'2.2.3','numpy':'1.26.4','soundfile':'0.13.1','librosa':'0.11.0','jiwer':'4.0.0','num2words':'0.5.14'}; actual={k:version(k) for k in expected}; assert actual==expected,(actual,expected); print('shared versions',actual)" || exit 1
 case "${ENGINE}" in
   whisper)  command -v ffmpeg >/dev/null || { echo "[FATAL] ffmpeg is required by the Transformers audio pipeline"; exit 1; }
-            python -c "from importlib.metadata import version; assert version('transformers')=='4.57.6'; import transformers; print('transformers',transformers.__version__)" || exit 1 ;;
+            python -c "from importlib.metadata import version; assert version('transformers')=='4.57.6' and version('accelerate')=='1.12.0' and version('safetensors')=='0.6.2'; import transformers; print('transformers',transformers.__version__,'accelerate',version('accelerate'),'safetensors',version('safetensors'))" || exit 1 ;;
   parakeet) python -c "from importlib.metadata import version; assert version('nemo_toolkit')=='2.3.0'; import nemo.collections.asr; print('NeMo',version('nemo_toolkit'))" || exit 1 ;;
   qwen3)    python -c "from importlib.metadata import version; assert version('qwen-asr')=='0.0.6' and version('transformers')=='4.57.6'; import qwen_asr; print('qwen-asr',version('qwen-asr'),'transformers',version('transformers'))" || exit 1 ;;
 esac
 nvidia-smi --query-gpu=name,uuid,memory.total,driver_version --format=csv,noheader || exit 1
 nvidia-smi --query-gpu=utilization.gpu,utilization.memory,memory.used,power.draw,clocks.sm --format=csv,noheader,nounits >/dev/null || exit 1
-echo "git commit: ${GIT_COMMIT}"
+echo "git commit: ${GIT_COMMIT} source_sha256: ${SOURCE_SHA256}"
 
 # Colon avoids PBS's comma separator for the qsub -v variable list.
 IFS=':' read -r -a DATASET_LIST <<< "${DATASETS}"

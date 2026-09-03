@@ -95,6 +95,8 @@ def _fake_result(model: str, runtime: str, package: str, version: str) -> dict:
         "num2words": "0.5.14",
         package: version,
     }
+    if runtime == "huggingface_transformers_whisper_pipeline":
+        software.update({"accelerate": "1.12.0", "safetensors": "0.6.2"})
     return {
         "_path": f"throughput_{model}.json",
         "protocol_version": "offline-throughput-v1",
@@ -108,12 +110,15 @@ def _fake_result(model: str, runtime: str, package: str, version: str) -> dict:
         "runtime": runtime,
         "runtime_config": {"checkpoint": checkpoint},
         "git_commit": "a" * 40,
+        "source_sha256": "f" * 64,
         "software": software,
         "hardware": {
             "gpu_name": "NVIDIA A100-SXM4-40GB",
             "gpu_count": 1,
             "gpu_total_mem_mib": 40536.0,
             "nvidia_driver": "570.124.06",
+            "torch_cuda": "12.4",
+            "cudnn": 90100,
         },
         "workload": {
             "dataset": "tie",
@@ -185,6 +190,24 @@ def test_aggregator_rejects_mixed_workloads_and_commits():
         assert "git commits" in str(exc)
     else:
         raise AssertionError("mixed commits were accepted")
+
+    bad_source = deepcopy(parakeet)
+    bad_source["source_sha256"] = "0" * 64
+    try:
+        validate([whisper, bad_source], "tie", require_complete=False)
+    except ValueError as exc:
+        assert "source checksums" in str(exc)
+    else:
+        raise AssertionError("mixed source checksums were accepted")
+
+    bad_cuda = deepcopy(parakeet)
+    bad_cuda["hardware"]["torch_cuda"] = "11.8"
+    try:
+        validate([whisper, bad_cuda], "tie", require_complete=False)
+    except ValueError as exc:
+        assert "PyTorch CUDA runtime differs" in str(exc)
+    else:
+        raise AssertionError("mixed CUDA runtimes were accepted")
 
 
 def test_aggregator_rejects_wrong_model_runtime_or_checkpoint():
