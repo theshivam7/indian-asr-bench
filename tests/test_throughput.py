@@ -210,6 +210,17 @@ def test_aggregator_rejects_mixed_workloads_and_commits():
         raise AssertionError("mixed CUDA runtimes were accepted")
 
 
+def test_aggregator_accepts_cuda_local_torch_version_suffix():
+    whisper = _fake_result(
+        "tiny", "huggingface_transformers_whisper_pipeline", "transformers", "4.57.6"
+    )
+    parakeet = _fake_result(
+        "parakeet", "nvidia_nemo_native_transcribe", "nemo_toolkit", "2.3.0"
+    )
+    whisper["software"]["torch"] = "2.5.1+cu124"
+    validate([whisper, parakeet], "tie", require_complete=False)
+
+
 def test_aggregator_rejects_wrong_model_runtime_or_checkpoint():
     whisper = _fake_result(
         "tiny", "huggingface_transformers_whisper_pipeline", "transformers", "4.57.6"

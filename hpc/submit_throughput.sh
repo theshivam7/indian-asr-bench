@@ -8,7 +8,8 @@ DATASETS=${DATASETS:-tie:svarah:aesrc}
 GIT_COMMIT=$(git rev-parse HEAD)
 SUBMIT_DIR=$(pwd -P)
 mkdir -p "${SUBMIT_DIR}/logs"
-WHISPER_THROUGHPUT_ENV=${WHISPER_THROUGHPUT_ENV:-whisper_throughput}
+SCRATCH_DIR=${SCRATCH:-/scratch/users/ntu/${USER}}
+WHISPER_THROUGHPUT_ENV=${WHISPER_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/whisper_throughput}
 PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
 QWEN3_ENV=${QWEN3_ENV:-qwen3}
 
@@ -36,29 +37,38 @@ SOURCE_SHA256=$(source_digest)
 
 # Fail on the login node before consuming a queued GPU job. Importing packages
 # and reading metadata is lightweight; model loading/inference remains inside PBS.
+run_in_env() {
+    env_name=$1
+    shift
+    case "${env_name}" in
+      /*) conda run -p "${env_name}" "$@" ;;
+      *)  conda run -n "${env_name}" "$@" ;;
+    esac
+}
+
 check_common() {
     env_name=$1
-    conda run -n "${env_name}" python -c \
-      "import torch; from importlib.metadata import version; expected={'torch':'2.5.1','datasets':'4.8.5','pandas':'2.2.3','numpy':'1.26.4','soundfile':'0.13.1','librosa':'0.11.0','jiwer':'4.0.0','num2words':'0.5.14'}; actual={k:version(k) for k in expected}; assert actual==expected,(actual,expected); assert torch.version.cuda, 'CUDA-enabled torch build required'; print('${env_name}',actual,'torch_cuda',torch.version.cuda)"
+    run_in_env "${env_name}" python -c \
+      "import torch; from importlib.metadata import version; expected={'datasets':'4.8.5','pandas':'2.2.3','numpy':'1.26.4','soundfile':'0.13.1','librosa':'0.11.0','jiwer':'4.0.0','num2words':'0.5.14'}; actual={k:version(k) for k in expected}; assert actual==expected,(actual,expected); torch_ver=version('torch'); assert torch_ver.split('+')[0]=='2.5.1',torch_ver; assert torch.version.cuda, 'CUDA-enabled torch build required'; print('${env_name}',{'torch':torch_ver,**actual},'torch_cuda',torch.version.cuda)"
 }
 
 echo "=== preflight: throughput environments ==="
 check_common "${WHISPER_THROUGHPUT_ENV}"
-conda run -n "${WHISPER_THROUGHPUT_ENV}" ffmpeg -version >/dev/null
-conda run -n "${WHISPER_THROUGHPUT_ENV}" python -c \
+run_in_env "${WHISPER_THROUGHPUT_ENV}" ffmpeg -version >/dev/null
+run_in_env "${WHISPER_THROUGHPUT_ENV}" python -c \
   "from importlib.metadata import version; assert version('transformers')=='4.57.6' and version('accelerate')=='1.12.0' and version('safetensors')=='0.6.2'"
 check_common "${PARAKEET_ENV}"
-conda run -n "${PARAKEET_ENV}" python -c \
+run_in_env "${PARAKEET_ENV}" python -c \
   "from importlib.metadata import version; assert version('nemo_toolkit')=='2.3.0'"
 check_common "${QWEN3_ENV}"
-conda run -n "${QWEN3_ENV}" python -c \
+run_in_env "${QWEN3_ENV}" python -c \
   "from importlib.metadata import version; assert version('qwen-asr')=='0.0.6' and version('transformers')=='4.57.6'"
 
-WHISPER_CUDA=$(conda run -n "${WHISPER_THROUGHPUT_ENV}" python -c \
+WHISPER_CUDA=$(run_in_env "${WHISPER_THROUGHPUT_ENV}" python -c \
   "import torch; print(f'{torch.version.cuda}|{torch.backends.cudnn.version()}')" | tr -d '\r\n')
-PARAKEET_CUDA=$(conda run -n "${PARAKEET_ENV}" python -c \
+PARAKEET_CUDA=$(run_in_env "${PARAKEET_ENV}" python -c \
   "import torch; print(f'{torch.version.cuda}|{torch.backends.cudnn.version()}')" | tr -d '\r\n')
-QWEN3_CUDA=$(conda run -n "${QWEN3_ENV}" python -c \
+QWEN3_CUDA=$(run_in_env "${QWEN3_ENV}" python -c \
   "import torch; print(f'{torch.version.cuda}|{torch.backends.cudnn.version()}')" | tr -d '\r\n')
 if [ "${WHISPER_CUDA}" != "${PARAKEET_CUDA}" ] || [ "${WHISPER_CUDA}" != "${QWEN3_CUDA}" ]; then
     echo "[FATAL] CUDA/cuDNN builds differ across environments:" >&2

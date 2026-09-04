@@ -48,7 +48,7 @@ source "${CONDA_BASE}/etc/profile.d/conda.sh"
 
 case "${ENGINE}" in
   whisper)
-    ENV_NAME=${WHISPER_THROUGHPUT_ENV:-whisper_throughput}
+    ENV_NAME=${WHISPER_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/whisper_throughput}
     DRIVER=throughput/run_whisper_hf.py
     ;;
   parakeet)
@@ -114,7 +114,7 @@ echo "=== environment ==="
 command -v python
 python --version
 python -c "import torch; assert torch.cuda.is_available(); p=torch.cuda.get_device_properties(0); mib=p.total_memory/2**20; assert torch.cuda.device_count()==1,(torch.cuda.device_count(),'visible GPUs'); assert 'A100' in p.name and 39000<=mib<=41500,(p.name,mib); print('torch',torch.__version__,'cuda',torch.version.cuda,'gpu',p.name,'memory_mib',round(mib,1))" || exit 1
-python -c "from importlib.metadata import version; expected={'torch':'2.5.1','datasets':'4.8.5','pandas':'2.2.3','numpy':'1.26.4','soundfile':'0.13.1','librosa':'0.11.0','jiwer':'4.0.0','num2words':'0.5.14'}; actual={k:version(k) for k in expected}; assert actual==expected,(actual,expected); print('shared versions',actual)" || exit 1
+python -c "from importlib.metadata import version; expected={'datasets':'4.8.5','pandas':'2.2.3','numpy':'1.26.4','soundfile':'0.13.1','librosa':'0.11.0','jiwer':'4.0.0','num2words':'0.5.14'}; actual={k:version(k) for k in expected}; assert actual==expected,(actual,expected); torch_ver=version('torch'); assert torch_ver.split('+')[0]=='2.5.1',torch_ver; print('shared versions',{'torch':torch_ver,**actual})" || exit 1
 case "${ENGINE}" in
   whisper)  command -v ffmpeg >/dev/null || { echo "[FATAL] ffmpeg is required by the Transformers audio pipeline"; exit 1; }
             python -c "from importlib.metadata import version; assert version('transformers')=='4.57.6' and version('accelerate')=='1.12.0' and version('safetensors')=='0.6.2'; import transformers; print('transformers',transformers.__version__,'accelerate',version('accelerate'),'safetensors',version('safetensors'))" || exit 1 ;;

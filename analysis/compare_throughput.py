@@ -47,7 +47,6 @@ EXPECTED_MODEL = {
 }
 
 EXPECTED_COMMON_SOFTWARE = {
-    "torch": "2.5.1",
     "datasets": "4.8.5",
     "pandas": "2.2.3",
     "numpy": "1.26.4",
@@ -170,6 +169,11 @@ def validate(results: list[dict], dataset: str, require_complete: bool) -> None:
                 errors.append(
                     f"{r['_path']}: {package}={actual!r}, expected {expected!r}"
                 )
+        torch_version = r.get("software", {}).get("torch")
+        if not isinstance(torch_version, str) or torch_version.split("+")[0] != "2.5.1":
+            errors.append(
+                f"{r['_path']}: torch={torch_version!r}, expected base version '2.5.1'"
+            )
         for field, expected in EXPECTED_WORKLOAD.items():
             actual = r.get("workload", {}).get(field)
             if actual != expected:
@@ -251,7 +255,10 @@ def validate(results: list[dict], dataset: str, require_complete: bool) -> None:
         errors.append("PyTorch CUDA runtime is missing")
     if any(not r.get("hardware", {}).get("cudnn") for r in results):
         errors.append("cuDNN runtime is missing")
-    require_same("torch version", [r.get("software", {}).get("torch") for r in results])
+    require_same(
+        "torch base version",
+        [str(r.get("software", {}).get("torch")).split("+")[0] for r in results],
+    )
     commits = {r.get("git_commit") for r in results}
     if len(commits) != 1 or not next(iter(commits), ""):
         errors.append(f"git commits are missing or differ: {commits}")

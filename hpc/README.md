@@ -55,7 +55,7 @@ single phase on its own, use `--phase 1|2` instead of `all`.
 | `parakeet` | `bash parakeet/setup.sh` | Parakeet-TDT / Parakeet-CTC (NeMo) |
 | `qwen3` | `bash qwen3/setup.sh` | Qwen3-ASR |
 | `whisper_medium_ft` | `bash finetune/setup.sh` | fine-tuning (HF `transformers`, `datasets==4.8.5`) |
-| `whisper_throughput` | `bash throughput/setup_whisper.sh` | batched Whisper throughput only |
+| `$SCRATCH/envs/whisper_throughput` | `bash throughput/setup_whisper.sh` | batched Whisper throughput only; scratch prefix avoids the HOME quota |
 
 Before the first throughput submission (and after pulling dependency changes),
 refresh the two existing native-engine environments:
@@ -101,6 +101,8 @@ git pull --ff-only origin main
 git status --short
 
 # one-time environment setup / refresh (also repairs a partial environment)
+export SCRATCH=/scratch/users/ntu/$USER
+export WHISPER_THROUGHPUT_ENV=$SCRATCH/envs/whisper_throughput
 bash throughput/setup_whisper.sh
 conda run -n parakeet pip install -r parakeet/requirements.txt
 conda run -n qwen3 pip install -r qwen3/requirements.txt

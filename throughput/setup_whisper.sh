@@ -3,21 +3,34 @@ set -euo pipefail
 # Run from the repository root on an NSCC login node. Installation is allowed on
 # login nodes; model inference is not.
 
-ENV_NAME=${1:-whisper_throughput}
+SCRATCH_DIR=${SCRATCH:-/scratch/users/ntu/${USER}}
+ENV_NAME=${1:-${WHISPER_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/whisper_throughput}}
+export CONDA_PKGS_DIRS=${CONDA_PKGS_DIRS:-${SCRATCH_DIR}/conda_pkgs}
+export PIP_CACHE_DIR=${PIP_CACHE_DIR:-${SCRATCH_DIR}/pip_cache}
+export TMPDIR=${TMPDIR:-${SCRATCH_DIR}/tmp}
+mkdir -p "${SCRATCH_DIR}/envs" "${CONDA_PKGS_DIRS}" "${PIP_CACHE_DIR}" "${TMPDIR}"
 
-if ! conda run -n "${ENV_NAME}" python --version >/dev/null 2>&1; then
-  conda create -n "${ENV_NAME}" python=3.10 -y
+case "${ENV_NAME}" in
+  /*) ENV_FLAG=-p ;;
+  *)  ENV_FLAG=-n ;;
+esac
+
+if ! conda run "${ENV_FLAG}" "${ENV_NAME}" python --version >/dev/null 2>&1; then
+  conda create "${ENV_FLAG}" "${ENV_NAME}" python=3.10 -y
 fi
 
 # Install file decoding independently, then let the pinned pip requirements use
 # the same working PyTorch 2.5.1 CUDA wheel as the native-engine environments.
 # This also repairs an environment left half-created by an interrupted install.
-conda install -n "${ENV_NAME}" -y "conda-forge::ffmpeg" -c conda-forge
-conda run --no-capture-output -n "${ENV_NAME}" \
+conda install "${ENV_FLAG}" "${ENV_NAME}" -y "conda-forge::ffmpeg" -c conda-forge
+conda run --no-capture-output "${ENV_FLAG}" "${ENV_NAME}" \
+  python -m pip install "torch==2.5.1" \
+  --index-url https://download.pytorch.org/whl/cu124
+conda run --no-capture-output "${ENV_FLAG}" "${ENV_NAME}" \
   python -m pip install -r throughput/requirements-whisper.txt
-conda run --no-capture-output -n "${ENV_NAME}" python -m pip check
-conda run -n "${ENV_NAME}" ffmpeg -version >/dev/null
-conda run --no-capture-output -n "${ENV_NAME}" python -c \
+conda run --no-capture-output "${ENV_FLAG}" "${ENV_NAME}" python -m pip check
+conda run "${ENV_FLAG}" "${ENV_NAME}" ffmpeg -version >/dev/null
+conda run --no-capture-output "${ENV_FLAG}" "${ENV_NAME}" python -c \
   "import torch, transformers; assert torch.version.cuda; print('torch', torch.__version__, 'cuda', torch.version.cuda, 'transformers', transformers.__version__)"
 
 echo "Ready: conda activate ${ENV_NAME}"
