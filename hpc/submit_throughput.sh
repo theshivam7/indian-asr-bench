@@ -10,8 +10,8 @@ SUBMIT_DIR=$(pwd -P)
 mkdir -p "${SUBMIT_DIR}/logs"
 SCRATCH_DIR=${SCRATCH:-/scratch/users/ntu/${USER}}
 WHISPER_THROUGHPUT_ENV=${WHISPER_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/whisper_throughput}
-PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
-QWEN3_ENV=${QWEN3_ENV:-qwen3}
+PARAKEET_ENV=${PARAKEET_ENV:-${SCRATCH_DIR}/envs/parakeet_throughput}
+QWEN3_ENV=${QWEN3_ENV:-${SCRATCH_DIR}/envs/qwen3_throughput}
 
 # Result files may legitimately be present or modified. Every other tracked or
 # untracked file must match GIT_COMMIT so local modules cannot silently shadow

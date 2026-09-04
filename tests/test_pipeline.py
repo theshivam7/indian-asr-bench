@@ -14,6 +14,8 @@ registry integrity, and the committed headline corpus-WER values (regression gat
 import os
 import sys
 
+import pandas as pd
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from utils import registry
@@ -24,7 +26,8 @@ from utils.wer_compute import (
     compute_sample_wer, compute_corpus_wer, compute_corpus_cer,
     reference_word_recall, length_ratio,
 )
-from utils.io_helpers import stage2_dir
+from utils.io_helpers import positive_float, stage2_dir, text_value
+from normalize_and_score import process
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -39,12 +42,37 @@ def test_custom_normalizer_contract():
     assert normalize_text("don't") == "dont"               # contraction: apostrophe stripped, not expanded
     assert normalize_text("Bernoulli's") == "bernoulli s"  # possessive split
     assert normalize_text("") == "" and normalize_text(None or "") == ""
+    assert normalize_text(float("nan")) == ""
 
 
 def test_minimal_normalizer_contract():
     assert minimal_clean_text('"Hello, World!"') == "hello world"   # strip quotes/punct/case
     assert minimal_clean_text("1st") == "1st"                        # NO number expansion
     assert minimal_clean_text("") == ""
+    assert minimal_clean_text(float("nan")) == ""
+
+
+def test_missing_text_values_never_become_literal_nan():
+    assert text_value(None) == ""
+    assert text_value(float("nan")) == ""
+    assert text_value("  hello  ") == "hello"
+    assert positive_float(1.5) == 1.5
+    assert positive_float(float("nan")) is None
+    assert positive_float(0) is None
+
+
+def test_scoring_preserves_an_empty_hypothesis_as_deletions():
+    df = pd.DataFrame({
+        "ID": ["clip-1"],
+        "transcript_raw": ["hello world"],
+        "normalised_transcript_raw": [""],
+        "hypothesis_raw": [float("nan")],
+    })
+    rows, stats = process(df, "tiny", "transcript_clean")
+    assert rows[0]["hypothesis_raw"] == ""
+    assert rows[0]["hypothesis"] == ""
+    assert stats["num_empty_hyps"] == 1
+    assert stats["deletions"] == 2
 
 
 def test_whisper_normalizer_contract():
@@ -77,6 +105,15 @@ def test_corpus_wer_empty_hyp_counts_as_deletions():
     r = compute_corpus_wer(["a b c", "x y"], ["", "x y"])
     assert r["num_empty_hyps"] == 1
     assert r["deletions"] >= 3                        # the 3 words of the empty-hyp ref
+
+def test_corpus_metrics_reject_misaligned_inputs():
+    for scorer in (compute_corpus_wer, compute_corpus_cer):
+        try:
+            scorer(["one", "two"], ["one"])
+        except ValueError as exc:
+            assert "count mismatch" in str(exc)
+        else:
+            raise AssertionError("misaligned corpus inputs were silently truncated")
 
 def test_corpus_cer_and_diagnostics():
     assert compute_corpus_cer(["abc"], [""]) == 1.0   # empty hyp = all chars deleted
@@ -193,8 +230,10 @@ if __name__ == "__main__":
     failed = 0
     for fn in fns:
         try:
-            fn(); print(f"PASS {fn.__name__}")
+            fn()
+            print(f"PASS {fn.__name__}")
         except AssertionError as e:
-            failed += 1; print(f"FAIL {fn.__name__}: {e}")
+            failed += 1
+            print(f"FAIL {fn.__name__}: {e}")
     print(f"\n{len(fns) - failed}/{len(fns)} passed")
     sys.exit(1 if failed else 0)

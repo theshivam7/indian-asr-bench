@@ -52,11 +52,11 @@ case "${ENGINE}" in
     DRIVER=throughput/run_whisper_hf.py
     ;;
   parakeet)
-    ENV_NAME=${PARAKEET_ENV:-parakeet}
+    ENV_NAME=${PARAKEET_ENV:-${SCRATCH_DIR}/envs/parakeet_throughput}
     DRIVER=throughput/run_parakeet.py
     ;;
   qwen3)
-    ENV_NAME=${QWEN3_ENV:-qwen3}
+    ENV_NAME=${QWEN3_ENV:-${SCRATCH_DIR}/envs/qwen3_throughput}
     DRIVER=throughput/run_qwen3.py
     ;;
   *)

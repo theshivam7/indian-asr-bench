@@ -20,7 +20,7 @@ if ! conda run "${ENV_FLAG}" "${ENV_NAME}" python --version >/dev/null 2>&1; the
 fi
 
 # Install file decoding independently, then let the pinned pip requirements use
-# the same working PyTorch 2.5.1 CUDA wheel as the native-engine environments.
+# the same PyTorch 2.5.1 CUDA wheel as the dedicated native throughput environments.
 # This also repairs an environment left half-created by an interrupted install.
 conda install "${ENV_FLAG}" "${ENV_NAME}" -y "conda-forge::ffmpeg" -c conda-forge
 conda run --no-capture-output "${ENV_FLAG}" "${ENV_NAME}" \

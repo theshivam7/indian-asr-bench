@@ -39,7 +39,7 @@ from utils.efficiency import (
     subset_fingerprint,
     synchronize_device,
 )
-from utils.io_helpers import audio_to_wav_16k, probe_audio_duration, throughput_dir
+from utils.io_helpers import audio_to_wav_16k, probe_audio_duration, text_value, throughput_dir
 from utils.normalize import normalize_for_mode
 from utils.registry import MODEL_BY_KEY
 from utils.wer_compute import compute_corpus_cer, compute_corpus_wer
@@ -140,7 +140,7 @@ def prepare_subset(
         raise ValueError("n_clips must be positive")
     eligible = []
     for i, ref in enumerate(gold_refs):
-        if not normalize_for_mode("transcript_clean", str(ref or "")):
+        if not normalize_for_mode("transcript_clean", text_value(ref)):
             continue
         duration = _declared_duration(ds, spec, i)
         # Metadata can be rounded. Probe the real audio near the boundary so a
@@ -186,7 +186,7 @@ def prepare_subset(
                 clip_id=ids[i],
                 path=wav_path,
                 duration_s=float(duration),
-                reference=str(sample.get(spec.gold_ref_col) or "").strip(),
+                reference=text_value(sample.get(spec.gold_ref_col)),
             )
         )
     prep_seconds = time.perf_counter() - prep_start
@@ -593,7 +593,7 @@ def run_throughput_benchmark(
                             raise RuntimeError(
                                 f"batch callable returned {len(outputs)} outputs for {len(chunk)} inputs"
                             )
-                        hypotheses.extend(str(v or "").strip() for v in outputs)
+                        hypotheses.extend(text_value(v) for v in outputs)
                         batch_counts.append(len(chunk))
                     synchronize_device()
                     processing_seconds = time.perf_counter() - trial_start

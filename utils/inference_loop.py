@@ -36,6 +36,8 @@ from utils.io_helpers import (
     write_run_manifest,
     raw_audio_column,
     probe_audio_duration,
+    positive_float,
+    text_value,
 )
 
 
@@ -43,9 +45,8 @@ def _install_sigterm_handler(state: dict) -> None:
     """On SIGTERM (PBS walltime kill) dump progress so the run is resumable."""
     def handler(signum, frame):
         if state["rows"]:
-            path = os.path.join(results_dir(state["dataset"]), f"wer_{state['model']}_interrupted.csv")
-            pd.DataFrame(state["rows"]).to_csv(path, index=False)
-            print(f"\n[SIGTERM] dumped {len(state['rows'])} rows to {path}", flush=True)
+            path = save_checkpoint(state["rows"], state["model"], state["dataset"])
+            print(f"\n[SIGTERM] saved {len(state['rows'])} resumable rows to {path}", flush=True)
         sys.exit(143)
     signal.signal(signal.SIGTERM, handler)
 
@@ -64,15 +65,17 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
     # Datasets without a duration column (AESRC) get per-clip duration derived from the
     # audio header, so duration-bucket analyses and manifest timing stay available.
     derive_duration = spec.duration_col is None and spec.audio_undecoded
-    raw_audio = raw_audio_column(ds) if callback_takes_raw_audio else None
-    ds_iter = ds.remove_columns(["audio"]) if callback_takes_raw_audio else ds
+    raw_audio = raw_audio_column(ds, spec.audio_col) if callback_takes_raw_audio else None
+    ds_iter = ds.remove_columns([spec.audio_col]) if callback_takes_raw_audio else ds
 
     checkpoint_path = os.path.join(results_dir(dataset_key), f"wer_{model_key}_partial.csv")
     completed: set[str] = set()
     ckpt_map: dict[str, dict] = {}
     if os.path.exists(checkpoint_path):
         for r in pd.read_csv(checkpoint_path).to_dict("records"):
-            sid = str(r["ID"])
+            sid = text_value(r.get("ID"))
+            if not sid:
+                raise ValueError(f"Checkpoint {checkpoint_path} contains an empty ID")
             completed.add(sid)
             ckpt_map[sid] = r
         print(f"  Resuming from checkpoint: {len(completed)} samples already done\n")
@@ -86,7 +89,7 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
     n_fresh = 0
     fresh_audio_seconds = 0.0
     for idx, sample in enumerate(tqdm(ds_iter, desc=f"{dataset_key}:{model_key}")):
-        transcript = str(sample.get(spec.gold_ref_col) or "").strip()
+        transcript = text_value(sample.get(spec.gold_ref_col))
         if not transcript:
             continue
         sid = sample_id(sample, spec)
@@ -95,15 +98,21 @@ def run_transcription(model_key: str, dataset_key: str, transcribe_one, *,
             av = raw_audio[idx].as_py() if callback_takes_raw_audio else sample.get(spec.audio_col)
             duration = probe_audio_duration(av)
         if sid in completed:
-            hyp_raw = str(ckpt_map.get(sid, {}).get("hypothesis_raw") or "")
+            hyp_raw = text_value(ckpt_map.get(sid, {}).get("hypothesis_raw"))
         else:
-            if callback_takes_raw_audio:
-                hyp_raw = transcribe_one(sample, raw_audio[idx].as_py())
-            else:
-                hyp_raw = transcribe_one(sample)
+            try:
+                if callback_takes_raw_audio:
+                    hyp_raw = transcribe_one(sample, raw_audio[idx].as_py())
+                else:
+                    hyp_raw = transcribe_one(sample)
+            except Exception:
+                if rows:
+                    path = save_checkpoint(rows, model_key, dataset_key)
+                    print(f"\n[ERROR] saved {len(rows)} resumable rows to {path}", flush=True)
+                raise
             n_fresh += 1
             if spec.duration_col:
-                fresh_audio_seconds += float(sample.get(spec.duration_col) or 0.0)
+                fresh_audio_seconds += positive_float(sample.get(spec.duration_col)) or 0.0
             elif duration:
                 fresh_audio_seconds += duration
         rows.append(build_sample_row(sample, sid, transcript, hyp_raw, spec=spec, split=split,

@@ -31,7 +31,8 @@ def speaker_ids(dataset_key: str, spec, role: str) -> list[str]:
     if dataset_key == "tie":
         # Direct load, as in the fine-tune scripts: TIE's validation split lacks the
         # duration column the adapter's schema validation requires.
-        ds = load_dataset(spec.hf_id, split=spec.splits[role], cache_dir=HF_CACHE)
+        ds = load_dataset(spec.hf_id, split=spec.splits[role], cache_dir=HF_CACHE,
+                          revision=spec.hf_revision)
         return [str(s) for s in ds["Speaker_ID"]]
 
     from utils.datasets import load_split

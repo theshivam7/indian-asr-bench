@@ -18,7 +18,11 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import torch
 
-from utils.io_helpers import decode_audio_value, raw_audio_column as _raw_audio_column
+from utils.io_helpers import (
+    decode_audio_value,
+    raw_audio_column as _raw_audio_column,
+    text_value,
+)
 from utils.normalize import strip_wrapping_quotes
 
 MAX_AUDIO_SECONDS = 30
@@ -55,7 +59,7 @@ def seed_everything(seed: int) -> None:
 
 
 def has_usable_text(transcript) -> bool:
-    return bool((transcript or "").strip())
+    return bool(text_value(transcript))
 
 
 def within_duration(dur, max_seconds: float = MAX_AUDIO_SECONDS) -> bool:
@@ -91,7 +95,8 @@ _WAV_HEADER_BYTES = 78
 _WAV_BYTES_PER_SECOND = 32000
 
 
-def _filter_by_bytes_duration(ds, max_seconds: float, label: str = ""):
+def _filter_by_bytes_duration(ds, max_seconds: float, label: str = "",
+                              audio_col: str = "audio"):
     """Drop clips longer than max_seconds using byte-derived WAV durations.
 
     Used when a dataset has no duration column but stores fixed-format WAV bytes.
@@ -101,7 +106,7 @@ def _filter_by_bytes_duration(ds, max_seconds: float, label: str = ""):
     """
     import pyarrow.compute as pc
 
-    col = _raw_audio_column(ds).combine_chunks()
+    col = _raw_audio_column(ds, audio_col).combine_chunks()
     lengths = pc.fill_null(pc.binary_length(col.field("bytes")), 0).to_pylist()
     seconds = [(n - _WAV_HEADER_BYTES) / _WAV_BYTES_PER_SECOND for n in lengths]
 
@@ -124,7 +129,8 @@ def _filter_by_bytes_duration(ds, max_seconds: float, label: str = ""):
 
 
 def _filter_core(ds, transcript_col: str, duration_col: str | None,
-                 max_seconds: float, label: str, bytes_duration: bool = False):
+                 max_seconds: float, label: str, bytes_duration: bool = False,
+                 audio_col: str = "audio"):
     """Shared clip-usability filtering for fine-tuning splits.
 
     Order matters (fixed 2026-07-08): text/duration filtering must run BEFORE the
@@ -147,11 +153,12 @@ def _filter_core(ds, transcript_col: str, duration_col: str | None,
     ds = ds.flatten_indices()
 
     if duration_col is None and bytes_duration:
-        ds = _filter_by_bytes_duration(ds, max_seconds, label=label)
+        ds = _filter_by_bytes_duration(ds, max_seconds, label=label, audio_col=audio_col)
 
     n_before = len(ds)
     ds = ds.filter(
-        has_audio_array(_raw_audio_column(ds)), input_columns=[transcript_col], with_indices=True,
+        has_audio_array(_raw_audio_column(ds, audio_col)),
+        input_columns=[transcript_col], with_indices=True,
     )
     print(f"  {label}: {n_before} -> {len(ds)} after dropping clips with no embedded audio")
     return ds.flatten_indices()
@@ -166,7 +173,7 @@ def filter_finetune_split(ds, spec, max_seconds: float = MAX_AUDIO_SECONDS, labe
     transcript.
     """
     return _filter_core(ds, spec.gold_ref_col, spec.duration_col, max_seconds, label,
-                        bytes_duration=spec.audio_undecoded)
+                        bytes_duration=spec.audio_undecoded, audio_col=spec.audio_col)
 
 
 def filter_tie_split(ds, has_duration_col: bool = True,

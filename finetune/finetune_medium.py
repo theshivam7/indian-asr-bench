@@ -56,6 +56,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.io_helpers import HF_CACHE, raw_audio_column
 from utils.normalize import normalize_text
+from utils.registry import TIE
 from utils.finetune_data import (
     DataCollatorSpeechSeq2SeqWithPadding,
     make_prepare_dataset,
@@ -128,8 +129,10 @@ model.config.mask_feature_prob = 0.05
 
 # --------------- Data ---------------
 print("Loading train + validation splits ...")
-train_ds = load_dataset("raianand/TIE_shorts", split="train", cache_dir=HF_CACHE)
-eval_ds = load_dataset("raianand/TIE_shorts", split="validation", cache_dir=HF_CACHE)
+train_ds = load_dataset(TIE.hf_id, split=TIE.splits["train"], cache_dir=HF_CACHE,
+                        revision=TIE.hf_revision)
+eval_ds = load_dataset(TIE.hf_id, split=TIE.splits["validation"], cache_dir=HF_CACHE,
+                       revision=TIE.hf_revision)
 
 # Text/duration/no-audio filtering, in the order that keeps subset selection below exact
 # (see utils.finetune_data.filter_tie_split). Shared with finetune/finetune_tiny_small.py
@@ -184,7 +187,7 @@ def compute_metrics(pred):
 
     # Apply the project's forward normalization to BOTH sides (matches transcript_clean).
     pred_norm = [normalize_text(p) for p in pred_str]
-    label_norm = [normalize_text(l) for l in label_str]
+    label_norm = [normalize_text(label) for label in label_str]
 
     # Drop pairs whose reference normalized to empty (jiwer requires non-empty refs).
     refs, hyps = [], []

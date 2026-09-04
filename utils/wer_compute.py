@@ -62,8 +62,13 @@ def compute_corpus_wer(
     If per_sample_wers is provided, also returns distribution stats
     (mean, median, std, p90, p95).
     """
-    valid_refs = [r for r, h in zip(refs, hyps) if h]
-    valid_hyps = [h for h in hyps if h]
+    if len(refs) != len(hyps):
+        raise ValueError(
+            f"reference/hypothesis count mismatch ({len(refs)} != {len(hyps)})"
+        )
+    valid_pairs = [(r, h) for r, h in zip(refs, hyps) if h]
+    valid_refs = [r for r, _ in valid_pairs]
+    valid_hyps = [h for _, h in valid_pairs]
 
     if valid_refs:
         output = jiwer.process_words(valid_refs, valid_hyps)
@@ -113,8 +118,13 @@ def compute_corpus_cer(refs: list[str], hyps: list[str]) -> float:
     Empty hypotheses count all reference characters as deletions (mirrors the WER
     empty-handling), so CER and WER treat missing output consistently.
     """
-    valid_refs = [r for r, h in zip(refs, hyps) if h]
-    valid_hyps = [h for h in hyps if h]
+    if len(refs) != len(hyps):
+        raise ValueError(
+            f"reference/hypothesis count mismatch ({len(refs)} != {len(hyps)})"
+        )
+    valid_pairs = [(r, h) for r, h in zip(refs, hyps) if h]
+    valid_refs = [r for r, _ in valid_pairs]
+    valid_hyps = [h for _, h in valid_pairs]
 
     if valid_refs:
         output = jiwer.process_characters(valid_refs, valid_hyps)

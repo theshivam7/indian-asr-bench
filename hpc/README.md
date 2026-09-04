@@ -56,13 +56,16 @@ single phase on its own, use `--phase 1|2` instead of `all`.
 | `qwen3` | `bash qwen3/setup.sh` | Qwen3-ASR |
 | `whisper_medium_ft` | `bash finetune/setup.sh` | fine-tuning (HF `transformers`, `datasets==4.8.5`) |
 | `$SCRATCH/envs/whisper_throughput` | `bash throughput/setup_whisper.sh` | batched Whisper throughput only; scratch prefix avoids the HOME quota |
+| `$SCRATCH/envs/parakeet_throughput` | `bash throughput/setup_native.sh parakeet` | batched Parakeet throughput, pinned to the same CUDA build |
+| `$SCRATCH/envs/qwen3_throughput` | `bash throughput/setup_native.sh qwen3` | batched Qwen3-ASR throughput, pinned to the same CUDA build |
 
 Before the first throughput submission (and after pulling dependency changes),
-refresh the two existing native-engine environments:
+create or refresh all three dedicated throughput environments:
 
 ```bash
-conda run -n parakeet pip install -r parakeet/requirements.txt
-conda run -n qwen3 pip install -r qwen3/requirements.txt
+bash throughput/setup_whisper.sh
+bash throughput/setup_native.sh parakeet
+bash throughput/setup_native.sh qwen3
 ```
 
 ## Individual jobs
@@ -73,7 +76,7 @@ qsub -P <id> -v DATASET=svarah                    hpc/job_parakeet.pbs # (parake
 qsub -P <id> -v DATASET=svarah                    hpc/job_qwen3.pbs
 qsub -P <id> -v DATASET=tie                        hpc/job_score.pbs   # CPU-only rescore + analysis (no GPU)
 qsub -P <id> -v DATASETS=tie,svarah                hpc/job_figures.pbs # CPU-only combined figures
-qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full from-scratch 7-model run
+qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full from-scratch 9-model run
 ```
 
 `DATASET` accepts any registry key (`tie`, `svarah`, `aesrc`); the AESRC spec filters
@@ -104,8 +107,8 @@ git status --short
 export SCRATCH=/scratch/users/ntu/$USER
 export WHISPER_THROUGHPUT_ENV=$SCRATCH/envs/whisper_throughput
 bash throughput/setup_whisper.sh
-conda run -n parakeet pip install -r parakeet/requirements.txt
-conda run -n qwen3 pip install -r qwen3/requirements.txt
+bash throughput/setup_native.sh parakeet
+bash throughput/setup_native.sh qwen3
 
 # submit nine exclusive-A100 jobs through NSCC's normal routing queue
 # (g1: 1 GPU, 16 CPUs, 110 GB host RAM, 8-hour limit per job)

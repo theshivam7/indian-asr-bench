@@ -2,12 +2,13 @@
 #PBS -N wer_medium_ft
 #PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
 #PBS -l walltime=3:00:00
-#PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/medium_ft.log
 #PBS -e logs/medium_ft.log
 #PBS -j oe
 #PBS -k oed
 #PBS -V
+
+set -euo pipefail
 # -V forwards the submitting shell's environment (HF_CACHE, WHISPER_FT_ENV, WORKDIR, ...)
 # to the compute node so HF caches resolve to scratch, not the quota-limited HOME.
 # Pass the project on the command line (#PBS directives are not shell-expanded):
@@ -18,8 +19,8 @@
 # the analysis incl. the dedicated pretrained-vs-finetuned comparison.
 #
 # Submit after training, auto-chained:
-#   JOBID=$(qsub hpc/job_finetune.pbs)
-#   qsub -W depend=afterok:$JOBID hpc/job_medium_ft.pbs
+#   JOBID=$(qsub -P <project_id> hpc/job_finetune.pbs)
+#   qsub -P <project_id> -W depend=afterok:$JOBID hpc/job_medium_ft.pbs
 
 # PBS_O_WORKDIR is set automatically by the scheduler to the directory `qsub` was run from
 # a much safer fallback than $(pwd), which for a PBS batch job defaults to $HOME, not the
@@ -40,7 +41,7 @@ conda activate "${WHISPER_FT_ENV}" || { echo "[FATAL] conda activate failed for 
 # loader path) don't always fire in a non-interactive PBS batch shell. Without this,
 # torchcodec's "cannot open shared object file" for libavutil.so.5x is a path problem,
 # not a missing/incompatible ffmpeg, it's installed, just not found at runtime.
-export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$HF_CACHE}"
 export HF_HOME="${HF_HOME:-$HF_CACHE}"

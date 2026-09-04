@@ -45,7 +45,10 @@ Primary sources:
   NSCC's `g1` route allocates 16 CPUs and 110 GB host RAM for this one-GPU job;
   CPU math-library threads are fixed to those 16 allocated CPUs for every model.
   The submitter requires the same PyTorch CUDA and cuDNN build in all three
-  environments, and the result validator checks them again.
+  environments, and the result validator checks them again. Dedicated throughput
+  environments are created by `throughput/setup_whisper.sh` and
+  `throughput/setup_native.sh`; this avoids comparing the CUDA 12.4 Whisper wheel
+  against legacy Stage-1 environments that may use CUDA 11.8.
 - Dataset: 512 evaluation clips with non-empty normalized references and duration
   of at most 30 seconds,
   selected with NumPy seed 42. The short-form limit prevents Whisper alone from

@@ -71,6 +71,13 @@ def check_comparability(reports: list[dict]) -> list[str]:
         return {getter(r) for r in reports if getter(r) is not None}
 
     fingerprints = distinct(lambda r: r.get("protocol", {}).get("subset_fingerprint"))
+    missing_fingerprints = [r.get("model_key", "?") for r in reports
+                            if not r.get("protocol", {}).get("subset_fingerprint")]
+    if missing_fingerprints:
+        warnings.append(
+            f"Runs are missing subset fingerprints ({', '.join(missing_fingerprints)}); "
+            "identical audio cannot be verified."
+        )
     if len(fingerprints) > 1:
         warnings.append(
             f"Runs used {len(fingerprints)} different clip subsets ({', '.join(sorted(fingerprints))}). "
@@ -87,8 +94,11 @@ def check_comparability(reports: list[dict]) -> list[str]:
 
     cpu_runs = [r["model_key"] for r in reports
                 if r.get("hardware", {}).get("gpu_name") in (None, "", "cpu")]
-    if cpu_runs and len(cpu_runs) != len(reports):
-        warnings.append(f"Some runs are CPU-only ({', '.join(cpu_runs)}) and some are not.")
+    if cpu_runs:
+        if len(cpu_runs) != len(reports):
+            warnings.append(f"Some runs are CPU-only ({', '.join(cpu_runs)}) and some are not.")
+        else:
+            warnings.append("All runs are CPU-only; these are not GPU-efficiency measurements.")
 
     # The three engines cannot share a conda env, so their torch builds differ by
     # construction: the Whisper env is cu118 and the NeMo/Qwen envs are cu124. This is
@@ -109,6 +119,12 @@ def check_comparability(reports: list[dict]) -> list[str]:
         )
 
     drivers = distinct(lambda r: r.get("hardware", {}).get("nvidia_driver") or None)
+    missing_drivers = [r.get("model_key", "?") for r in reports
+                       if not r.get("hardware", {}).get("nvidia_driver")]
+    if missing_drivers and not cpu_runs:
+        warnings.append(
+            f"Runs are missing NVIDIA driver provenance ({', '.join(missing_drivers)})."
+        )
     if len(drivers) > 1:
         warnings.append(f"Runs span different NVIDIA drivers ({', '.join(sorted(drivers))}).")
 

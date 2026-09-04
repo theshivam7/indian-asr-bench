@@ -48,15 +48,16 @@ pytestmark = pytest.mark.skipif(
            "(see whisper_asr/requirements.txt) to run these",
 )
 
-from utils.datasets import load_split
-from utils.finetune_data import filter_finetune_split, filter_tie_split
-from utils.io_helpers import (
+from utils.datasets import load_split  # noqa: E402
+from utils.finetune_data import filter_finetune_split, filter_tie_split  # noqa: E402
+from utils.io_helpers import (  # noqa: E402
     build_sample_row,
     decode_audio_value,
     probe_audio_duration,
     raw_audio_column,
+    sample_id,
 )
-from utils.registry import get_dataset
+from utils.registry import get_dataset  # noqa: E402
 
 SR = 16000
 
@@ -176,7 +177,32 @@ def test_probe_audio_duration():
     assert probe_audio_duration({"bytes": _wav_bytes(2.0), "path": "x.wav"}) == pytest.approx(2.0, abs=0.01)
     assert probe_audio_duration({"array": [0.0] * SR, "sampling_rate": SR}) == pytest.approx(1.0)
     assert probe_audio_duration({"bytes": None, "path": None}) is None
+    assert probe_audio_duration({"array": [], "sampling_rate": SR}) is None
     assert probe_audio_duration(None) is None
+
+
+def test_probe_audio_duration_from_path(tmp_path):
+    path = tmp_path / "clip.wav"
+    path.write_bytes(_wav_bytes(1.25))
+    assert probe_audio_duration({"bytes": None, "path": str(path)}) == pytest.approx(
+        1.25, abs=0.01
+    )
+
+
+def test_raw_audio_column_respects_dataset_spec_name():
+    ds = Dataset.from_dict({
+        "audio_filepath": [{"array": [0.0, 0.1], "sampling_rate": SR, "path": "x.wav"}],
+    })
+    raw = raw_audio_column(ds, "audio_filepath")[0].as_py()
+    assert raw["sampling_rate"] == SR
+    assert raw["array"] == [0.0, 0.1]
+
+
+def test_sample_id_rejects_missing_values():
+    spec = get_dataset("aesrc")
+    for missing in (None, float("nan"), ""):
+        with pytest.raises(ValueError, match="empty id"):
+            sample_id({spec.id_col: missing}, spec)
 
 
 @pytest.mark.parametrize("arity", [1, 2])

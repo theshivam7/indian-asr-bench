@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.efficiency import (DEFAULT_CLIPS, DEFAULT_SEED, DEFAULT_WARMUP, count_parameters,
                               run_efficiency_benchmark, timed)
+from utils.io_helpers import text_value
 
 BATCH_SIZE = 16
 CHECKPOINT_EVERY = 50
@@ -50,8 +51,9 @@ def transcribe_batch(model, samples, audio_col):
         outputs = model.transcribe(tmp_paths, batch_size=len(tmp_paths))
         return [(o.text if hasattr(o, "text") else str(o)).strip() for o in outputs]
     except Exception as e:
-        print(f"  [WARN] batch transcription failed: {e}", flush=True)
-        return [""] * len(samples)
+        raise RuntimeError(
+            f"Parakeet batch transcription failed for {len(samples)} clip(s)"
+        ) from e
     finally:
         for p in tmp_paths:
             try:
@@ -133,7 +135,11 @@ def main():
     checkpoint_path = os.path.join(results_dir(dataset), f"wer_{model_key}_partial.csv")
     if os.path.exists(checkpoint_path):
         for r in pd.read_csv(checkpoint_path).to_dict("records"):
-            sid = str(r["ID"]); completed.add(sid); ckpt_map[sid] = r
+            sid = text_value(r.get("ID"))
+            if not sid:
+                raise ValueError(f"Checkpoint {checkpoint_path} contains an empty ID")
+            completed.add(sid)
+            ckpt_map[sid] = r
         print(f"  Resuming: {len(completed)} samples already done\n")
 
     all_rows, pending, pending_meta = [], [], []
@@ -141,8 +147,6 @@ def main():
     def _sigterm(signum, frame):
         if all_rows:
             save_checkpoint(all_rows, model_key, dataset)
-            pd.DataFrame(all_rows).to_csv(
-                os.path.join(stage1_raw_dir(dataset), f"wer_{model_key}_interrupted.csv"), index=False)
         print(f"\n[SIGTERM] saved {len(all_rows)} rows", flush=True)
         sys.exit(143)
     signal.signal(signal.SIGTERM, _sigterm)
@@ -150,25 +154,33 @@ def main():
     def flush():
         if not pending:
             return
-        hyps = transcribe_batch(model, pending, audio_col)
+        try:
+            hyps = transcribe_batch(model, pending, audio_col)
+        except Exception:
+            if all_rows:
+                path = save_checkpoint(all_rows, model_key, dataset)
+                print(f"\n[ERROR] saved {len(all_rows)} resumable rows to {path}", flush=True)
+            raise
         for s, (sid, tr), hyp in zip(pending, pending_meta, hyps):
             all_rows.append(build_sample_row(s, sid, tr, hyp, spec=spec, split=split))
             if len(all_rows) % CHECKPOINT_EVERY == 0:
                 save_checkpoint(all_rows, model_key, dataset)
-        pending.clear(); pending_meta.clear()
+        pending.clear()
+        pending_meta.clear()
 
     print(f"--- {spec.display} [{split}] : {len(ds)} samples, model={model_key} ---")
     for sample in tqdm(ds, desc=f"{dataset}:{model_key}"):
-        transcript = str(sample.get(spec.gold_ref_col) or "").strip()
+        transcript = text_value(sample.get(spec.gold_ref_col))
         if not transcript:
             continue
         sid = sample_id(sample, spec)
         if sid in completed:
             flush()
-            hyp = str((ckpt_map.get(sid) or {}).get("hypothesis_raw") or "")
+            hyp = text_value((ckpt_map.get(sid) or {}).get("hypothesis_raw"))
             all_rows.append(build_sample_row(sample, sid, transcript, hyp, spec=spec, split=split))
         else:
-            pending.append(sample); pending_meta.append((sid, transcript))
+            pending.append(sample)
+            pending_meta.append((sid, transcript))
             if len(pending) >= BATCH_SIZE:
                 flush()
     flush()
