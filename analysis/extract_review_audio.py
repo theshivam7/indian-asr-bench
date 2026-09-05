@@ -1,15 +1,17 @@
 """Extract 16 kHz mono WAVs for the clips listed in a human-review CSV.
 
-Must run where the HF dataset cache already exists (NSCC), TIE_shorts is too
-large to download to a laptop. Reads sample_id from --csv, loads the TIE eval
-split from the cache (no network needed once cached), writes one WAV per row
-into --out-dir, and rewrites the CSV's audio_path column to the WAVs' absolute
-paths.
+Must run where the HF dataset cache already exists (NSCC); the corpora are too
+large to download to a laptop. Reads sample_id from --csv, loads that dataset's
+eval split from the cache (no network needed once cached), writes one WAV per
+row into --out-dir, and rewrites the CSV's audio_path column.
+
+Works for all three review studies; --dataset selects which eval split to read.
 
 Usage (on NSCC, inside a qsub -I session, whisper_medium_ft env active):
-    python extract_audio.py \\
-        --csv review_sheet.csv \\
-        --out-dir audio
+    python analysis/extract_review_audio.py \\
+        --dataset svarah \\
+        --csv analysis/svarah_validation/review_sample.csv \\
+        --out-dir analysis/svarah_validation/audio
 """
 
 import argparse
@@ -18,11 +20,12 @@ import sys
 
 import pandas as pd
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--dataset", required=True, choices=("tie", "svarah", "aesrc"))
     ap.add_argument("--csv", required=True)
     ap.add_argument("--out-dir", default="audio")
     args = ap.parse_args()
@@ -33,7 +36,7 @@ def main() -> None:
     df = pd.read_csv(args.csv)
     df["sample_id"] = df["sample_id"].astype(str)
 
-    ds, dspec = load_eval("tie")
+    ds, dspec = load_eval(args.dataset)
     pos = {cid: i for i, cid in enumerate(extract_ids(ds, dspec))}
 
     out_dir = args.out_dir  # kept relative: an absolute path would bake this
@@ -43,7 +46,7 @@ def main() -> None:
     missing = 0
     for cid in df["sample_id"]:
         if cid not in pos:
-            print(f"  [WARN] clip {cid} not found in the eval split, skipped")
+            print(f"  [WARN] clip {cid} not in the {args.dataset} eval split, skipped")
             audio_paths.append("")
             missing += 1
             continue

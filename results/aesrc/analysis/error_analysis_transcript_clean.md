@@ -9,7 +9,7 @@
 | category | n_clips | share_pct | share_ci_lo | share_ci_hi | mean_recall | mean_ratio | mean_wer |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | clip_over_run | 0 | 0.0 | 0.0 | 0.2 | N/A | N/A | N/A |
-| content_mismatch | 2 | 0.1 | 0.0 | 0.4 | 0.36 | 0.9 | 0.674 |
+| content_mismatch | 2 | 0.1 | 0.0 | 0.4 | 0.36 | 0.89 | 0.674 |
 | short_ref | 12 | 0.7 | 0.4 | 1.2 | 0.74 | 1.08 | 0.364 |
 | unflagged | 1717 | 99.2 | 98.6 | 99.5 | 0.93 | 1.0 | 0.082 |
 
@@ -54,11 +54,11 @@ Top-20 highest-WER clips per model (180 rows -> 77 distinct). **Tail artifact sh
 
 | category | n_clips | share_pct | mean_recall | mean_ratio | mean_wer |
 | --- | --- | --- | --- | --- | --- |
-| content_mismatch | 16 | 20.8 | 0.28 | 1.11 | 0.942 |
+| content_mismatch | 16 | 20.8 | 0.28 | 1.1 | 0.942 |
 | genuine_error | 52 | 67.5 | 0.54 | 1.13 | 0.652 |
 | short_ref | 9 | 11.7 | 0.45 | 1.34 | 0.927 |
 
-11 tail clips appear in the worst-20 of >=3 distinct architectures; across those the mean per-clip spread is recall std=0.129, length-ratio std=0.209.
+11 tail clips appear in the worst-20 of >=3 distinct architectures; across those the mean per-clip spread is recall std=0.129, length-ratio std=0.216.
 
 ## Threshold sensitivity
 
