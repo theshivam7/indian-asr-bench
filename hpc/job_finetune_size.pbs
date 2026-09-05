@@ -2,11 +2,12 @@
 #PBS -N asr_ft_size
 #PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
 #PBS -l walltime=12:00:00
-#PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/
 #PBS -j oe
 #PBS -k oed
 #PBS -V
+
+set -euo pipefail
 
 # Capacity study: fine-tune one Whisper size on a dataset's official train split using the
 # step-based recipe (finetune/finetune_tiny_small.py). See that script's docstring for the
@@ -14,9 +15,9 @@
 # (effective batch 32 vs 16, fp16 vs bf16, no SpecAugment/early stopping, different
 # checkpoint-selection normalizer).
 #
-#   qsub -v SIZE=tiny  hpc/job_finetune_size.pbs                  # TIE (default dataset)
-#   qsub -v SIZE=small hpc/job_finetune_size.pbs
-#   qsub -v SIZE=medium,DATASET=aesrc hpc/job_finetune_size.pbs   # AESRC Indian subset
+#   qsub -P <project_id> -v SIZE=tiny hpc/job_finetune_size.pbs  # TIE (default dataset)
+#   qsub -P <project_id> -v SIZE=small hpc/job_finetune_size.pbs
+#   qsub -P <project_id> -v SIZE=medium,DATASET=aesrc hpc/job_finetune_size.pbs
 #
 # TIE allows tiny|small only (its medium study used the epoch-based recipe and is
 # historical); AESRC runs all three sizes through this one recipe.
@@ -28,8 +29,8 @@
 
 DATASET=${DATASET:-tie}
 
-if [ -z "${SIZE}" ]; then
-    echo "[FATAL] SIZE is not set. Submit with: qsub -v SIZE=tiny $0  (or SIZE=small)"
+if [ -z "${SIZE:-}" ]; then
+    echo "[FATAL] SIZE is not set. Submit with: qsub -P <project_id> -v SIZE=tiny $0"
     exit 1
 fi
 case "${DATASET}:${SIZE}" in
@@ -55,7 +56,7 @@ mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" "${WORKDIR}/models"
 cd "${WORKDIR}"
 
 conda activate "${WHISPER_FT_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_FT_ENV}'"; conda info --envs; exit 1; }
-export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 
 echo "--- GPU / CUDA diagnostics (${SIZE} on ${DATASET}, capacity-study fine-tune) ---"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"

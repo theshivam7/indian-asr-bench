@@ -2,11 +2,12 @@
 #PBS -N asr_ft_seeds
 #PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
 #PBS -l walltime=24:00:00
-#PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/
 #PBS -j oe
 #PBS -k oed
 #PBS -V
+
+set -euo pipefail
 
 # Multi-seed capacity study: train one Whisper size across N seeds, then transcribe and
 # score each seed, so the fine-tuning delta can be reported as mean +/- SD across runs.
@@ -14,9 +15,9 @@
 # The single-seed study cannot separate a real effect from run-to-run noise. This job
 # closes that gap for one size; submit it once per size.
 #
-#   qsub -v SIZE=tiny                              hpc/job_finetune_seeds.pbs
-#   qsub -v SIZE=medium,DATASET=aesrc              hpc/job_finetune_seeds.pbs
-#   qsub -v 'SIZE=small,SEEDS="42,43,44"'          hpc/job_finetune_seeds.pbs
+#   qsub -P <project_id> -v SIZE=tiny                         hpc/job_finetune_seeds.pbs
+#   qsub -P <project_id> -v SIZE=medium,DATASET=aesrc         hpc/job_finetune_seeds.pbs
+#   qsub -P <project_id> -v 'SIZE=small,SEEDS="42,43,44"'     hpc/job_finetune_seeds.pbs
 #
 # QUOTE SEEDS. qsub splits -v on commas, so an unquoted SEEDS=42,43,44 is read as
 # SEEDS=42 followed by bare names 43 and 44, which PBS then tries to import from the
@@ -38,8 +39,8 @@
 DATASET=${DATASET:-aesrc}
 SEEDS=${SEEDS:-42,43,44,45,46,47}
 
-if [ -z "${SIZE}" ]; then
-    echo "[FATAL] SIZE is not set. Submit with: qsub -v SIZE=tiny $0"
+if [ -z "${SIZE:-}" ]; then
+    echo "[FATAL] SIZE is not set. Submit with: qsub -P <project_id> -v SIZE=tiny $0"
     exit 1
 fi
 case "${SIZE}" in
@@ -63,7 +64,7 @@ mkdir -p "${HF_CACHE}" "${WORKDIR}/logs" "${WORKDIR}/${MODELS_ROOT}"
 cd "${WORKDIR}"
 
 conda activate "${WHISPER_FT_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_FT_ENV}'"; conda info --envs; exit 1; }
-export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 
 echo "--- GPU / CUDA diagnostics (${SIZE} on ${DATASET}, seeds ${SEEDS}) ---"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
@@ -87,15 +88,6 @@ fi
 echo "=== multi-seed fine-tuning: ${SIZE} on ${DATASET}, seeds ${SEEDS} $(date) ==="
 bash finetune/run_seeds.sh --size "${SIZE}" --dataset "${DATASET}" \
     --seeds "${SEEDS}" --models-root "${MODELS_ROOT}"
-STATUS=$?
-
-# Without this the trailing echo below sets the job's exit status, so a run that died
-# partway (a full disk, an OOM, a failed download) is recorded by PBS as a success and
-# leaves no signal that the seeds are missing.
-if [ "${STATUS}" -ne 0 ]; then
-    echo "[FATAL] run_seeds.sh failed with exit ${STATUS}; seeds are incomplete"
-    exit "${STATUS}"
-fi
 
 echo "=== ${SIZE} multi-seed study on ${DATASET} complete $(date) ==="
 echo "Aggregate once every size is done:"

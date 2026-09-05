@@ -2,15 +2,16 @@
 #PBS -N indian_asr_bench_pipeline
 #PBS -l select=1:ngpus=1:ncpus=8:mem=64gb
 #PBS -l walltime=12:00:00
-#PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/pipeline.log
 #PBS -e logs/pipeline.log
 #PBS -j oe
 #PBS -k oed
 
+set -euo pipefail
+
 # Full from-scratch benchmark for one dataset: all inference models -> Stage 2 ->
 # Stage 3 (compare + statistics + error analysis + figures). Set DATASET (default tie).
-#   qsub -v DATASET=svarah hpc/run_pipeline.pbs
+#   qsub -P <project_id> -v DATASET=svarah hpc/run_pipeline.pbs
 # For an already-benchmarked dataset you usually DON'T need this, reuse the committed
 # raw transcripts and just run hpc/job_score.pbs (CPU).
 
@@ -41,15 +42,15 @@ conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${
 # so the env's own libstdc++/libav* stay off the loader path and the system /lib64
 # copies win. That surfaces as an ImportError naming CXXABI_1.3.15 or a missing
 # libavutil, both of which read as a broken install rather than a path problem.
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
-for M in base medium large large_v3_turbo; do
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+for M in tiny base small medium large large_v3_turbo; do
   echo -e "\n=== Stage 1: whisper ${M} ==="
   python whisper_asr/run_whisper.py --model "${M}" --dataset "${DATASET}"
 done
 
 # Stage 1. Parakeet TDT + CTC
 conda activate "${PARAKEET_ENV}" || { echo "[FATAL] conda activate failed for '${PARAKEET_ENV}'"; conda info --envs; exit 1; }
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 for M in parakeet parakeet_ctc; do
   echo -e "\n=== Stage 1: ${M} ==="
   python parakeet/wer_parakeet.py --model "${M}" --dataset "${DATASET}"
@@ -57,13 +58,13 @@ done
 
 # Stage 1. Qwen3-ASR
 conda activate "${QWEN3_ENV}" || { echo "[FATAL] conda activate failed for '${QWEN3_ENV}'"; conda info --envs; exit 1; }
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 echo -e "\n=== Stage 1: qwen3 ==="
 python qwen3/wer_qwen3.py --dataset "${DATASET}"
 
 # Stage 2 + 3 (CPU)
 conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 echo -e "\n=== Stage 2 + 3 ==="
 python normalize_and_score.py --dataset "${DATASET}"
 python analysis/compare_all.py --dataset "${DATASET}"

@@ -2,17 +2,18 @@
 #PBS -N asr_spk_overlap
 #PBS -l select=1:ncpus=4:mem=16gb
 #PBS -l walltime=1:00:00
-#PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/speaker_overlap.log
 #PBS -e logs/speaker_overlap.log
 #PBS -j oe
 #PBS -k oed
 
+set -euo pipefail
+
 # CPU-only: speaker-overlap leakage disclosure for one dataset. Reads only the speaker
 # column from the cached splits (no GPU, no audio decode beyond the adapter's one-clip
 # probe) and writes results/<dataset>/analysis/speaker_overlap.md. Run after a job that
 # has already downloaded the dataset's train/valid/test splits into HF_CACHE.
-#   qsub -v DATASET=aesrc hpc/job_speaker_overlap.pbs
+#   qsub -P <project_id> -v DATASET=aesrc hpc/job_speaker_overlap.pbs
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
@@ -29,7 +30,7 @@ conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${
 # so the env's own libstdc++/libav* stay off the loader path and the system /lib64
 # copies win. That surfaces as an ImportError naming CXXABI_1.3.15 or a missing
 # libavutil, both of which read as a broken install rather than a path problem.
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 echo "=== Speaker-overlap check for dataset '${DATASET}' $(date) ==="
 python finetune/check_speaker_overlap.py --dataset "${DATASET}"
 echo "=== done $(date) ==="

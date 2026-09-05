@@ -2,11 +2,12 @@
 #PBS -N asr_bench_tie_newmodels
 #PBS -l select=1:ngpus=1:ncpus=8:mem=48gb
 #PBS -l walltime=5:00:00
-#PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/tie_newmodels.log
 #PBS -e logs/tie_newmodels.log
 #PBS -j oe
 #PBS -k oed
+
+set -euo pipefail
 
 # Adds the two NEW models to the existing TIE benchmark (the other 7 raw CSVs are
 # already committed and are NOT re-run). Then rescores TIE from ALL raw transcripts
@@ -35,7 +36,7 @@ conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${
 # Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
 # non-interactive PBS batch shell (same quirk documented in job_finetune.pbs)
 # without this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok, '| device count:', torch.cuda.device_count()); sys.exit(0 if ok else 1)" \
     || { echo "[FATAL] CUDA not available in ${WHISPER_ENV} - aborting before a CPU-bound run"; exit 1; }
 
@@ -43,7 +44,7 @@ echo -e "\n=== TIE Stage 1: whisper large-v3-turbo ==="
 python whisper_asr/run_whisper.py --model large_v3_turbo --dataset tie
 
 conda activate "${PARAKEET_ENV}" || { echo "[FATAL] conda activate failed for '${PARAKEET_ENV}'"; conda info --envs; exit 1; }
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 echo -e "\n=== TIE Stage 1: parakeet_ctc ==="
 python parakeet/wer_parakeet.py --model parakeet_ctc --dataset tie
 
@@ -52,7 +53,7 @@ conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${
 # Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
 # non-interactive PBS batch shell (same quirk documented in job_finetune.pbs)
 # without this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 python normalize_and_score.py --dataset tie
 python analysis/compare_all.py --dataset tie
 python analysis/statistics.py --dataset tie

@@ -2,17 +2,16 @@
 #PBS -N asr_bench_svarah
 #PBS -l select=1:ngpus=1:ncpus=8:mem=64gb
 #PBS -l walltime=10:00:00
-#PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/svarah.log
 #PBS -e logs/svarah.log
 #PBS -j oe
 #PBS -k oed
 
+set -euo pipefail
+
 # Full Svarah benchmark: 7 models -> Stage 2 -> Stage 3 (compare + statistics +
 # error analysis + NEER). Svarah is gated on HF: run `huggingface-cli login` (or set
-# HF_TOKEN) once so the download works. NOTE: verify the Svarah column names print by
-# utils/datasets on first load and, if they differ, fix the SVARAH DatasetSpec in
-# utils/registry.py (currently verified=False) before trusting the results.
+# HF_TOKEN) once so the download works. Its pinned schema is verified by the adapter.
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
@@ -40,7 +39,7 @@ conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${
 # Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
 # non-interactive PBS batch shell (same quirk documented in job_finetune.pbs)
 # without this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok, '| device count:', torch.cuda.device_count()); sys.exit(0 if ok else 1)" \
     || { echo "[FATAL] CUDA not available in ${WHISPER_ENV} - aborting before a CPU-bound run"; exit 1; }
 
@@ -56,7 +55,7 @@ done
 
 # Stage 1. Parakeet TDT + CTC (parakeet env)
 conda activate "${PARAKEET_ENV}" || { echo "[FATAL] conda activate failed for '${PARAKEET_ENV}'"; conda info --envs; exit 1; }
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 for M in parakeet parakeet_ctc; do
   echo -e "\n=== Svarah Stage 1: ${M} ==="
   python parakeet/wer_parakeet.py --model "${M}" --dataset svarah
@@ -64,13 +63,13 @@ done
 
 # Stage 1. Qwen3 (qwen3 env)
 conda activate "${QWEN3_ENV}" || { echo "[FATAL] conda activate failed for '${QWEN3_ENV}'"; conda info --envs; exit 1; }
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 echo -e "\n=== Svarah Stage 1: qwen3 ==="
 python qwen3/wer_qwen3.py --dataset svarah
 
 # Stage 2 + 3 (CPU; whisper env has pandas/jiwer/matplotlib + whisper_normalizer)
 conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 echo -e "\n=== Svarah Stage 2 + 3 ==="
 python normalize_and_score.py --dataset svarah
 python analysis/compare_all.py --dataset svarah

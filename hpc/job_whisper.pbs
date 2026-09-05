@@ -2,16 +2,17 @@
 #PBS -N asr_bench_whisper
 #PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
 #PBS -l walltime=6:00:00
-#PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/whisper.log
 #PBS -e logs/whisper.log
 #PBS -j oe
 #PBS -k oed
 #PBS -V
 
+set -euo pipefail
+
 # One openai-whisper model on one dataset (replaces the old job_base/medium/large).
-#   qsub -v MODEL=large,DATASET=tie      hpc/job_whisper.pbs
-#   qsub -v MODEL=large_v3_turbo,DATASET=svarah hpc/job_whisper.pbs
+#   qsub -P <project_id> -v MODEL=large,DATASET=tie hpc/job_whisper.pbs
+#   qsub -P <project_id> -v MODEL=large_v3_turbo,DATASET=svarah hpc/job_whisper.pbs
 # MODEL in {tiny, base, small, medium, large, large_v3_turbo}; DATASET in {tie, svarah, aesrc}.
 
 # Fixed 2026-07-08: $(pwd) in a PBS batch shell defaults to $HOME (quota-limited, and the
@@ -33,7 +34,7 @@ export HF_DATASETS_CACHE="${HF_CACHE}" HF_HOME="${HF_CACHE}" XDG_CACHE_HOME="${H
 mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 cd "${WORKDIR}"
 conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
-export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 
 # Fixed 2026-07-08: a broken/CPU-fallback env never crashes the job, it silently produces
 # an all-empty-hypothesis, near-100%-WER transcript CSV that "completes successfully". Fail

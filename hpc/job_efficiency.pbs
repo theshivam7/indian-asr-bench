@@ -2,19 +2,20 @@
 #PBS -N asr_efficiency
 #PBS -l select=1:ngpus=1:ncpus=8:mem=32gb
 #PBS -l walltime=2:00:00
-#PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/efficiency.log
 #PBS -e logs/efficiency.log
 #PBS -j oe
 #PBS -k oed
 
+set -euo pipefail
+
 # Efficiency benchmarking (RTF, latency, throughput, peak GPU memory).
 #
 # One engine per submission, because the three engines cannot share a conda env.
 # ENGINE selects which env to activate and which driver to call:
-#     qsub -v ENGINE=whisper,MODEL=medium   hpc/job_efficiency.pbs
-#     qsub -v ENGINE=parakeet,MODEL=parakeet hpc/job_efficiency.pbs
-#     qsub -v ENGINE=qwen3                   hpc/job_efficiency.pbs
+#     qsub -P <project_id> -v ENGINE=whisper,MODEL=medium    hpc/job_efficiency.pbs
+#     qsub -P <project_id> -v ENGINE=parakeet,MODEL=parakeet hpc/job_efficiency.pbs
+#     qsub -P <project_id> -v ENGINE=qwen3                    hpc/job_efficiency.pbs
 #
 # Every model MUST be measured with the same CLIPS and SEED, otherwise the runs
 # are not comparable and analysis/compare_efficiency.py will refuse to present
@@ -43,7 +44,8 @@ SEED=${SEED:-42}
 # has silently discarded the output file. Redirecting here, before any other command,
 # means an environment failure is still recorded somewhere predictable.
 mkdir -p "${WORKDIR}/logs"
-JOBTAG="${PBS_JOBID%%.*}"
+JOBTAG_RAW=${PBS_JOBID:-manual}
+JOBTAG="${JOBTAG_RAW%%.*}"
 exec >> "${WORKDIR}/logs/eff_${JOBTAG:-manual}.log" 2>&1
 
 echo "=== job start $(date) ==="
@@ -106,7 +108,7 @@ fi
 # wins. NeMo imports IPython, which imports sqlite3, which pulls in the env's
 # libicui18n; against the system libstdc++ that fails with "version CXXABI_1.3.15 not
 # found". It reads as a broken NeMo install but is only a loader-path problem.
-export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 
 export HF_DATASETS_CACHE="${HF_CACHE}"
 export HF_HOME="${HF_CACHE}"
@@ -142,13 +144,4 @@ else
   python "${DRIVER}" --model "${MODEL}" --dataset "${DATASET}" --efficiency \
       --clips "${CLIPS}" --warmup "${WARMUP}" --seed "${SEED}"
 fi
-STATUS=$?
-
-# Propagate the driver's exit code. PBS records the script's status, so swallowing a
-# failure here would report a successful job that produced no measurements.
-if [ "${STATUS}" -ne 0 ]; then
-    echo "[FATAL] benchmark failed with exit ${STATUS}"
-    exit "${STATUS}"
-fi
-
 echo "Done. Aggregate with: python analysis/compare_efficiency.py --dataset ${DATASET}"
