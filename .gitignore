@@ -29,6 +29,8 @@ whisper_cache/
 
 # Logs
 logs/
+/asr_throughput.o*
+/asr_throughput.e*
 
 # Fine-tuned model checkpoints (too large for git; uploaded to Hugging Face instead)
 models/
