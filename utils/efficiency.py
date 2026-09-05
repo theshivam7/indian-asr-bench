@@ -59,7 +59,13 @@ import pandas as pd
 from tqdm import tqdm
 
 from utils.datasets import load_eval, extract_ids
-from utils.io_helpers import efficiency_dir, probe_audio_duration, sample_id
+from utils.io_helpers import (
+    efficiency_dir,
+    positive_float,
+    probe_audio_duration,
+    sample_id,
+    text_value,
+)
 from utils.registry import MODEL_BY_KEY
 
 # torch is present in every engine env but not in the CPU-only analysis venv, and this
@@ -222,8 +228,13 @@ def select_subset(ds, n_clips: int, seed: int):
     would misalign with logical rows under an overlay (same trap documented in
     utils/datasets.py:_apply_row_filter).
     """
+    n_clips = int(n_clips)
+    if n_clips < 1:
+        raise ValueError("n_clips must be positive")
     n = len(ds)
-    k = min(int(n_clips), n)
+    if n < 1:
+        raise ValueError("cannot select a benchmark subset from an empty dataset")
+    k = min(n_clips, n)
     rng = np.random.default_rng(seed)
     indices = sorted(int(i) for i in rng.choice(n, size=k, replace=False))
     return ds.select(indices).flatten_indices(), indices
@@ -293,11 +304,9 @@ def _clip_duration(sample: dict, spec) -> float | None:
     charged to the model.
     """
     if spec.duration_col:
-        try:
-            value = float(sample.get(spec.duration_col) or 0.0)
-        except (TypeError, ValueError):
-            return None
-        return value if value > 0 else None
+        value = positive_float(sample.get(spec.duration_col))
+        if value is not None:
+            return value
     return probe_audio_duration(sample.get(spec.audio_col))
 
 
@@ -351,7 +360,7 @@ def run_efficiency_benchmark(model_key: str, dataset_key: str, transcribe_one, *
             "duration_seconds": round(duration, 3) if duration else "",
             "latency_seconds": round(elapsed, 4),
             "rtf": round(elapsed / duration, 4) if duration else "",
-            "hypothesis_chars": len(hyp or ""),
+            "hypothesis_chars": len(text_value(hyp)),
         })
 
     metrics = {**summarize_timings(latencies, durations), **peak_gpu_memory()}
@@ -383,7 +392,8 @@ def run_efficiency_benchmark(model_key: str, dataset_key: str, transcribe_one, *
             "gpu_memory_convention": "torch.cuda.max_memory_allocated and max_memory_reserved, "
                                      "peak since the post-warmup reset",
         },
-        "model_load_seconds": round(model_load_seconds, 3) if model_load_seconds else None,
+        "model_load_seconds": (round(model_load_seconds, 3)
+                               if model_load_seconds is not None else None),
         "param_count": param_count,
         "metrics": metrics,
         "hardware": hardware_provenance(),

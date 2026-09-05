@@ -45,7 +45,8 @@ if __name__ != "__main__":
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from utils.normalize import normalize_text, MODES, get_reference_source
+from utils.normalize import normalize_text
+from utils.registry import ALL_MODES as MODES
 from utils.wer_compute import compute_sample_wer, compute_corpus_wer
 
 STAGE1_DIR = os.path.join(os.path.dirname(__file__), "..", "results", "stage1_raw_transcripts")

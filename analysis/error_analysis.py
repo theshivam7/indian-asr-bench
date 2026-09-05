@@ -69,7 +69,7 @@ import jiwer
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.registry import PRIMARY_MODE, MODEL_BY_KEY, models_for_dataset, get_dataset
-from utils.io_helpers import stage2_dir, analysis_dir, build_md_table
+from utils.io_helpers import stage2_dir, analysis_dir, build_md_table, text_value
 
 TOP_K = 20
 RECALL_OVERRUN = 0.80
@@ -145,7 +145,9 @@ def _load_full(dataset: str, model: str, mode: str) -> pd.DataFrame | None:
     if not need.issubset(df.columns):
         return None
     df = df.copy()
-    df["ID"] = df["ID"].astype(str)
+    df["ID"] = df["ID"].map(text_value)
+    if (df["ID"] == "").any() or df["ID"].duplicated().any():
+        raise ValueError(f"{path}: empty or duplicate clip IDs invalidate cross-model analysis")
     df["model"] = model
     df["arch"] = MODEL_BY_KEY[model].arch_class
     df["ref_words"] = df["reference"].map(
@@ -363,6 +365,15 @@ def main(dataset: str, mode: str) -> None:
         print(f"  [note] {dropped} clips absent from >=1 model's table were excluded "
               f"(common set: {len(common)} clips x {n_models} models).")
     pool = pool[pool["ID"].isin(common)].copy()
+    if pool.empty:
+        raise ValueError(f"[error_analysis] {dataset}/{mode}: model tables have no common clips")
+    ref_counts = pool.groupby("ID")["reference"].nunique(dropna=False)
+    if (ref_counts != 1).any():
+        examples = ref_counts[ref_counts != 1].index[:5].tolist()
+        raise ValueError(
+            f"[error_analysis] normalized references differ across models for "
+            f"{int((ref_counts != 1).sum())} clips (e.g. {examples})"
+        )
 
     cons = consensus_table(pool)
     # Naive (guard-free) classification, kept for the instrument-transfer audit:

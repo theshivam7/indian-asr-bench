@@ -80,9 +80,9 @@ for model, df in model_tops.items():
         print(f"  HYP: {r['hypothesis_raw']}")
 
 # Load dataset once and extract all needed audio
-print(f"\n\nStreaming dataset (downloads only needed clips, not full dataset)...")
-import os as _os
-from datasets import load_dataset as _load_dataset
+print("\n\nStreaming dataset (downloads only needed clips, not full dataset)...")
+import os as _os  # noqa: E402
+from datasets import load_dataset as _load_dataset  # noqa: E402
 _HF_CACHE = _os.path.expanduser("~/hf_cache")
 ds = _load_dataset("raianand/TIE_shorts", split="test", streaming=True, cache_dir=_HF_CACHE)
 

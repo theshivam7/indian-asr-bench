@@ -116,8 +116,9 @@ class WhisperFTDataset(Dataset):
     matches logical row i.
     """
 
-    def __init__(self, ds, processor: WhisperProcessor, transcript_col: str):
-        self.raw_audio = raw_audio_column(ds)
+    def __init__(self, ds, processor: WhisperProcessor, transcript_col: str,
+                 audio_col: str = "audio"):
+        self.raw_audio = raw_audio_column(ds, audio_col)
         self.transcripts = ds[transcript_col]
         self.processor = processor
 
@@ -142,8 +143,11 @@ def load_finetune_splits(dataset_key: str):
     load_split, which applies any registry row filter and fail-early validation.
     """
     if dataset_key == "tie":
-        train_hf = load_dataset("raianand/TIE_shorts", split="train", cache_dir=HF_CACHE)
-        eval_hf = load_dataset("raianand/TIE_shorts", split="validation", cache_dir=HF_CACHE)
+        spec = get_dataset(dataset_key)
+        train_hf = load_dataset(spec.hf_id, split=spec.splits["train"], cache_dir=HF_CACHE,
+                                revision=spec.hf_revision)
+        eval_hf = load_dataset(spec.hf_id, split=spec.splits["validation"], cache_dir=HF_CACHE,
+                               revision=spec.hf_revision)
         return train_hf, eval_hf
 
     from utils.datasets import load_split
@@ -220,8 +224,8 @@ def main() -> None:
         eval_hf = eval_hf.select(range(min(8, len(eval_hf)))).flatten_indices()
         print(f"  SMOKE TEST: capped filtered train to {len(train_hf)} samples")
 
-    train_ds = WhisperFTDataset(train_hf, processor, spec.gold_ref_col)
-    eval_ds = WhisperFTDataset(eval_hf, processor, spec.gold_ref_col)
+    train_ds = WhisperFTDataset(train_hf, processor, spec.gold_ref_col, spec.audio_col)
+    eval_ds = WhisperFTDataset(eval_hf, processor, spec.gold_ref_col, spec.audio_col)
     print(f"  train: {len(train_ds)} clips   validation: {len(eval_ds)} clips")
 
     tokenizer = processor.tokenizer

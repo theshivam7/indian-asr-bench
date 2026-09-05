@@ -42,10 +42,10 @@ plt.rcParams.update({
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from utils.wer_compute import compute_corpus_wer
-from utils.registry import ALL_MODES as MODES, PRIMARY_MODE, MODEL_ORDER, MODEL_BY_KEY
-from utils.io_helpers import stage2_dir, analysis_dir
-from analysis.statistics import _clip_errors, _holm, analyze
+from utils.wer_compute import compute_corpus_wer  # noqa: E402
+from utils.registry import ALL_MODES as MODES, PRIMARY_MODE, MODEL_ORDER, MODEL_BY_KEY  # noqa: E402
+from utils.io_helpers import stage2_dir, analysis_dir  # noqa: E402
+from analysis.statistics import _clip_errors, _holm, analyze  # noqa: E402
 
 # One entry per model size, each running the same minimal protocol: one official-split
 # fine-tune vs its own HF-pipeline pretrained baseline. For TIE, out_stem=
@@ -138,8 +138,26 @@ def paired_speaker_bootstrap(df_base: pd.DataFrame, df_ft: pd.DataFrame,
     SPEAKERS (accounts for within-speaker correlation; see analysis/statistics.py).
 
     Returns (diff_pp, ci_lo_pp, ci_hi_pp, p_value, n_clips, n_speakers)."""
+    if B < 1:
+        raise ValueError("bootstrap resamples must be positive")
+    for label, df in (("baseline", df_base), ("fine-tuned", df_ft)):
+        ids = df["ID"].map(lambda value: "" if pd.isna(value) else str(value).strip())
+        if (ids == "").any() or ids.duplicated().any():
+            raise ValueError(f"{label} table has empty or duplicate IDs")
+
     cols = ["ID", "reference", "hypothesis"]
     a = df_base[cols + ["Speaker_ID"]].merge(df_ft[cols], on="ID", suffixes=("_a", "_b"))
+    if a.empty:
+        raise ValueError("baseline and fine-tuned tables have no common clip IDs")
+    if len(a) != len(df_base) or len(a) != len(df_ft):
+        raise ValueError(
+            f"baseline/fine-tuned evaluation panels differ ({len(df_base)} vs {len(df_ft)} rows, "
+            f"{len(a)} common); a paired comparison requires identical clip IDs"
+        )
+    ref_a = a["reference_a"].fillna("").astype(str)
+    ref_b = a["reference_b"].fillna("").astype(str)
+    if ref_a.ne(ref_b).any():
+        raise ValueError("baseline and fine-tuned normalized references differ")
     ea, wa = zip(*(_clip_errors(r, h) for r, h in zip(a["reference_a"], a["hypothesis_a"])))
     eb, _ = zip(*(_clip_errors(r, h) for r, h in zip(a["reference_b"], a["hypothesis_b"])))
     ea, eb, wa = np.array(ea, float), np.array(eb, float), np.array(wa, float)
@@ -149,7 +167,7 @@ def paired_speaker_bootstrap(df_base: pd.DataFrame, df_ft: pd.DataFrame,
     labels = np.where(spk != "", spk, "clip:" + a["ID"].astype(str))
     uniq = sorted(set(labels))
     gpos = {g: i for i, g in enumerate(uniq)}
-    gidx = np.array([gpos[l] for l in labels])
+    gidx = np.array([gpos[label] for label in labels])
     G = len(uniq)
     Ea = np.bincount(gidx, weights=ea, minlength=G)
     Eb = np.bincount(gidx, weights=eb, minlength=G)
@@ -328,6 +346,8 @@ def run_pair(pair: dict) -> dict:
         merged = df_base[["ID", "wer"]].merge(
             df_ft[["ID", "wer"]], on="ID", suffixes=("_base", "_ft")
         )
+        if not len(merged):
+            raise ValueError("baseline and fine-tuned tables have no common clips")
         improved = (merged["wer_ft"] < merged["wer_base"] - 1e-9).sum()
         regressed = (merged["wer_ft"] > merged["wer_base"] + 1e-9).sum()
         unchanged = len(merged) - improved - regressed
@@ -384,7 +404,8 @@ def run_pair(pair: dict) -> dict:
         ax.set_title(f"{display_name}: pretrained vs fine-tuned, all modes ({blurb['test_label']})",
                      loc="left", pad=12)
         ax.legend(loc="upper right")
-        ax.grid(axis="y"); ax.grid(axis="x", visible=False)
+        ax.grid(axis="y")
+        ax.grid(axis="x", visible=False)
         ax.tick_params(axis="x", length=0)
         ax.margins(y=0.12)
         fig.tight_layout()

@@ -20,7 +20,6 @@ def transcribe_sample(model, sample: dict, transcribe_kw: dict, audio_col: str =
         result = model.transcribe(tmp_path, **transcribe_kw)
         return result["text"].strip()
     except Exception as e:
-        print(f"  [WARN] Failed to transcribe a sample: {e}")
-        return ""
+        raise RuntimeError("Whisper failed to transcribe a sample") from e
     finally:
         os.unlink(tmp_path)

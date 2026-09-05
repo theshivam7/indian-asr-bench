@@ -37,7 +37,7 @@ def main() -> int:
         return 1
 
     from utils.datasets import load_eval, extract_ids
-    from utils.io_helpers import decode_audio_value, sample_id, build_sample_row
+    from utils.io_helpers import decode_audio_value, sample_id, build_sample_row, text_value
 
     # load_eval already runs schema validation + ID uniqueness + probe decode.
     ds, spec = load_eval(args.dataset)
@@ -54,7 +54,7 @@ def main() -> int:
             f", per-sample and columnar ID paths must be identical."
         )
         samples_arr, sr = decode_audio_value(sample[spec.audio_col], target_sr=16000)
-        ref = str(sample.get(spec.gold_ref_col) or "").strip()
+        ref = text_value(sample.get(spec.gold_ref_col))
         row = build_sample_row(sample, sid, ref, "smoke-test-hypothesis", spec=spec,
                                split=spec.splits["eval"])
         print(f"[smoke] sample {i}: id={sid}  audio={len(samples_arr)/sr:.2f}s@{sr}Hz  "

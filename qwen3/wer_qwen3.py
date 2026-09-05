@@ -38,8 +38,7 @@ def transcribe_qwen3(model, sample: dict, audio_col: str) -> str:
         r = results[0]
         return (r.text if hasattr(r, "text") else str(r)).strip()
     except Exception as e:
-        print(f"  [WARN] transcription failed: {e}", flush=True)
-        return ""
+        raise RuntimeError("Qwen3-ASR transcription failed") from e
     finally:
         os.unlink(tmp_path)
 

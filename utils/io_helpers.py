@@ -1,6 +1,7 @@
 """Dataset loading and CSV I/O utilities."""
 
 import io
+import math
 import os
 
 import numpy as np
@@ -33,13 +34,16 @@ def load_dataset_test():
 
     print("Loading dataset raianand/TIE_shorts (test split) ...")
     print(f"  Cache directory: {HF_CACHE}")
-    ds = load_dataset("raianand/TIE_shorts", split="test", cache_dir=HF_CACHE)
+    from utils.registry import TIE
+
+    ds = load_dataset(TIE.hf_id, split=TIE.splits["eval"], cache_dir=HF_CACHE,
+                      revision=TIE.hf_revision)
     print(f"  Loaded {len(ds)} samples\n")
     return ds
 
 
-def raw_audio_column(ds):
-    """Return the "audio" column's underlying pyarrow ChunkedArray for a dataset.
+def raw_audio_column(ds, audio_col: str = "audio"):
+    """Return an audio column's underlying pyarrow ChunkedArray for a dataset.
 
     Indexing this (``raw_audio_column(ds)[i].as_py()``) returns a plain Python dict read
     straight from arrow storage, with NO involvement of datasets' Audio feature/decode
@@ -48,7 +52,34 @@ def raw_audio_column(ds):
     "audio") on .map()/.filter() and row index access so audio is never auto-decoded during
     normal iteration either.
     """
-    return ds.data.column("audio")
+    return ds.data.column(audio_col)
+
+
+def text_value(value) -> str:
+    """Convert a scalar CSV/dataset value to clean text, treating missing as empty.
+
+    ``bool(float('nan'))`` is true, so the common ``str(value or '')`` idiom turns
+    pandas missing values into the literal ASR token ``"nan"``.  Centralizing the
+    conversion keeps empty hypotheses empty through checkpoint resume and scoring.
+    """
+    if value is None:
+        return ""
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        # Non-scalar containers are not text cells; stringify them below as before.
+        pass
+    return str(value).strip()
+
+
+def positive_float(value) -> float | None:
+    """Return a finite positive float, otherwise None."""
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    return result if math.isfinite(result) and result > 0 else None
 
 
 def decode_audio_value(audio_value: dict, target_sr: int | None = None) -> tuple[np.ndarray, int]:
@@ -62,6 +93,8 @@ def decode_audio_value(audio_value: dict, target_sr: int | None = None) -> tuple
     single-channel wrapper), so this doesn't depend on knowing the exact shape in advance.
     Pass target_sr to resample (e.g. 16000 for Whisper); omit it to keep the native rate.
     """
+    if not isinstance(audio_value, dict):
+        raise ValueError(f"audio value must be a dict, got {type(audio_value).__name__}")
     array = audio_value.get("array")
     if array is not None:
         samples = np.asarray(array, dtype=np.float32).reshape(-1)
@@ -72,11 +105,17 @@ def decode_audio_value(audio_value: dict, target_sr: int | None = None) -> tuple
         # pull in the audio stack.
         import soundfile as sf
 
-        source = io.BytesIO(audio_value["bytes"]) if audio_value.get("bytes") else audio_value["path"]
+        encoded = audio_value.get("bytes")
+        path = audio_value.get("path")
+        if not encoded and not path:
+            raise ValueError("audio value contains neither samples, encoded bytes, nor a path")
+        source = io.BytesIO(encoded) if encoded else path
         samples, sr = sf.read(source, dtype="float32")
         samples = np.asarray(samples, dtype=np.float32)
         if samples.ndim > 1:
             samples = samples.mean(axis=1)
+    if samples.size == 0 or sr <= 0:
+        raise ValueError(f"decoded audio is empty or has an invalid sample rate (sr={sr})")
     if target_sr is not None and sr != target_sr:
         import librosa  # lazy: only needed when the stored rate differs from target
 
@@ -99,14 +138,20 @@ def probe_audio_duration(audio_value) -> float | None:
     array = audio_value.get("array")
     if array is not None:
         sr = int(audio_value.get("sampling_rate") or 16000)
-        return len(np.asarray(array).reshape(-1)) / sr if sr > 0 else None
-    if audio_value.get("bytes"):
+        n_samples = len(np.asarray(array).reshape(-1))
+        return n_samples / sr if sr > 0 and n_samples > 0 else None
+    encoded = audio_value.get("bytes")
+    path = audio_value.get("path")
+    if encoded or path:
         import soundfile as sf
 
         try:
-            info = sf.info(io.BytesIO(audio_value["bytes"]))
+            source = io.BytesIO(encoded) if encoded else path
+            info = sf.info(source)
+            if info.frames <= 0 or info.samplerate <= 0:
+                return None
             return float(info.frames) / float(info.samplerate)
-        except RuntimeError:   # unreadable header: treat as unknown, not fatal
+        except (OSError, RuntimeError):  # unreadable header: treat as unknown, not fatal
             return None
     return None
 
@@ -151,6 +196,19 @@ def efficiency_dir(dataset: str = "tie") -> str:
     return d
 
 
+def throughput_dir(dataset: str = "tie") -> str:
+    """Saturated/offline throughput measurements: results/<dataset>/throughput.
+
+    This is separate from ``efficiency_dir`` because the two protocols answer
+    different questions: efficiency is batch-1 single-stream latency, whereas
+    throughput sweeps batch sizes on pre-staged audio to find the fastest valid
+    operating point.
+    """
+    d = os.path.join(results_dir(dataset), "throughput")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
 def sample_id(sample: dict, spec) -> str:
     """Extract a clean string ID for a sample.
 
@@ -165,7 +223,7 @@ def sample_id(sample: dict, spec) -> str:
     val = sample.get(spec.id_col, "")
     if isinstance(val, dict):
         val = os.path.basename(val.get("path") or "")
-    sid = str(val)
+    sid = text_value(val)
     if not sid:
         raise ValueError(f"sample_id: empty id from column '{spec.id_col}' "
                          f"(dataset '{spec.key}'), refusing to emit a blank ID.")
@@ -215,10 +273,10 @@ def build_sample_row(
         split = spec.splits.get("eval", "test")
     if alt_ref is None:
         alt_ref = sample.get(spec.alt_ref_col) if spec.alt_ref_col else ""
-    if duration is None:
-        duration = (sample.get(spec.duration_col) or "") if spec.duration_col else ""
-    else:
-        duration = round(float(duration), 3)
+    duration_value = (sample.get(spec.duration_col) if spec.duration_col else None
+                      ) if duration is None else duration
+    clean_duration = positive_float(duration_value)
+    duration = round(clean_duration, 3) if clean_duration is not None else ""
 
     row = {
         "split": split,
@@ -228,9 +286,9 @@ def build_sample_row(
     }
     for out_name, src_col in spec.metadata_cols.items():
         row[out_name] = sample.get(src_col, "")
-    row["transcript_raw"] = transcript
-    row["normalised_transcript_raw"] = str(alt_ref or "").strip()
-    row["hypothesis_raw"] = hyp_raw
+    row["transcript_raw"] = text_value(transcript)
+    row["normalised_transcript_raw"] = text_value(alt_ref)
+    row["hypothesis_raw"] = text_value(hyp_raw)
     return row
 
 

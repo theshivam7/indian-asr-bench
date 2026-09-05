@@ -38,6 +38,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.io_helpers import analysis_dir, stage2_dir
 from utils.registry import MODEL_BY_KEY, PRIMARY_MODE
+from utils.wer_compute import compute_corpus_wer
 
 SIZES = ("tiny", "small", "medium")
 DISPLAY = {"tiny": "Whisper Tiny", "small": "Whisper Small", "medium": "Whisper Medium"}
@@ -58,12 +59,22 @@ def corpus_wer(path: str) -> float | None:
     if not os.path.exists(path):
         return None
     df = pd.read_csv(path)
-    if df.empty or "wer" not in df.columns:
+    if df.empty or not {"reference", "hypothesis"}.issubset(df.columns):
         return None
-    ref_words = df["reference"].fillna("").astype(str).str.split().str.len()
-    errors = df["wer"].astype(float) * ref_words
-    total = float(ref_words.sum())
-    return float(errors.sum()) / total * 100 if total else None
+    refs = df["reference"].fillna("").astype(str).tolist()
+    hyps = df["hypothesis"].fillna("").astype(str).tolist()
+    result = compute_corpus_wer(refs, hyps)
+    return result["corpus_wer"] * 100 if result["total_ref_words"] else None
+
+
+def _identity(path: str) -> pd.Series:
+    """ID-indexed normalized references used to enforce a fixed evaluation panel."""
+    df = pd.read_csv(path, usecols=["ID", "reference"])
+    ids = df["ID"].map(lambda value: "" if pd.isna(value) else str(value).strip())
+    if (ids == "").any() or ids.duplicated().any():
+        raise ValueError(f"{path}: empty or duplicate clip IDs invalidate seed comparison")
+    refs = df["reference"].map(lambda value: "" if pd.isna(value) else str(value))
+    return pd.Series(refs.to_numpy(), index=ids, name="reference").sort_index()
 
 
 def find_seed_tables(dataset: str, mode: str, size: str) -> dict[int, str]:
@@ -100,12 +111,26 @@ def build_rows(dataset: str, mode: str) -> tuple[list[dict], list[dict]]:
         if not tables:
             continue
         base = baseline_wer(dataset, mode, size)
+        baseline_path = os.path.join(
+            stage2_dir(dataset), mode, f"wer_{size}_hf_{mode}.csv"
+        )
+        baseline_identity = _identity(baseline_path) if base is not None else None
         seeds = sorted(tables)
         ft_wers, deltas, used_seeds = [], [], []
         for s in seeds:
             w = corpus_wer(tables[s])
             if w is None:
                 continue
+            identity = _identity(tables[s])
+            if baseline_identity is not None and not identity.equals(baseline_identity):
+                missing = len(baseline_identity.index.difference(identity.index))
+                extra = len(identity.index.difference(baseline_identity.index))
+                shared = identity.index.intersection(baseline_identity.index)
+                ref_mismatch = int(identity.loc[shared].ne(baseline_identity.loc[shared]).sum())
+                raise ValueError(
+                    f"{tables[s]} does not match the {size}_hf evaluation panel "
+                    f"(missing IDs={missing}, extra IDs={extra}, reference mismatches={ref_mismatch})"
+                )
             used_seeds.append(s)
             ft_wers.append(w)
             d = (w - base) if base is not None else None
@@ -170,8 +195,10 @@ def to_markdown(rows: list[dict], per_seed: list[dict], dataset: str, mode: str)
         "| Size | Params | Seeds | Baseline WER | FT WER (mean) | Δ mean (pp) | Δ SD (pp) | Δ min | Δ max |",
         "|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|",
     ]
+    def fmt(value):
+        return "" if value is None else f"{value:g}"
+
     for r in rows:
-        fmt = lambda v: "" if v is None else f"{v:g}"
         lines.append(
             f"| {r['display_name']} | {r['params']} | {r['n_seeds']} | {fmt(r['hf_baseline_wer'])}% | "
             f"{fmt(r['ft_wer_mean'])}% | {fmt(r['delta_pp_mean'])} | {fmt(r['delta_pp_sd'])} | "
@@ -189,7 +216,6 @@ def to_markdown(rows: list[dict], per_seed: list[dict], dataset: str, mode: str)
             "| Size | Seed | Baseline WER | FT WER | Δ (pp) |",
             "|---|:---:|:---:|:---:|:---:|",
         ]
-        fmt = lambda v: "" if v is None else f"{v:g}"
         for r in per_seed:
             lines.append(
                 f"| {r['display_name']} | {r['seed']} | {fmt(r['hf_baseline_wer'])}% | "

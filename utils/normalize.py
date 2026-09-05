@@ -19,7 +19,6 @@ import re
 import unicodedata
 
 from utils.registry import (
-    ALL_MODES as MODES,
     get_normalizer,
     get_reference_role,
 )
@@ -47,7 +46,7 @@ def strip_wrapping_quotes(text) -> str:
     e.g. "The second component ..." -> The second component ...
     Only an outer matched pair is removed; quotes inside the sentence are untouched here.
     """
-    s = (text or "").strip()
+    s = _safe_str(text).strip()
     if len(s) >= 2 and s[0] == '"' and s[-1] == '"':
         s = s[1:-1].strip()
     return s
@@ -111,7 +110,8 @@ def normalize_text(text: str) -> str:
     hypothesis, so it never rewards a rewrite that neither transcript uses. Used for
     the *_clean (custom) modes.
     """
-    if not text or not text.strip():
+    text = _safe_str(text)
+    if not text.strip():
         return ""
 
     text = unicodedata.normalize("NFC", text)
@@ -133,7 +133,8 @@ def minimal_clean_text(text: str) -> str:
         "The second component is less than here ..."
     -> the second component is less than here ...
     """
-    if not text or not text.strip():
+    text = _safe_str(text)
+    if not text.strip():
         return ""
 
     text = unicodedata.normalize("NFC", text)
@@ -173,7 +174,8 @@ def whisper_normalize_text(text: str) -> str:
     Expands contractions, spells out numbers, standardises spelling and strips
     punctuation. Applied symmetrically; used for the `whisper_norm` comparison mode.
     """
-    if not text or not text.strip():
+    text = _safe_str(text)
+    if not text.strip():
         return ""
     return _get_whisper_normalizer()(text).strip()
 
@@ -193,5 +195,4 @@ def normalize_for_mode(mode: str, text: str) -> str:
 def get_reference_source(mode: str) -> str:
     """Backward-compatible alias: returns the canonical reference role (gold/alt)."""
     return get_reference_role(mode)
-
 

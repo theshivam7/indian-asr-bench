@@ -238,7 +238,7 @@ print(f"  Coverage    : {available}/{total} ({available/total*100:.1f}%)" if tot
 if ip_block_stop:
     print(f"\n  [NOTE] Stopped early due to IP blocking after {MAX_IP_BLOCKS} consecutive blocks.")
     print(f"         Re-run this script later to fetch remaining {stats['ip_blocked']} samples.")
-    print(f"         Checkpoint saved, already fetched samples will be skipped.")
+    print("         Checkpoint saved, already fetched samples will be skipped.")
 else:
     if os.path.exists(checkpoint_path):
         os.unlink(checkpoint_path)

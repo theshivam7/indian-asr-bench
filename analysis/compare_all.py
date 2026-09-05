@@ -32,7 +32,7 @@ from utils.registry import (
     PRIMARY_MODE, MODEL_BY_KEY, MODEL_DISPLAY, MODEL_COLOR, MODEL_ORDER,
     models_for_dataset, modes_for_dataset, get_dataset,
 )
-from utils.io_helpers import stage2_dir, analysis_dir, build_md_table
+from utils.io_helpers import stage2_dir, analysis_dir, build_md_table, text_value
 
 DURATION_BINS = [0, 5, 15, 30, 60, float("inf")]
 DURATION_LABELS = ["0-5s", "5-15s", "15-30s", "30-60s", "60s+"]
@@ -56,6 +56,46 @@ def load_result_csv(dataset, model, mode):
 def _ordered_chart_models(present):
     """Chart models (chart=True) that have data, in registry order."""
     return [m for m in MODEL_ORDER if m in present and MODEL_BY_KEY[m].chart]
+
+
+def _validate_headline_panels(all_data: dict, mode: str) -> None:
+    """Require every headline model to use the same clip/reference panel."""
+    models = _ordered_chart_models({model for model, table_mode in all_data
+                                    if table_mode == mode})
+    if len(models) < 2:
+        return
+
+    identities = {}
+    for model in models:
+        df = all_data[(model, mode)]
+        required = {"ID", "reference", "hypothesis"}
+        missing = sorted(required - set(df.columns))
+        if missing:
+            raise ValueError(f"{model}/{mode}: missing required columns {missing}")
+        ids = df["ID"].map(text_value)
+        if (ids == "").any() or ids.duplicated().any():
+            raise ValueError(f"{model}/{mode}: empty or duplicate clip IDs")
+        refs = df["reference"].map(text_value)
+        identities[model] = pd.Series(refs.to_numpy(), index=ids).sort_index()
+
+    baseline = models[0]
+    expected = identities[baseline]
+    for model in models[1:]:
+        actual = identities[model]
+        if not actual.index.equals(expected.index):
+            missing = len(expected.index.difference(actual.index))
+            extra = len(actual.index.difference(expected.index))
+            raise ValueError(
+                f"{model}/{mode}: headline evaluation panel differs from {baseline} "
+                f"(missing IDs={missing}, extra IDs={extra})"
+            )
+        mismatch = actual.ne(expected)
+        if mismatch.any():
+            examples = mismatch[mismatch].index[:5].tolist()
+            raise ValueError(
+                f"{model}/{mode}: normalized references differ from {baseline} for "
+                f"{int(mismatch.sum())} clips (e.g. {examples})"
+            )
 
 
 def _grouped_bar(ax, groups, models, value_of, bar_width=None):
@@ -95,11 +135,16 @@ def main(dataset: str) -> None:
         pkey = (model, PRIMARY_MODE)
         row["CER_primary"] = round(_corpus_cer(all_data[pkey]), 2) if pkey in all_data else None
         summary_rows.append(row)
+    for mode in modes:
+        _validate_headline_panels(all_data, mode)
     df_summary = pd.DataFrame(summary_rows)
     df_summary.to_csv(os.path.join(out_dir, "wer_summary.csv"), index=False)
     print(df_summary.to_string(index=False))
 
-    chart_models = _ordered_chart_models({m for (m, _) in all_data})
+    # Headline charts require the headline mode. A model with only some secondary
+    # mode must not appear as a zero-valued (apparently perfect) primary result.
+    chart_models = _ordered_chart_models({m for (m, mode) in all_data
+                                           if mode == PRIMARY_MODE})
 
     # ---- 2. subgroup breakdowns (registry-driven) + duration ------------------
     for col, label in spec.subgroup_dims:
@@ -178,28 +223,37 @@ def main(dataset: str) -> None:
                     fontsize=10.5, fontweight="bold" if v == best else "normal",
                     color="#0072B2" if v == best else "#33383D")
         ax.margins(x=0.14)
-        ax.grid(axis="x"); ax.grid(axis="y", visible=False)
+        ax.grid(axis="x")
+        ax.grid(axis="y", visible=False)
         ax.tick_params(axis="y", length=0)
         ci_note = " with 95% cluster-bootstrap CI" if ci else ""
         ax.set_xlabel(f"Corpus WER (%){ci_note}")
         ax.set_title(f"{spec.display}: corpus WER, {PRIMARY_MODE} mode (lower is better)",
                      loc="left", pad=12)
-        fig.tight_layout(); fig.savefig(os.path.join(out_dir, "wer_by_model.png")); plt.close(fig)
+        fig.tight_layout()
+        fig.savefig(os.path.join(out_dir, "wer_by_model.png"))
+        plt.close(fig)
 
     # by mode
     if chart_models:
         fig, ax = plt.subplots(figsize=(10, 6))
         _grouped_bar(ax, modes, chart_models,
                      lambda m, md: float(df_summary.loc[df_summary.model == m, md].values[0])
-                     if pd.notna(df_summary.loc[df_summary.model == m, md].values[0]) else 0.0)
-        ax.set_xticklabels(modes, rotation=15); ax.set_ylabel("WER (%)"); ax.legend(fontsize=8)
+                     if pd.notna(df_summary.loc[df_summary.model == m, md].values[0])
+                     else float("nan"))
+        ax.set_xticklabels(modes, rotation=15)
+        ax.set_ylabel("WER (%)")
+        ax.legend(fontsize=8)
         ax.set_title(f"WER by model and mode: {spec.display}")
-        fig.tight_layout(); fig.savefig(os.path.join(out_dir, "wer_by_model_and_mode.png")); plt.close(fig)
+        fig.tight_layout()
+        fig.savefig(os.path.join(out_dir, "wer_by_model_and_mode.png"))
+        plt.close(fig)
 
     # per-utterance distribution (small multiples)
     dm = [m for m in chart_models if (m, PRIMARY_MODE) in all_data]
     if dm:
-        ncols = 2; nrows = math.ceil(len(dm) / ncols)
+        ncols = 2
+        nrows = math.ceil(len(dm) / ncols)
         fig, axes = plt.subplots(nrows, ncols, figsize=(11, 2.4 * nrows + 1), sharex=True, sharey=True)
         axes = axes.flatten()
         bins = [i * 5 for i in range(21)]
@@ -211,21 +265,30 @@ def main(dataset: str) -> None:
                 med = float(pd.Series(w).median())
                 ax.axvline(med, color="#d62728", linestyle="--", linewidth=1)
                 ax.text(med + 2, ax.get_ylim()[1] * 0.85, f"median {med:.0f}%", fontsize=8, color="#d62728")
-            ax.set_title(MODEL_DISPLAY.get(m, m), fontsize=10); ax.grid(axis="y", alpha=0.3)
+            ax.set_title(MODEL_DISPLAY.get(m, m), fontsize=10)
+            ax.grid(axis="y", alpha=0.3)
         for j in range(len(dm), len(axes)):
             axes[j].axis("off")
-        fig.supxlabel("WER (%), bin width 5%"); fig.supylabel("% of utterances")
+        fig.supxlabel("WER (%), bin width 5%")
+        fig.supylabel("% of utterances")
         fig.suptitle(f"Per-utterance WER distribution ({PRIMARY_MODE}): {spec.display}", fontsize=12)
-        fig.tight_layout(); fig.savefig(os.path.join(out_dir, "wer_distribution.png")); plt.close(fig)
+        fig.tight_layout()
+        fig.savefig(os.path.join(out_dir, "wer_distribution.png"))
+        plt.close(fig)
 
     # by duration
     if dur and chart_models:
         buckets = [b for b in DURATION_LABELS if b in dur]
         fig, ax = plt.subplots(figsize=(10, 6))
-        _grouped_bar(ax, buckets, chart_models, lambda m, b: dur.get(b, {}).get(m, 0))
-        ax.set_xticklabels(buckets); ax.set_ylabel("WER (%)"); ax.legend(fontsize=8)
+        _grouped_bar(ax, buckets, chart_models,
+                     lambda m, b: dur.get(b, {}).get(m, float("nan")))
+        ax.set_xticklabels(buckets)
+        ax.set_ylabel("WER (%)")
+        ax.legend(fontsize=8)
         ax.set_title(f"WER by duration ({PRIMARY_MODE}): {spec.display}")
-        fig.tight_layout(); fig.savefig(os.path.join(out_dir, "wer_by_duration.png")); plt.close(fig)
+        fig.tight_layout()
+        fig.savefig(os.path.join(out_dir, "wer_by_duration.png"))
+        plt.close(fig)
 
     # one chart per subgroup dim
     for col, label in spec.subgroup_dims:
@@ -240,10 +303,15 @@ def main(dataset: str) -> None:
             continue
         groups = sorted(gd.keys())
         fig, ax = plt.subplots(figsize=(10, 6))
-        _grouped_bar(ax, groups, chart_models, lambda m, g: gd.get(g, {}).get(m, 0))
-        ax.set_xticklabels(groups, rotation=15); ax.set_ylabel("WER (%)"); ax.legend(fontsize=8)
+        _grouped_bar(ax, groups, chart_models,
+                     lambda m, g: gd.get(g, {}).get(m, float("nan")))
+        ax.set_xticklabels(groups, rotation=15)
+        ax.set_ylabel("WER (%)")
+        ax.legend(fontsize=8)
         ax.set_title(f"WER by {label} ({PRIMARY_MODE}): {spec.display}")
-        fig.tight_layout(); fig.savefig(os.path.join(out_dir, f"wer_by_{col}.png")); plt.close(fig)
+        fig.tight_layout()
+        fig.savefig(os.path.join(out_dir, f"wer_by_{col}.png"))
+        plt.close(fig)
 
     # ---- 4. summary report + top20 aggregation --------------------------------
     lines = [f"# WER Evaluation Summary: {spec.display}", "",
