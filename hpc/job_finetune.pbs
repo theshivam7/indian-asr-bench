@@ -2,12 +2,13 @@
 #PBS -N whisper_medium_ft
 #PBS -l select=1:ngpus=1:ncpus=8:mem=64gb
 #PBS -l walltime=10:00:00
-#PBS -P ${PBS_PROJECT:-your_project_id}
 #PBS -o logs/finetune.log
 #PBS -e logs/finetune.log
 #PBS -j oe
 #PBS -k oed
 #PBS -V
+
+set -euo pipefail
 # -V forwards the submitting shell's environment (HF_CACHE, WHISPER_FT_ENV, WORKDIR, ...)
 # to the compute node. Without it, HF_CACHE falls back to $HOME and the dataset download
 # hits the HOME disk quota. Export HF_CACHE to a scratch path before qsub, and pass the
@@ -34,7 +35,7 @@ conda activate "${WHISPER_FT_ENV}" || { echo "[FATAL] conda activate failed for 
 # loader path) don't always fire in a non-interactive PBS batch shell. Without this,
 # torchcodec's "cannot open shared object file" for libavutil.so.5x is a path problem,
 # not a missing/incompatible ffmpeg, it's installed, just not found at runtime.
-export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$HF_CACHE}"
 export HF_HOME="${HF_HOME:-$HF_CACHE}"

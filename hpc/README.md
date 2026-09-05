@@ -52,9 +52,21 @@ single phase on its own, use `--phase 1|2` instead of `all`.
 | conda env | created from | used by |
 |-----------|--------------|---------|
 | `whisper` | `environments/whisper.yaml` | Whisper inference **+ all CPU scoring/analysis/figures** (has `whisper_normalizer`) |
-| `parakeet` | `environments/parakeet.yaml` | Parakeet-TDT / Parakeet-CTC (NeMo) |
-| `qwen3` | `environments/qwen3.yaml` | Qwen3-ASR |
+| `parakeet` | `bash parakeet/setup.sh` | Parakeet-TDT / Parakeet-CTC (NeMo) |
+| `qwen3` | `bash qwen3/setup.sh` | Qwen3-ASR |
 | `whisper_medium_ft` | `bash finetune/setup.sh` | fine-tuning (HF `transformers`, `datasets==4.8.5`) |
+| `$SCRATCH/envs/whisper_throughput` | `bash throughput/setup_whisper.sh` | batched Whisper throughput only; scratch prefix avoids the HOME quota |
+| `$SCRATCH/envs/parakeet_throughput` | `bash throughput/setup_native.sh parakeet` | batched Parakeet throughput, pinned to the same CUDA build |
+| `$SCRATCH/envs/qwen3_throughput` | `bash throughput/setup_native.sh qwen3` | batched Qwen3-ASR throughput, pinned to the same CUDA build |
+
+Before the first throughput submission (and after pulling dependency changes),
+create or refresh all three dedicated throughput environments:
+
+```bash
+bash throughput/setup_whisper.sh
+bash throughput/setup_native.sh parakeet
+bash throughput/setup_native.sh qwen3
+```
 
 ## Individual jobs
 
@@ -64,7 +76,7 @@ qsub -P <id> -v DATASET=svarah                    hpc/job_parakeet.pbs # (parake
 qsub -P <id> -v DATASET=svarah                    hpc/job_qwen3.pbs
 qsub -P <id> -v DATASET=tie                        hpc/job_score.pbs   # CPU-only rescore + analysis (no GPU)
 qsub -P <id> -v DATASETS=tie,svarah                hpc/job_figures.pbs # CPU-only combined figures
-qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full from-scratch 7-model run
+qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full from-scratch 9-model run
 ```
 
 `DATASET` accepts any registry key (`tie`, `svarah`, `aesrc`); the AESRC spec filters
@@ -81,6 +93,31 @@ qsub -P <id> -v DATASET=tie                          hpc/job_speaker_overlap.pbs
 qsub -P <id> -v ENGINE=parakeet,MODEL=parakeet        hpc/job_efficiency.pbs      # RTF/latency/peak-GPU, one model per submission
 qsub -P <id> -v SIZE=tiny,DATASET=aesrc               hpc/job_finetune_seeds.pbs  # multi-seed capacity study (default: seeds 42-47)
 ```
+
+For the separate quality-gated offline batch sweep across all nine pretrained
+systems and all three datasets:
+
+```bash
+# first update the NSCC checkout from the repository root
+git fetch origin
+git pull --ff-only origin main
+git status --short
+
+# one-time environment setup / refresh (also repairs a partial environment)
+export SCRATCH=/scratch/users/ntu/$USER
+export WHISPER_THROUGHPUT_ENV=$SCRATCH/envs/whisper_throughput
+bash throughput/setup_whisper.sh
+bash throughput/setup_native.sh parakeet
+bash throughput/setup_native.sh qwen3
+
+# submit nine exclusive-A100 jobs through NSCC's normal routing queue
+# (g1: 1 GPU, 16 CPUs, 110 GB host RAM, 8-hour limit per job)
+export PROJECT=<nscc_project_id>
+bash hpc/submit_throughput.sh
+```
+
+See [`INFERENCE_EFFICIENCY_PROTOCOL.md`](../INFERENCE_EFFICIENCY_PROTOCOL.md) for
+the fixed workload, batch sweep, quality gate, metrics, and claim boundaries.
 
 `job_finetune_seeds.pbs` has its full usage (including the SEEDS-quoting gotcha) documented in its
 own header comment; see also `analysis/compare_seeds.py` to aggregate the resulting per-seed tables.
