@@ -14,7 +14,7 @@ Adding a new dataset -> append one DatasetSpec to DATASET_SPECS.
 Adding a new mode    -> append one ModeSpec to MODE_SPECS.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 # ============================================================================

@@ -33,7 +33,7 @@ import pandas as pd
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.io_helpers import analysis_dir, results_dir
-from utils.registry import MODEL_COLOR, MODEL_ORDER, PRIMARY_MODE, get_dataset
+from utils.registry import MODEL_COLOR, PRIMARY_MODE, get_dataset
 
 DATASETS = ("tie", "svarah", "aesrc")
 
@@ -80,7 +80,8 @@ def main(mode: str = PRIMARY_MODE) -> None:
                      f"{df['n_clips'].iloc[0]:,} clips, {df['n_clusters'].iloc[0]} {unit} clusters",
                      fontsize=9)
         ax.set_xlim(0, df["ci_hi_pct"].max() * 1.20)
-        ax.grid(axis="x", alpha=0.30); ax.grid(axis="y", visible=False)
+        ax.grid(axis="x", alpha=0.30)
+        ax.grid(axis="y", visible=False)
         ax.invert_yaxis()
         ax.tick_params(axis="both", length=3, width=0.6)
 

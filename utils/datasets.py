@@ -5,15 +5,15 @@ DatasetSpec, after validating that every column the spec declares actually exist
 in the dataset's features. This is what makes adding a dataset a one-line registry
 change: everything downstream reads reference/metadata columns *through* the spec.
 
-For a spec marked `verified=False` (currently Svarah, whose HF schema is gated and
-unconfirmed), a missing column prints an actionable warning instead of crashing,
-so the first real load on NSCC tells you exactly which names to fix in the registry.
+For any future spec marked `verified=False`, a missing column prints an actionable
+warning instead of crashing, so the first real load tells you exactly which names
+to fix in the registry. All currently registered schemas are verified.
 
 `datasets` is imported lazily so the CPU-only Stage 2/3 pipeline never needs it.
 """
 
 from utils.registry import get_dataset
-from utils.io_helpers import HF_CACHE
+from utils.io_helpers import HF_CACHE, text_value
 
 
 def _validate_schema(spec, ds) -> None:
@@ -57,7 +57,7 @@ def extract_ids(ds, spec) -> list[str]:
     if pa.types.is_struct(col.type):
         paths = col.combine_chunks().field("path").to_pylist()
         return [os.path.basename(p) if p else "" for p in paths]
-    return [str(v) for v in col.to_pylist()]
+    return [text_value(v) for v in col.to_pylist()]
 
 
 def _validate_data(spec, ds) -> None:

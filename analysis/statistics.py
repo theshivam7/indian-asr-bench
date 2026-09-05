@@ -41,7 +41,7 @@ import jiwer
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.registry import PRIMARY_MODE, MODEL_BY_KEY, MODEL_DISPLAY, models_for_dataset, get_dataset
-from utils.io_helpers import stage2_dir, analysis_dir, build_md_table
+from utils.io_helpers import stage2_dir, analysis_dir, build_md_table, text_value
 
 B_DEFAULT = 2000
 SEED = 42
@@ -65,7 +65,11 @@ def _load_clip_table(dataset: str, model: str, mode: str) -> pd.DataFrame | None
     if not os.path.exists(path):
         return None
     df = pd.read_csv(path)
-    ids = df["ID"].astype(str)
+    ids = df["ID"].map(text_value)
+    if (ids == "").any():
+        raise ValueError(
+            f"[statistics] {path}: {(ids == '').sum()} empty clip IDs; paired joins are invalid"
+        )
     if ids.duplicated().any():
         dupes = ids[ids.duplicated()].unique()[:5].tolist()
         raise ValueError(
@@ -77,7 +81,9 @@ def _load_clip_table(dataset: str, model: str, mode: str) -> pd.DataFrame | None
     # "nan", silently merging unrelated clips into one giant pseudo-speaker cluster.
     speaker = (df["Speaker_ID"].map(lambda v: "" if pd.isna(v) else str(v).strip())
                if "Speaker_ID" in df.columns else pd.Series([""] * len(df)))
+    references = df["reference"].map(lambda v: "" if pd.isna(v) else str(v))
     out = pd.DataFrame({"ID": ids, "errors": errs, "ref_words": words,
+                        "reference": references,
                         "speaker": speaker.values})
     return out.set_index("ID")
 
@@ -103,6 +109,8 @@ def _holm(pvals: list[float]) -> list[float]:
 
 
 def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
+    if B < 1:
+        raise ValueError("bootstrap resamples must be positive")
     spec = get_dataset(dataset)
     tables = {}
     # One hypothesis family per analysis: only the headline (chart) models enter
@@ -126,13 +134,40 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
         common = set(t.index) if common is None else (common & set(t.index))
     common = sorted(common)
     N = len(common)
+    if N == 0:
+        raise ValueError(
+            f"[statistics] {dataset}/{mode}: model tables have no common clip IDs"
+        )
     for m, t in tables.items():
         if len(t) != N:
             print(f"  [WARNING] {m}: scored table has {len(t)} clips but the cross-model "
                   f"intersection is {N}. Its standalone Stage-2 corpus WER covers a DIFFERENT "
                   f"clip set than the numbers below, do not mix them in the paper.")
 
-    ref_words = tables[models[0]].loc[common, "ref_words"].to_numpy()
+    baseline = models[0]
+    base_refs = tables[baseline].loc[common, "reference"]
+    for model in models[1:]:
+        refs = tables[model].loc[common, "reference"]
+        mismatch = refs.ne(base_refs)
+        if mismatch.any():
+            examples = mismatch[mismatch].index[:5].tolist()
+            raise ValueError(
+                f"[statistics] normalized references differ between {baseline} and {model} "
+                f"for {int(mismatch.sum())} common clips (e.g. {examples}); paired WER "
+                "comparison is invalid until Stage-2 inputs are made identical"
+            )
+        speakers = tables[model].loc[common, "speaker"]
+        base_speakers = tables[baseline].loc[common, "speaker"]
+        speaker_mismatch = speakers.ne(base_speakers)
+        if speaker_mismatch.any():
+            examples = speaker_mismatch[speaker_mismatch].index[:5].tolist()
+            raise ValueError(
+                f"[statistics] speaker metadata differ between {baseline} and {model} "
+                f"for {int(speaker_mismatch.sum())} clips (e.g. {examples}); "
+                "cluster-bootstrap membership is not consistent"
+            )
+
+    ref_words = tables[baseline].loc[common, "ref_words"].to_numpy()
     E_clip = {m: tables[m].loc[common, "errors"].to_numpy() for m in models}
     point = {m: E_clip[m].sum() / ref_words.sum() for m in models}
 
@@ -163,7 +198,7 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
     uniq = sorted(set(labels))
     G = len(uniq)
     gpos = {g: i for i, g in enumerate(uniq)}
-    gidx = np.array([gpos[l] for l in labels])
+    gidx = np.array([gpos[label] for label in labels])
     W_grp = np.bincount(gidx, weights=ref_words, minlength=G)
     E_grp = {m: np.bincount(gidx, weights=E_clip[m], minlength=G) for m in models}
 

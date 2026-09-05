@@ -69,8 +69,8 @@ def transcribe_sample_hf(pipe, sample: dict, audio_value: dict) -> str:
     sample["audio"], the caller strips "audio" from sample so plain dataset iteration
     never triggers datasets.Audio's decode (which needs torchcodec).
 
-    Returns the raw (unnormalized) transcription string. Mirrors the error-handling
-    behaviour of utils.transcribe.transcribe_sample.
+    Returns the raw (unnormalized) transcription string. Infrastructure/decode errors
+    are raised so they cannot be published as genuine empty model hypotheses.
     """
     try:
         # Inside the try: some rows have no embedded array, only a stale local path from
@@ -84,5 +84,4 @@ def transcribe_sample_hf(pipe, sample: dict, audio_value: dict) -> str:
         return result["text"].strip()
     except Exception as e:
         sample_id = sample.get("ID", "?")
-        print(f"  [WARN] Failed to transcribe {sample_id}: {e}")
-        return ""
+        raise RuntimeError(f"HF Whisper failed to transcribe sample {sample_id}") from e

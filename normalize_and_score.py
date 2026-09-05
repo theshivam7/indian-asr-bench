@@ -41,7 +41,7 @@ from utils.wer_compute import (
     reference_word_recall,
     length_ratio,
 )
-from utils.io_helpers import build_md_table, stage1_raw_dir, stage2_dir
+from utils.io_helpers import build_md_table, stage1_raw_dir, stage2_dir, text_value
 
 # Raw-CSV text columns are replaced by scored columns; everything else is carried
 # through generically so the script is dataset-agnostic (no hard-coded metadata).
@@ -54,6 +54,20 @@ def load_raw(dataset: str, model: str) -> pd.DataFrame | None:
         print(f"  [SKIP] {os.path.relpath(path)} not found")
         return None
     df = pd.read_csv(path)
+    spec = get_dataset(dataset)
+    required = {"ID", "transcript_raw", "hypothesis_raw"}
+    if spec.alt_ref_col:
+        required.add("normalised_transcript_raw")
+    missing = sorted(required - set(df.columns))
+    if missing:
+        raise ValueError(f"{path}: missing required raw-transcript columns {missing}")
+    ids = df["ID"].map(text_value)
+    if (ids == "").any():
+        raise ValueError(f"{path}: {(ids == '').sum()} empty clip IDs")
+    if ids.duplicated().any():
+        examples = ids[ids.duplicated()].unique()[:5].tolist()
+        raise ValueError(f"{path}: duplicate clip IDs (e.g. {examples})")
+    df["ID"] = ids
     print(f"  Loaded {len(df)} samples for {model}")
     return df
 
@@ -70,8 +84,8 @@ def process(df: pd.DataFrame, model: str, mode: str) -> tuple[list[dict], dict]:
 
     rows = []
     for _, row in df.iterrows():
-        ref_raw = str(row.get(ref_col) or "").strip()
-        hyp_raw = str(row.get("hypothesis_raw") or "").strip()
+        ref_raw = text_value(row.get(ref_col))
+        hyp_raw = text_value(row.get("hypothesis_raw"))
         if not ref_raw:
             continue
 

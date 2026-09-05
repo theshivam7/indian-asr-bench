@@ -60,7 +60,7 @@ much as swapping the model itself. Full detail in [Normalization](SUMMARY.md#nor
 - Significance testing uses a speaker- or recording-clustered paired bootstrap, Holm-corrected across every pairwise model comparison, and is run under both normalizers rather than only the primary one.
 - A cross-model consensus classifier flags reference/audio mismatches from agreement patterns across all nine models, without hand review.
 - Split design is treated as an evaluation-validity property: TIE's official splits are shown to be speaker-entangled, and the fine-tuning capacity study (Tiny, Small, Medium) runs on AESRC, whose test set is natively speaker-disjoint from training.
-- Inference cost sits next to accuracy: real-time factor, latency percentiles and peak GPU memory for all nine models on all three corpora, timed on one fixed 200-clip subset per corpus under an identical protocol, so speed comparisons are like-for-like rather than anecdotal.
+- Inference cost sits next to accuracy: the existing 200-clip results measure batch-1 single-stream latency; the registered 512-clip batch sweep separately measures quality-gated saturated throughput, GPU utilization, memory and power on a controlled A100-40GB setup.
 - Every table and chart regenerates on CPU from the committed Stage-1 transcripts; no GPU or re-transcription needed.
 
 ---
@@ -298,10 +298,10 @@ resumes rather than restarts. The across-seed spread is reported separately from
 within-run bootstrap CI, because they measure different things and pooling them would
 misstate both.
 
-### Benchmark inference cost (GPU)
+### Benchmark inference efficiency (GPU)
 
-Real-time factor, latency percentiles, throughput and peak GPU memory, measured on a
-seeded clip subset so every model sees identical audio.
+Batch-1 real-time factor, latency percentiles, latency-bound throughput and peak
+GPU memory, measured on a seeded clip subset so every model sees identical audio.
 
 ```bash
 python whisper_asr/run_whisper.py --model medium   --dataset tie --efficiency
@@ -310,8 +310,18 @@ python qwen3/wer_qwen3.py                          --dataset tie --efficiency
 python analysis/compare_efficiency.py              --dataset tie   # merge into one table
 ```
 
-Keep `--clips` and `--seed` identical across models. The aggregator refuses to present
-runs measured on different subsets or different GPUs as one comparable table.
+Those commands measure **batch-1 single-stream latency**, not maximum GPU
+throughput. The quality-gated batch sweep used for saturated/offline throughput is
+documented in [INFERENCE_EFFICIENCY_PROTOCOL.md](INFERENCE_EFFICIENCY_PROTOCOL.md):
+
+```bash
+PROJECT=<nscc_project_id> bash hpc/submit_throughput.sh
+python analysis/compare_throughput.py --dataset tie --require-complete
+```
+
+Keep `--clips` and `--seed` identical across models. The batch-1 aggregator places
+comparability warnings in its report; the publication throughput aggregator fails if
+the workload, GPU/software environment, provenance, or model panel is inconsistent.
 
 ### On a cluster (NSCC / PBS Pro)
 
@@ -329,6 +339,7 @@ Individual jobs, if you prefer to drive them yourself:
 | Fine-tune one size | `qsub -P <id> -v SIZE=tiny,DATASET=aesrc hpc/job_finetune_size.pbs` |
 | Seed sweep | `qsub -P <id> -v SIZE=tiny hpc/job_finetune_seeds.pbs` |
 | Efficiency | `qsub -P <id> -v ENGINE=whisper,MODEL=medium hpc/job_efficiency.pbs` |
+| Offline throughput | `PROJECT=<id> bash hpc/submit_throughput.sh` |
 
 Conda specs are in [`environments/`](environments/), PBS jobs and the runbook in
 [`hpc/`](hpc/). All reported runs used a single NVIDIA A100-40GB (NSCC ASPIRE2A).
@@ -344,6 +355,7 @@ indian-asr-bench/
 ├── whisper_asr/         Whisper transcription driver (--efficiency for speed/memory)
 ├── parakeet/            NeMo Parakeet transcription driver (--efficiency)
 ├── qwen3/               Qwen3-ASR transcription driver (--efficiency)
+├── throughput/          quality-gated batched-throughput drivers and Whisper environment
 ├── finetune/            fine-tuning, multi-seed runner, evaluation scripts
 ├── analysis/            Stage 3: comparisons, statistics, error analysis, efficiency, seeds
 │   └── tie_validation/  human review of TIE's 49 hardest clips, validates the artifact classifier
@@ -351,7 +363,7 @@ indian-asr-bench/
 ├── hpc/                 PBS job scripts + NSCC runbook
 ├── environments/        conda env specs per engine
 ├── scripts/             smoke test
-├── tests/               pytest suite (41 tests)
+├── tests/               pytest regression suite
 └── archived_tasks/      exploratory work SUMMARY.md still cites (TIE fine-tuning, YouTube captions)
 ```
 

@@ -31,17 +31,17 @@ from utils.io_helpers import stage2_dir
 def _write_csv(path, rows):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["reference", "wer"])
+        w = csv.DictWriter(fh, fieldnames=["ID", "reference", "hypothesis", "wer"])
         w.writeheader()
         for r in rows:
-            w.writerow(r)
+            w.writerow({k: r.get(k, "") for k in w.fieldnames})
 
 
 def test_corpus_wer_basic():
     with tempfile.TemporaryDirectory() as td:
         p = os.path.join(td, "t.csv")
         # 10-word reference, wer=0.20 -> 2.0 errors -> corpus WER 20.0%
-        _write_csv(p, [{"reference": "a b c d e f g h i j", "wer": "0.20"}])
+        _write_csv(p, [_fixture_row(10, 0.20)])
         assert abs(compare_seeds.corpus_wer(p) - 20.0) < 1e-9
 
 
@@ -63,7 +63,14 @@ def test_corpus_wer_empty_file_returns_none():
 # is filesystem-coupled by design).
 # --------------------------------------------------------------------------- #
 def _fixture_row(ref_words: int, wer: float) -> dict:
-    return {"reference": " ".join(f"w{i}" for i in range(ref_words)), "wer": str(wer)}
+    words = [f"w{i}" for i in range(ref_words)]
+    errors = int(round(ref_words * wer))
+    return {
+        "ID": "clip-1",
+        "reference": " ".join(words),
+        "hypothesis": " ".join(words[:ref_words - errors]),
+        "wer": str(wer),
+    }
 
 
 def test_build_rows_seed_aggregation_and_guards():
@@ -81,20 +88,20 @@ def test_build_rows_seed_aggregation_and_guards():
 
         # --- tiny: baseline present, 3 clean seeds + 1 unreadable seed ------
         _write_csv(os.path.join(s2, mode, "wer_tiny_hf_transcript_clean.csv"),
-                   [_fixture_row(10, 0.30)])                       # baseline 30.0%
+                   [_fixture_row(100, 0.30)])                      # baseline 30.0%
         _write_csv(os.path.join(s2, mode, f"wer_tiny_{ds}_ft_seed42_transcript_clean.csv"),
-                   [_fixture_row(10, 0.20)])                       # 20.0% -> delta -10.0
+                   [_fixture_row(100, 0.20)])                      # 20.0% -> delta -10.0
         _write_csv(os.path.join(s2, mode, f"wer_tiny_{ds}_ft_seed43_transcript_clean.csv"),
-                   [_fixture_row(10, 0.22)])                       # 22.0% -> delta -8.0
+                   [_fixture_row(100, 0.22)])                      # 22.0% -> delta -8.0
         _write_csv(os.path.join(s2, mode, f"wer_tiny_{ds}_ft_seed44_transcript_clean.csv"),
-                   [_fixture_row(10, 0.24)])                       # 24.0% -> delta -6.0
+                   [_fixture_row(100, 0.24)])                      # 24.0% -> delta -6.0
         _write_csv(os.path.join(s2, mode, f"wer_tiny_{ds}_ft_seed45_transcript_clean.csv"), [])  # unreadable
 
         # --- small: seeds present, NO baseline file at all ------------------
         _write_csv(os.path.join(s2, mode, f"wer_small_{ds}_ft_seed42_transcript_clean.csv"),
-                   [_fixture_row(10, 0.10)])
+                   [_fixture_row(100, 0.10)])
         _write_csv(os.path.join(s2, mode, f"wer_small_{ds}_ft_seed43_transcript_clean.csv"),
-                   [_fixture_row(10, 0.14)])
+                   [_fixture_row(100, 0.14)])
 
         rows, per_seed = compare_seeds.build_rows(ds, mode)
         by_size = {r["size"]: r for r in rows}
@@ -206,6 +213,20 @@ def test_subset_fingerprint_deterministic_and_sensitive():
     assert efficiency.subset_fingerprint(ids[:-1]) != fp1
 
 
+def test_subset_selection_rejects_empty_workloads():
+    class Empty:
+        def __len__(self):
+            return 0
+
+    for ds, n in ((Empty(), 1), (object(), 0)):
+        try:
+            efficiency.select_subset(ds, n, 42)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid empty benchmark workload was accepted")
+
+
 def test_count_parameters_shapes():
     class Flat:
         def parameters(self):
@@ -253,6 +274,12 @@ def test_check_comparability_flags_fingerprint_mismatch():
     reports = [_report("a", fingerprint="fp1"), _report("b", fingerprint="fp2")]
     warnings = compare_efficiency.check_comparability(reports)
     assert any("different clip subsets" in w for w in warnings)
+
+
+def test_check_comparability_flags_missing_fingerprint():
+    reports = [_report("a"), _report("b", fingerprint="")]
+    warnings = compare_efficiency.check_comparability(reports)
+    assert any("missing subset fingerprints" in w for w in warnings)
 
 
 def test_check_comparability_flags_gpu_and_batch_and_driver_mismatch():
@@ -305,8 +332,10 @@ if __name__ == "__main__":
     failed = 0
     for fn in fns:
         try:
-            fn(); print(f"PASS {fn.__name__}")
+            fn()
+            print(f"PASS {fn.__name__}")
         except AssertionError as e:
-            failed += 1; print(f"FAIL {fn.__name__}: {e}")
+            failed += 1
+            print(f"FAIL {fn.__name__}: {e}")
     print(f"\n{len(fns) - failed}/{len(fns)} passed")
     sys.exit(1 if failed else 0)
