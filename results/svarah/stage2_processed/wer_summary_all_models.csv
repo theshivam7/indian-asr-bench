@@ -1,8 +1,8 @@
 dataset,model,mode,reference_source,normalizer,corpus_wer_pct,corpus_cer_pct,mean_wer_pct,median_wer_pct,std_wer_pct,p90_wer_pct,p95_wer_pct,insertion_rate_pct,num_samples,total_ref_words,total_errors
-svarah,tiny,transcript_raw,gold,minimal,20.33,10.42,39.24,13.04,213.9,100.0,100.0,5.94,6656,69898,14213
-svarah,tiny,transcript_clean,gold,custom,19.96,11.07,34.95,11.11,212.89,83.33,100.0,5.58,6656,74417,14857
-svarah,tiny,whisper_norm,gold,whisper,19.52,10.18,35.71,11.11,171.7,100.0,100.0,5.93,6656,69845,13634
-svarah,base,transcript_raw,gold,minimal,14.88,7.34,28.98,8.33,91.35,100.0,100.0,3.66,6656,69898,10403
+svarah,tiny,transcript_raw,gold,minimal,20.33,10.43,39.24,13.04,213.9,100.0,100.0,5.94,6656,69898,14213
+svarah,tiny,transcript_clean,gold,custom,19.96,11.08,34.95,11.11,212.89,83.33,100.0,5.58,6656,74417,14857
+svarah,tiny,whisper_norm,gold,whisper,19.52,10.17,35.71,11.11,171.7,100.0,100.0,5.93,6656,69845,13634
+svarah,base,transcript_raw,gold,minimal,14.88,7.35,28.98,8.33,91.35,100.0,100.0,3.66,6656,69898,10403
 svarah,base,transcript_clean,gold,custom,14.53,7.78,25.36,6.67,84.42,64.29,100.0,3.41,6656,74417,10812
 svarah,base,whisper_norm,gold,whisper,14.37,7.15,27.01,7.14,90.71,66.67,100.0,3.8,6656,69845,10039
 svarah,small,transcript_raw,gold,minimal,10.4,4.94,19.85,0.0,100.91,46.15,100.0,2.65,6656,69898,7270

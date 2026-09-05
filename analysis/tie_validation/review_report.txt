@@ -1,0 +1,587 @@
+=== row 1  (kPnr_57oii4) ===
+normalised_corrected_reference: course approx assuming that q is large okay assuming that q is large okay so what is this
+reference_check = Partially correct  (wer_true=30.0, wer_orig=66)
+hyp_large        _check = Partially correct  (wer_true=55.56, wer_orig=130)
+hyp_parakeet     _check = Correct            (wer_true=16.67, wer_orig=60)
+hyp_parakeet_ctc _check = Correct            (wer_true=16.67, wer_orig=60)
+hyp_qwen3        _check = Correct            (wer_true=16.67, wer_orig=80)
+hyp_medium       _check = Partially correct  (wer_true=44.44, wer_orig=0)
+error_type -> Reference error, Disfluency (fillers, repetitions, false starts)
+reviewer_decision -> Reference error - Large also repeats its last line three times
+reviewer_notes -> Reference drops a repeated phrase that is really in the audio. Large repeats its last line for no reason.
+
+=== row 2  (lwXgJpDzx1s) ===
+normalised_corrected_reference: similarly the example of two d lattice also we can see in two d lattice we talk about in terms of position vector and then the example is like this this is a two d lattice
+reference_check = Correct  (wer_true=18.89, wer_orig=48.82)
+hyp_large        _check = Incorrect          (wer_true=25.0, wer_orig=55.88)
+hyp_parakeet     _check = Correct            (wer_true=16.67, wer_orig=44.12)
+hyp_parakeet_ctc _check = Incorrect          (wer_true=27.78, wer_orig=58.82)
+hyp_qwen3        _check = Incorrect          (wer_true=25.0, wer_orig=55.88)
+hyp_medium       _check = Correct            (wer_true=0.0, wer_orig=29.41)
+error_type -> Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Genuine model error - Large, Parakeet-CTC and Qwen3 all mishear 'lattice' as 'light is'
+reviewer_notes -> Reference is fine here. Three models mishear the word lattice as light is.
+
+=== row 3  (Z6j-Zlem32Q) ===
+normalised_corrected_reference: used so finally what happens is no geometrical similarities achieved and then it becomes a distorted model so when this distorted models when we use the distorted model there will be definitely the scale effects so we have to consider the scale effects so many cases as i mentioned we cannot do all the geometrical similarities
+reference_check = Partially correct  (wer_true=6.79, wer_orig=48.93)
+hyp_large        _check = Correct            (wer_true=5.36, wer_orig=51.06)
+hyp_parakeet     _check = Correct            (wer_true=5.36, wer_orig=44.68)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=14.29, wer_orig=51.06)
+hyp_qwen3        _check = Correct            (wer_true=5.36, wer_orig=46.81)
+hyp_medium       _check = Partially correct  (wer_true=3.57, wer_orig=51.06)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference is missing a few words and has a stray word (scale) that does not belong. Most models get this right.
+
+=== row 4  (E-r2EDS0uP4) ===
+normalised_corrected_reference: f which we have seen c times n minus one minus 2j sorry this is i made a mistake here j two is one but j two is 2j two so this should be counted as two into one that is two and j is five so f is c into four minus two into five which is two
+reference_check = Incorrect  (wer_true=8.14, wer_orig=154.17)
+hyp_large        _check = Correct            (wer_true=10.17, wer_orig=141.67)
+hyp_parakeet     _check = Correct            (wer_true=6.78, wer_orig=162.5)
+hyp_parakeet_ctc _check = Correct            (wer_true=6.78, wer_orig=162.5)
+hyp_qwen3        _check = Correct            (wer_true=6.78, wer_orig=162.5)
+hyp_medium       _check = Correct            (wer_true=10.17, wer_orig=141.67)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference says 3 where the audio says c, and it skips the whole 'sorry I made a mistake' part. All five models got this right.
+
+=== row 5  (1Gqi2iL7ZN8) ===
+normalised_corrected_reference: so essentially what we are doing is no no it is fine it is okay essentially essentially what essentially what we are saying essentially what we are saying is so this is zero zero this is what i am generating right
+reference_check = Incorrect  (wer_true=18.05, wer_orig=48.82)
+hyp_large        _check = Partially correct  (wer_true=21.95, wer_orig=47.06)
+hyp_parakeet     _check = Incorrect          (wer_true=24.39, wer_orig=44.12)
+hyp_parakeet_ctc _check = Correct            (wer_true=7.32, wer_orig=52.94)
+hyp_qwen3        _check = Correct            (wer_true=17.07, wer_orig=52.94)
+hyp_medium       _check = Partially correct  (wer_true=19.51, wer_orig=47.06)
+error_type -> Reference error, Disfluency (fillers, repetitions, false starts)
+reviewer_decision -> Reference error - Parakeet mishears '0,0' as '0,000'
+reviewer_notes -> Reference has a stray note in brackets that is not real speech, and it is missing the last sentence. Parakeet also gets the number wrong.
+
+=== row 6  (RZQTTfU9TNA) ===
+normalised_corrected_reference: this is a practical three three decoder actually i can give you the ic number if you want to it is seventy four thousand one hundred and thirty eight doesnt matter dont have to remember numbers i do not remember numbers if i always in fact i am not even sure if it is one hundred and twenty eight or one hundred and thirty eight i think it is one hundred and thirty eight somebody has a book you can have a quick look at it anyway now
+reference_check = Partially correct  (wer_true=23.41, wer_orig=66.57)
+hyp_large        _check = Partially correct  (wer_true=18.18, wer_orig=62.69)
+hyp_parakeet     _check = Partially correct  (wer_true=22.73, wer_orig=67.16)
+hyp_parakeet_ctc _check = Correct            (wer_true=30.68, wer_orig=76.12)
+hyp_qwen3        _check = Partially correct  (wer_true=32.95, wer_orig=79.1)
+hyp_medium       _check = Correct            (wer_true=12.5, wer_orig=47.76)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error
+reviewer_notes -> Truth says 3-3 decoder but 3 to 8 decoder is the standard term, worth a re-listen. Reference is also missing the last sentence about the book.
+
+=== row 7  (nhzTl_5Syg4) ===
+normalised_corrected_reference: thing like this so let us take a prime number say thirteen so if i say that factorize it in such a way so that the remainder is as less as possible then you can say that i will take six into two so it is a divisor and the remainder is one rather than if i say that you take five as the divisor so if i take five as the divisor then it will be five into two and the remainder will be three
+reference_check = Incorrect  (wer_true=15.58, wer_orig=50.42)
+hyp_large        _check = Correct            (wer_true=12.79, wer_orig=49.3)
+hyp_parakeet     _check = Partially correct  (wer_true=19.77, wer_orig=53.52)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=18.6, wer_orig=53.52)
+hyp_qwen3        _check = Partially correct  (wer_true=16.28, wer_orig=45.07)
+hyp_medium       _check = Correct            (wer_true=10.47, wer_orig=50.7)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference cuts off before the final number (3) and has garbled phrases. Four of five models say something like it's prime that is missing from the truth, might be worth a re-listen.
+
+=== row 8  (4XulH3TfbT0) ===
+normalised_corrected_reference: in short time s is much much less than h so short time means s is much much less than h so the right hand side is approximately pi r squared h rho g so eight pi mu s ds by dt equal to pi r squared h rho g okay so s ds by dt equal to r squared h rho g by eight mu you
+reference_check = Incorrect  (wer_true=22.09, wer_orig=94.15)
+hyp_large        _check = Correct            (wer_true=22.39, wer_orig=104.88)
+hyp_parakeet     _check = Correct            (wer_true=22.39, wer_orig=104.88)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=17.91, wer_orig=95.12)
+hyp_qwen3        _check = Partially correct  (wer_true=16.42, wer_orig=92.68)
+hyp_medium       _check = Partially correct  (wer_true=31.34, wer_orig=73.17)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error
+reviewer_notes -> Reference has a raw timestamp stuck in the text, clearly a mistake, and it drops a whole clause. Large and Parakeet get the full equation right.
+
+=== row 9  (EayOCWaiRkw) ===
+normalised_corrected_reference: now the voltage that is the voltage in c remains constant voltage in c remains constant voltage in c remains constant because it cannot discharge assuming the bias current is negligible then the voltage
+reference_check = Partially correct  (wer_true=15.29, wer_orig=84.55)
+hyp_large        _check = Partially correct  (wer_true=41.18, wer_orig=122.73)
+hyp_parakeet     _check = Correct            (wer_true=2.94, wer_orig=68.18)
+hyp_parakeet_ctc _check = Correct            (wer_true=2.94, wer_orig=63.64)
+hyp_qwen3        _check = Correct            (wer_true=0.0, wer_orig=63.64)
+hyp_medium       _check = Partially correct  (wer_true=29.41, wer_orig=104.55)
+error_type -> Reference error, Disfluency (fillers, repetitions, false starts)
+reviewer_decision -> Reference error - Large and Medium add an extra repeat at the end that is not really there
+reviewer_notes -> Reference drops two of the three repeats that are really in the audio.
+
+=== row 10  (LORmHAC_vPo) ===
+normalised_corrected_reference: b is equal to plus one is equal to minus now i am going to calculate the fixed end moments at bc and cb as if they did not exist as if this
+reference_check = Incorrect  (wer_true=18.79, wer_orig=47.6)
+hyp_large        _check = Incorrect          (wer_true=24.24, wer_orig=52)
+hyp_parakeet     _check = Correct            (wer_true=12.12, wer_orig=44)
+hyp_parakeet_ctc _check = Correct            (wer_true=15.15, wer_orig=46)
+hyp_qwen3        _check = Correct            (wer_true=12.12, wer_orig=44)
+hyp_medium       _check = Partially correct  (wer_true=30.3, wer_orig=52)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error - Large drops the first part of the sentence
+reviewer_notes -> Reference has specific numbers that are not in the truth at all, worth double-checking the audio since this might be something the correction missed.
+
+=== row 11  (o3mpbZ_FRd0) ===
+normalised_corrected_reference: okay so that is what i was trying to point out
+reference_check = Incorrect  (wer_true=9.09, wer_orig=48.89)
+hyp_large        _check = Correct            (wer_true=9.09, wer_orig=44.44)
+hyp_parakeet     _check = Correct            (wer_true=9.09, wer_orig=44.44)
+hyp_parakeet_ctc _check = Correct            (wer_true=9.09, wer_orig=44.44)
+hyp_qwen3        _check = Correct            (wer_true=9.09, wer_orig=66.67)
+hyp_medium       _check = Correct            (wer_true=9.09, wer_orig=44.44)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference changes I was to we are, a real change in meaning, not just wording. All five models match the truth.
+
+=== row 12  (Zk7u1iDKhCc) ===
+normalised_corrected_reference: the range of integration infinite range of integration infinite and second the function the function is unbounded unbounded in the range
+reference_check = Incorrect  (wer_true=19.05, wer_orig=54.67)
+hyp_large        _check = Partially correct  (wer_true=19.05, wer_orig=66.67)
+hyp_parakeet     _check = Partially correct  (wer_true=14.29, wer_orig=66.67)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=9.52, wer_orig=60)
+hyp_qwen3        _check = Correct            (wer_true=14.29, wer_orig=66.67)
+hyp_medium       _check = Partially correct  (wer_true=38.1, wer_orig=13.33)
+error_type -> Reference error, Disfluency (fillers, repetitions, false starts)
+reviewer_decision -> Reference error
+reviewer_notes -> Reference drops the repeated phrases that are really in the audio. Reference and Medium both stop before the word range at the very end, worth a quick re-listen.
+
+=== row 13  (whuItiXjk5s) ===
+normalised_corrected_reference: can make the output go to zero so this kind of adjustment has to be done so by assuming by assuming assuming i bias plus equal to i bias minus we can make the error due to error due to bias current zero by adjusting the resistor values now for example if i want to have a
+reference_check = Incorrect  (wer_true=30.88, wer_orig=50.3)
+hyp_large        _check = Partially correct  (wer_true=43.86, wer_orig=46.97)
+hyp_parakeet     _check = Partially correct  (wer_true=24.56, wer_orig=46.97)
+hyp_parakeet_ctc _check = Incorrect          (wer_true=36.84, wer_orig=60.61)
+hyp_qwen3        _check = Partially correct  (wer_true=31.58, wer_orig=59.09)
+hyp_medium       _check = Partially correct  (wer_true=17.54, wer_orig=37.88)
+error_type -> Reference error, Disfluency (fillers, repetitions, false starts)
+reviewer_decision -> Reference error - Large, Parakeet-CTC and Qwen3 also add extra repeated words that are not really there
+reviewer_notes -> Reference says selecting where truth says adjusting, and it keeps going with extra content that is not in the truth at all, may be from a different part of the audio.
+
+=== row 14  (kHeysMOk9h4) ===
+normalised_corrected_reference: one thing you have a numerical methods problem generally we work on shared memory model the people are working nowadays on cluster machines now the next problem is that we have to tell me how i can do it
+reference_check = Incorrect  (wer_true=12.82, wer_orig=94.63)
+hyp_large        _check = Correct            (wer_true=15.38, wer_orig=92.68)
+hyp_parakeet     _check = Correct            (wer_true=5.13, wer_orig=97.56)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=15.38, wer_orig=95.12)
+hyp_qwen3        _check = Partially correct  (wer_true=10.26, wer_orig=95.12)
+hyp_medium       _check = Partially correct  (wer_true=17.95, wer_orig=92.68)
+error_type -> Misalignment (wrong clip boundary)
+reviewer_decision -> Reference error
+reviewer_notes -> Reference describes something completely different, looks like the wrong reference got attached to this clip.
+
+=== row 15  (Vpoi5W6a3lo) ===
+normalised_corrected_reference: rate could be something like well two people arrive per minute okay so that s two and i want to ask the question what is the probability zero people will arrive over the next minute so id say on average two people arrive at the bus stop k is that zero right so ill put ill substitute k with zero
+reference_check = Incorrect  (wer_true=2.67, wer_orig=121.25)
+hyp_large        _check = Correct            (wer_true=1.67, wer_orig=120.83)
+hyp_parakeet     _check = Correct            (wer_true=1.67, wer_orig=122.92)
+hyp_parakeet_ctc _check = Correct            (wer_true=6.67, wer_orig=122.92)
+hyp_qwen3        _check = Correct            (wer_true=0.0, wer_orig=120.83)
+hyp_medium       _check = Partially correct  (wer_true=3.33, wer_orig=118.75)
+error_type -> Misalignment (wrong clip boundary)
+reviewer_decision -> Reference error - Medium also mishears 'per minute' as 'permanent'
+reviewer_notes -> Reference is about a totally different topic, looks like a mismatched reference for this clip.
+
+=== row 16  (qx86xQ6UKmU) ===
+normalised_corrected_reference: by what is the concentration of bn plus in the solution so r n minus bn plus resin means activity of bn plus in the resin and bn plus s means activity of bn plus in the solution
+reference_check = Incorrect  (wer_true=25.26, wer_orig=96.17)
+hyp_large        _check = Correct            (wer_true=7.89, wer_orig=93.62)
+hyp_parakeet     _check = Correct            (wer_true=36.84, wer_orig=95.74)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=39.47, wer_orig=97.87)
+hyp_qwen3        _check = Partially correct  (wer_true=34.21, wer_orig=97.87)
+hyp_medium       _check = Correct            (wer_true=7.89, wer_orig=95.74)
+error_type -> Misalignment (wrong clip boundary)
+reviewer_decision -> Reference error - Parakeet-CTC mishears 'Bn plus' as 'b and plus'
+reviewer_notes -> Reference talks about the same general topic but not this specific sentence, looks like a nearby but wrong reference segment.
+
+=== row 17  (jtMZfLViZu8) ===
+normalised_corrected_reference: xi i theta y i and w i at each of these four nodes which have coordinates x i xi y i xi in this expanded form how many values now we have we have twelve values it is a twelfth order i mean there are twelve terms in this expression so now we solve for so we can write it as this whole thing w one theta theta y one theta x one then w two theta theta y two theta x two up to all the way down to
+reference_check = Partially correct  (wer_true=12.09, wer_orig=61.69)
+hyp_large        _check = Correct            (wer_true=7.69, wer_orig=66.2)
+hyp_parakeet     _check = Correct            (wer_true=7.69, wer_orig=66.2)
+hyp_parakeet_ctc _check = Correct            (wer_true=8.79, wer_orig=67.61)
+hyp_qwen3        _check = Partially correct  (wer_true=28.57, wer_orig=43.66)
+hyp_medium       _check = Partially correct  (wer_true=7.69, wer_orig=64.79)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error
+reviewer_notes -> Reference drops the number 12 before terms. The opening symbol is read differently by everyone including the reference, might need a careful re-listen.
+
+=== row 18  (Xatxc4IV9UE) ===
+normalised_corrected_reference: on it to you so here we are saying that this is here and this is the modified fixed end moment okay so we can call
+reference_check = Incorrect  (wer_true=21.54, wer_orig=56.67)
+hyp_large        _check = Partially correct  (wer_true=34.62, wer_orig=55.56)
+hyp_parakeet     _check = Correct            (wer_true=26.92, wer_orig=50)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=19.23, wer_orig=61.11)
+hyp_qwen3        _check = Correct            (wer_true=15.38, wer_orig=66.67)
+hyp_medium       _check = Correct            (wer_true=11.54, wer_orig=50)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference drops the whole so here we are saying that part. Most models get this right.
+
+=== row 19  (3vVJkvTsbXQ) ===
+normalised_corrected_reference: i wont say assumption but it is an abstraction well talk about how it affects our analysis as many number of processors as you need which means it is valid for a single processor machine or even millions of processors yes ahmm so one is the amount of resources how much memory i have how much local versus shared
+reference_check = Incorrect  (wer_true=15.59, wer_orig=100.57)
+hyp_large        _check = Correct            (wer_true=16.95, wer_orig=100)
+hyp_parakeet     _check = Correct            (wer_true=25.42, wer_orig=120)
+hyp_parakeet_ctc _check = Correct            (wer_true=18.64, wer_orig=97.14)
+hyp_qwen3        _check = Correct            (wer_true=11.86, wer_orig=97.14)
+hyp_medium       _check = Correct            (wer_true=5.08, wer_orig=88.57)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference drops a whole sentence about millions of processors, real content missing. All five models have it.
+
+=== row 20  (nwcOtus_7eo) ===
+normalised_corrected_reference: is a y that means k one y equal to k two x minus y equal to k two x minus k two y therefore y
+reference_check = Incorrect  (wer_true=50.77, wer_orig=82.86)
+hyp_large        _check = Incorrect          (wer_true=65.38, wer_orig=66.67)
+hyp_parakeet     _check = Incorrect          (wer_true=61.54, wer_orig=138.1)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=11.54, wer_orig=85.71)
+hyp_qwen3        _check = Partially correct  (wer_true=50.0, wer_orig=52.38)
+hyp_medium       _check = Incorrect          (wer_true=65.38, wer_orig=71.43)
+error_type -> Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> (left blank, ambiguous)
+reviewer_notes -> This is a fast equation dictation and everyone struggles with it, including the reference. Might need a few listens to nail down exactly what is said.
+
+=== row 21  (-2aOCNaOiLs) ===
+normalised_corrected_reference: considered in problem forty five okay let us do that
+reference_check = Partially correct  (wer_true=8.0, wer_orig=92)
+hyp_large        _check = Correct            (wer_true=10.0, wer_orig=80)
+hyp_parakeet     _check = Correct            (wer_true=0.0, wer_orig=100)
+hyp_parakeet_ctc _check = Correct            (wer_true=10.0, wer_orig=100)
+hyp_qwen3        _check = Correct            (wer_true=10.0, wer_orig=100)
+hyp_medium       _check = Correct            (wer_true=10.0, wer_orig=80)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference is missing the last sentence, okay let us do that. All five models have it.
+
+=== row 22  (l8kIWLWfbZ8) ===
+normalised_corrected_reference: in fact it is not v p zero it is v p zero cylindrical it is equal to p and d magnitude divided by two epsilon r epsilon zero
+reference_check = Incorrect  (wer_true=33.1, wer_orig=66.67)
+hyp_large        _check = Partially correct  (wer_true=55.17, wer_orig=55.56)
+hyp_parakeet     _check = Partially correct  (wer_true=24.14, wer_orig=66.67)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=13.79, wer_orig=72.22)
+hyp_qwen3        _check = Incorrect          (wer_true=41.38, wer_orig=83.33)
+hyp_medium       _check = Partially correct  (wer_true=31.03, wer_orig=55.56)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error
+reviewer_notes -> Six different sources, the reference and all five models, say twice epsilon, but the truth says divided by 2, the opposite math operation. Worth a careful re-listen. A few models also mishear p as q.
+
+=== row 23  (vlFdVYAXIxg) ===
+normalised_corrected_reference: then added with g three that will give me x three it is fine what about x four x five x six x seven now you see w n say w eight n is eight in our case w eight
+reference_check = Incorrect  (wer_true=15.5, wer_orig=60)
+hyp_large        _check = Partially correct  (wer_true=35.0, wer_orig=58.7)
+hyp_parakeet     _check = Correct            (wer_true=2.5, wer_orig=58.7)
+hyp_parakeet_ctc _check = Correct            (wer_true=5.0, wer_orig=63.04)
+hyp_qwen3        _check = Correct            (wer_true=7.5, wer_orig=60.87)
+hyp_medium       _check = Partially correct  (wer_true=27.5, wer_orig=58.7)
+error_type -> Reference error
+reviewer_decision -> Reference error - Large gets stuck repeating zero ten times at the end
+reviewer_notes -> Reference is missing the very start of the sentence, then keeps going past where the truth stops, that extra bit sounds like real audio that got cut from this clip.
+
+=== row 24  (ubY0YiU2PkY) ===
+normalised_corrected_reference: prismane you get you see how we get that products see when you take benzene and if you this how it exists in your singlet state
+reference_check = Incorrect  (wer_true=12.31, wer_orig=42.31)
+hyp_large        _check = Incorrect          (wer_true=15.38, wer_orig=46.15)
+hyp_parakeet     _check = Partially correct  (wer_true=15.38, wer_orig=42.31)
+hyp_parakeet_ctc _check = Correct            (wer_true=19.23, wer_orig=42.31)
+hyp_qwen3        _check = Incorrect          (wer_true=11.54, wer_orig=42.31)
+hyp_medium       _check = Correct            (wer_true=0.0, wer_orig=38.46)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error - Large and Qwen3 also lose the chemical name Prismane
+reviewer_notes -> Reference says simplest state but truth says singlet state, a real chemistry term, not just spelling.
+
+=== row 25  (Ot-ztTT-9Jk) ===
+normalised_corrected_reference: divided by this beta hat will give you that estimate of this correlation coefficient so now also what we have seen that the conditional variance that conditional variance of y given that x is equals to one by n
+reference_check = Incorrect  (wer_true=2.56, wer_orig=48.97)
+hyp_large        _check = Correct            (wer_true=2.56, wer_orig=48.28)
+hyp_parakeet     _check = Correct            (wer_true=2.56, wer_orig=48.28)
+hyp_parakeet_ctc _check = Correct            (wer_true=2.56, wer_orig=48.28)
+hyp_qwen3        _check = Correct            (wer_true=5.13, wer_orig=48.28)
+hyp_medium       _check = Correct            (wer_true=0.0, wer_orig=51.72)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference says variants instead of variance, a different word, and it is missing several spaces and cuts off early. All five models get this right.
+
+=== row 26  (vf0S_1ZITuA) ===
+normalised_corrected_reference: x by so it is h squared by so it was three factorial and that multiplied by two so that it becomes three and divided by two yes
+reference_check = Incorrect  (wer_true=25.71, wer_orig=130)
+hyp_large        _check = Correct            (wer_true=17.86, wer_orig=120)
+hyp_parakeet     _check = Incorrect          (wer_true=53.57, wer_orig=170)
+hyp_parakeet_ctc _check = Correct            (wer_true=3.57, wer_orig=110)
+hyp_qwen3        _check = Correct            (wer_true=3.57, wer_orig=110)
+hyp_medium       _check = Partially correct  (wer_true=50.0, wer_orig=140)
+error_type -> Reference error
+reviewer_decision -> Reference error - Parakeet also makes up nonsense partway through
+reviewer_notes -> Reference is missing almost this whole sentence, it jumps straight to the end. Parakeet invents a few words that are not real.
+
+=== row 27  (YWACaAGz0Y8) ===
+normalised_corrected_reference: eighteen degrees so twenty five degree centigrade and fifty percent relative humidity is considered as the best considered as human comfort so all the air
+reference_check = Incorrect  (wer_true=14.4, wer_orig=61.74)
+hyp_large        _check = Partially correct  (wer_true=8.0, wer_orig=52.17)
+hyp_parakeet     _check = Partially correct  (wer_true=24.0, wer_orig=69.57)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=20.0, wer_orig=69.57)
+hyp_qwen3        _check = Correct            (wer_true=12.0, wer_orig=65.22)
+hyp_medium       _check = Partially correct  (wer_true=8.0, wer_orig=52.17)
+error_type -> Reference error
+reviewer_decision -> Reference error - Large, Parakeet and Medium all drop the opening sentence
+reviewer_notes -> Reference gets the number wrong, 20 degrees instead of 25, a real mistake not just wording. Qwen3 gets everything right.
+
+=== row 28  (jqhQx9U9kok) ===
+normalised_corrected_reference: is got a higher resolution than i had decided earlier right so just to illustrate you here the example you look at here at the boundaries here as you see some staircase kind of a pattern here right here here
+reference_check = Incorrect  (wer_true=6.5, wer_orig=58.75)
+hyp_large        _check = Correct            (wer_true=7.5, wer_orig=62.5)
+hyp_parakeet     _check = Correct            (wer_true=10.0, wer_orig=53.12)
+hyp_parakeet_ctc _check = Correct            (wer_true=7.5, wer_orig=53.12)
+hyp_qwen3        _check = Correct            (wer_true=7.5, wer_orig=62.5)
+hyp_medium       _check = Correct            (wer_true=0.0, wer_orig=62.5)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference says solution where truth says resolution, a different word. It also drops a chunk in the middle. All five models are close to the truth.
+
+=== row 29  (HZwe_fEnLfs) ===
+normalised_corrected_reference: so there is no functional dependency here and none of these functional dependent on part of the of this so there is no need for any it is a it is a ordinary three nf order number and item code are multivalued
+reference_check = Incorrect  (wer_true=24.76, wer_orig=53.33)
+hyp_large        _check = Partially correct  (wer_true=16.67, wer_orig=63.33)
+hyp_parakeet     _check = Partially correct  (wer_true=23.81, wer_orig=53.33)
+hyp_parakeet_ctc _check = Incorrect          (wer_true=40.48, wer_orig=53.33)
+hyp_qwen3        _check = Incorrect          (wer_true=26.19, wer_orig=46.67)
+hyp_medium       _check = Partially correct  (wer_true=16.67, wer_orig=50)
+error_type -> Reference error
+reviewer_decision -> Reference error - Parakeet-CTC and Qwen3 make the same mistake as the reference
+reviewer_notes -> Reference drops the word no, so there is no dependency becomes there is a dependency, the opposite meaning. Two models make the exact same mistake, so that word may just be hard to catch in the audio.
+
+=== row 30  (lnD212vbPSk) ===
+normalised_corrected_reference: much higher compared to the summer and it is a labor intensive sludge process as far as sludge removal is concerned because we are pumping the liquid sludge to the sludge drying beds once the sludge is dried how can we remove it we have to remove the sludge from the sludge drying bed manually so it is a labor intensive process and
+reference_check = Incorrect  (wer_true=6.67, wer_orig=99.29)
+hyp_large        _check = Correct            (wer_true=3.17, wer_orig=96.43)
+hyp_parakeet     _check = Partially correct  (wer_true=17.46, wer_orig=105.36)
+hyp_parakeet_ctc _check = Correct            (wer_true=7.94, wer_orig=101.79)
+hyp_qwen3        _check = Correct            (wer_true=3.17, wer_orig=98.21)
+hyp_medium       _check = Correct            (wer_true=1.59, wer_orig=94.64)
+error_type -> Misalignment (wrong clip boundary)
+reviewer_decision -> Reference error
+reviewer_notes -> Reference says almost the opposite of the truth, it says the beds are low cost and dry on their own, but the real audio says removal is hard manual work. Looks like the wrong reference for this clip.
+
+=== row 31  (qBw8ZQrJeys) ===
+normalised_corrected_reference: this we will continue in the next class
+reference_check = Incorrect  (wer_true=20.0, wer_orig=91.11)
+hyp_large        _check = Partially correct  (wer_true=12.5, wer_orig=91.11)
+hyp_parakeet     _check = Partially correct  (wer_true=25.0, wer_orig=91.11)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=37.5, wer_orig=91.11)
+hyp_qwen3        _check = Partially correct  (wer_true=25.0, wer_orig=91.11)
+hyp_medium       _check = Correct            (wer_true=0.0, wer_orig=91.11)
+error_type -> Misalignment (wrong clip boundary)
+reviewer_decision -> Reference error
+reviewer_notes -> Reference is a completely different topic, does not match this one-sentence clip at all, looks like the wrong reference. Medium is the only model that gets it exactly right.
+
+=== row 32  (LT8uiz2YdgY) ===
+normalised_corrected_reference: so at this time user s agreement on this srs document is reached so in that the user believes this is what is going to get i guarantee that this is what i am going to give so the srs document is one of the most important documents which are signed by the contractor in this case system provider and the user
+reference_check = Incorrect  (wer_true=4.52, wer_orig=49.41)
+hyp_large        _check = Correct            (wer_true=3.23, wer_orig=49.02)
+hyp_parakeet     _check = Correct            (wer_true=4.84, wer_orig=50.98)
+hyp_parakeet_ctc _check = Correct            (wer_true=6.45, wer_orig=49.02)
+hyp_qwen3        _check = Partially correct  (wer_true=8.06, wer_orig=47.06)
+hyp_medium       _check = Correct            (wer_true=0.0, wer_orig=50.98)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference is missing the whole opening sentence about the agreement being reached. Most models have it, Medium matches almost exactly.
+
+=== row 33  (aGvMubj8NXk) ===
+normalised_corrected_reference: register we can use it for different purposes just one for example we are seeing now this is fundamental basic requirement so now you can see assuming the device has prepared the data and then put in the data
+reference_check = Partially correct  (wer_true=15.9, wer_orig=47.5)
+hyp_large        _check = Partially correct  (wer_true=33.33, wer_orig=68.75)
+hyp_parakeet     _check = Partially correct  (wer_true=12.82, wer_orig=40.62)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=15.38, wer_orig=46.88)
+hyp_qwen3        _check = Partially correct  (wer_true=15.38, wer_orig=46.88)
+hyp_medium       _check = Correct            (wer_true=2.56, wer_orig=34.38)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference is missing a whole sentence. Four of five models all add the same extra words, thing anyway, before requirement, that is not in the truth at all, worth a re-listen since it is unusual for four models to agree on the same thing.
+
+=== row 34  (VPwq6SN4Zos) ===
+normalised_corrected_reference: because these can be powered that s what we had seen moreover we notice that the axis can be axis can be parallel or perpendicular to each other this is what we had seen this is what we had seen in the last
+reference_check = Partially correct  (wer_true=10.23, wer_orig=64.57)
+hyp_large        _check = Incorrect          (wer_true=13.95, wer_orig=68.57)
+hyp_parakeet     _check = Correct            (wer_true=6.98, wer_orig=65.71)
+hyp_parakeet_ctc _check = Correct            (wer_true=9.3, wer_orig=68.57)
+hyp_qwen3        _check = Correct            (wer_true=11.63, wer_orig=60)
+hyp_medium       _check = Correct            (wer_true=9.3, wer_orig=60)
+error_type -> Reference error
+reviewer_decision -> Reference error - Large mishears powered as covered and ends with a made-up word
+reviewer_notes -> Reference garbles the opening and drops one of the repeats. The clip itself cuts off mid-sentence at the end, so models guess different last words, that is likely just the clip stopping, not a real error.
+
+=== row 35  (SL21aDqgs8Q) ===
+normalised_corrected_reference: example for hollow shaft we can see that this comes out to be equal to td zero by two and i p will be
+reference_check = Partially correct  (wer_true=23.33, wer_orig=64)
+hyp_large        _check = Partially correct  (wer_true=16.67, wer_orig=50)
+hyp_parakeet     _check = Partially correct  (wer_true=50.0, wer_orig=100)
+hyp_parakeet_ctc _check = Correct            (wer_true=12.5, wer_orig=55)
+hyp_qwen3        _check = Correct            (wer_true=12.5, wer_orig=55)
+hyp_medium       _check = Partially correct  (wer_true=25.0, wer_orig=60)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference has a stray equals sign left in as text instead of a word, and drops the word out. Parakeet-CTC and Qwen3 match the truth best.
+
+=== row 36  (K5Bd9i0p7uQ) ===
+normalised_corrected_reference: dash and here u prime ũ which is u star is equal to zero and h prime is equal is equal to a function of time the top plate is moving with respect to the bottom plate as a function of time so h prime by t prime equal to v prime
+reference_check = Partially correct  (wer_true=20.77, wer_orig=51.05)
+hyp_large        _check = Partially correct  (wer_true=23.08, wer_orig=47.37)
+hyp_parakeet     _check = Correct            (wer_true=19.23, wer_orig=52.63)
+hyp_parakeet_ctc _check = Correct            (wer_true=19.23, wer_orig=52.63)
+hyp_qwen3        _check = Partially correct  (wer_true=19.23, wer_orig=55.26)
+hyp_medium       _check = Partially correct  (wer_true=23.08, wer_orig=47.37)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names), Disfluency (fillers, repetitions, false starts)
+reviewer_decision -> Reference error
+reviewer_notes -> Reference has stray equals signs left in as text and garbles the final equation. It also drops one of the repeats that is really there. Qwen3 says delta instead of del, a different math symbol, not just spelling.
+
+=== row 37  (ksh6OMRFroI) ===
+normalised_corrected_reference: actually compile this program and try to run it to compile this program we need to use the c compiler and the command for the c compiler is cc so the arguments that i have given to the cc command are first of all o o says
+reference_check = Incorrect  (wer_true=3.83, wer_orig=62.45)
+hyp_large        _check = Correct            (wer_true=4.26, wer_orig=61.22)
+hyp_parakeet     _check = Correct            (wer_true=4.26, wer_orig=61.22)
+hyp_parakeet_ctc _check = Correct            (wer_true=4.26, wer_orig=61.22)
+hyp_qwen3        _check = Correct            (wer_true=2.13, wer_orig=67.35)
+hyp_medium       _check = Correct            (wer_true=4.26, wer_orig=61.22)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference drops the whole opening sentence about compiling and running the program. All five models match the truth well.
+
+=== row 38  (gngL5CXT7YE) ===
+normalised_corrected_reference: runtime environment is type checked by the type environment gamma provided every variable in the runtime environment has a value every variable in the runtime environment has a value which is given by rho v applied to that variable
+reference_check = Incorrect  (wer_true=12.82, wer_orig=30.32)
+hyp_large        _check = Incorrect          (wer_true=23.08, wer_orig=9.68)
+hyp_parakeet     _check = Correct            (wer_true=2.56, wer_orig=41.94)
+hyp_parakeet_ctc _check = Correct            (wer_true=5.13, wer_orig=41.94)
+hyp_qwen3        _check = Correct            (wer_true=7.69, wer_orig=45.16)
+hyp_medium       _check = Incorrect          (wer_true=25.64, wer_orig=12.9)
+error_type -> Reference error, Disfluency (fillers, repetitions, false starts)
+reviewer_decision -> Reference error - Large and Medium make the same mistake as the reference, dropping the repeated sentence
+reviewer_notes -> Reference drops Run from Runtime and completely skips a sentence that is really said twice.
+
+=== row 39  (Ta-nCbQNY4s) ===
+normalised_corrected_reference: to zero so it is just like equation of a spring mass system m x double dot plus kx equal to zero so what is the natural frequency of oscillation of the system root over equivalent stiffness by equivalent mass so omega into gm
+reference_check = Incorrect  (wer_true=14.09, wer_orig=41.88)
+hyp_large        _check = Correct            (wer_true=11.36, wer_orig=43.75)
+hyp_parakeet     _check = Correct            (wer_true=13.64, wer_orig=37.5)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=13.64, wer_orig=46.88)
+hyp_qwen3        _check = Partially correct  (wer_true=18.18, wer_orig=56.25)
+hyp_medium       _check = Partially correct  (wer_true=13.64, wer_orig=25)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error
+reviewer_notes -> Reference drops the double-dot mark on x, which changes the physics meaning, and cuts off before the last sentence. Large and Parakeet match the truth completely.
+
+=== row 40  (G0rbpTX_ytE) ===
+normalised_corrected_reference: devices into whatever scenario which we have discussed involving cpu and memory this is what we have been discussing right if you introduce these input output devices what are the various issues that are there and how these things can be tackled so these will form the focus of our lectures in part three so in part one we are essentially talking about
+reference_check = Incorrect  (wer_true=6.67, wer_orig=37.83)
+hyp_large        _check = Partially correct  (wer_true=14.29, wer_orig=23.91)
+hyp_parakeet     _check = Correct            (wer_true=1.59, wer_orig=45.65)
+hyp_parakeet_ctc _check = Correct            (wer_true=1.59, wer_orig=45.65)
+hyp_qwen3        _check = Correct            (wer_true=3.17, wer_orig=47.83)
+hyp_medium       _check = Partially correct  (wer_true=12.7, wer_orig=26.09)
+error_type -> Reference error
+reviewer_decision -> Reference error - Large and Medium also drop the same short line the reference drops
+reviewer_notes -> Reference drops a chunk about introducing input output devices, and changes are to were, wrong tense.
+
+=== row 41  (1JGSQQRu4fg) ===
+normalised_corrected_reference: another call comes it can be a nuisance same way it is somewhat like a denial of services something similar to that otherwise it were flooded with a lot of enquiry
+reference_check = Incorrect  (wer_true=21.29, wer_orig=47.91)
+hyp_large        _check = Partially correct  (wer_true=12.9, wer_orig=51.16)
+hyp_parakeet     _check = Partially correct  (wer_true=25.81, wer_orig=39.53)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=38.71, wer_orig=44.19)
+hyp_qwen3        _check = Incorrect          (wer_true=29.03, wer_orig=55.81)
+hyp_medium       _check = Correct            (wer_true=0.0, wer_orig=48.84)
+error_type -> Reference error
+reviewer_decision -> Reference error - Parakeet and Parakeet-CTC both mishear 'Another' as 'Whenever'
+reviewer_notes -> Reference's last sentence is worded quite differently, a real difference not just phrasing. Medium matches the truth exactly.
+
+=== row 42  (vlImg6wCr8M) ===
+normalised_corrected_reference: which is v one into r two by r one plus v zero two which is minus v two into r two by r one so that is r two by r one into v one minus v two so ultimately what we conclude is this is an amplifier which gives an output equal to the difference between the two v one minus v two v one is plus connected to this plus terminal v two is connected to minus terminal
+reference_check = Incorrect  (wer_true=16.05, wer_orig=71.93)
+hyp_large        _check = Partially correct  (wer_true=38.27, wer_orig=36.84)
+hyp_parakeet     _check = Partially correct  (wer_true=16.05, wer_orig=78.95)
+hyp_parakeet_ctc _check = Incorrect          (wer_true=20.99, wer_orig=77.19)
+hyp_qwen3        _check = Correct            (wer_true=3.7, wer_orig=82.46)
+hyp_medium       _check = Correct            (wer_true=1.23, wer_orig=84.21)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error - Parakeet-CTC also mixes up the letters V and B throughout
+reviewer_notes -> Reference adds an extra bit at the start that does not match the truth, and drops the word plus right when talking about plus and minus terminals. Qwen3 and Medium match the truth best.
+
+=== row 43  (U6xmF1EqMEM) ===
+normalised_corrected_reference: that should be equal to probability of a i into probability of a j into probability of a k i j k must not be equal and so on probability of intersection a i i equal to one to n must be equal to the product of all the probabilities basically these are two to the power n minus n minus one conditions
+reference_check = Partially correct  (wer_true=13.33, wer_orig=58.22)
+hyp_large        _check = Partially correct  (wer_true=26.98, wer_orig=86.67)
+hyp_parakeet     _check = Correct            (wer_true=3.17, wer_orig=48.89)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=6.35, wer_orig=53.33)
+hyp_qwen3        _check = Correct            (wer_true=19.05, wer_orig=37.78)
+hyp_medium       _check = Partially correct  (wer_true=11.11, wer_orig=64.44)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error
+reviewer_notes -> Reference uses raw symbols instead of words, a formatting issue, though the meaning is still right. Parakeet-CTC mishears 1 to n as one two n. Large and Medium both add an extra sentence at the end that is not really there.
+
+=== row 44  (pPOXG7XRKTw) ===
+normalised_corrected_reference: to ask because that is a huge difference between true and false so we need to do this cleanup though most works on resolution do not even refer to it the third thing of course is that we from the idempotence of and and or it is clear that all
+reference_check = Incorrect  (wer_true=13.6, wer_orig=45.66)
+hyp_large        _check = Correct            (wer_true=2.0, wer_orig=37.74)
+hyp_parakeet     _check = Partially correct  (wer_true=12.0, wer_orig=47.17)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=22.0, wer_orig=47.17)
+hyp_qwen3        _check = Incorrect          (wer_true=32.0, wer_orig=56.6)
+hyp_medium       _check = Correct            (wer_true=0.0, wer_orig=39.62)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error - Parakeet, Parakeet-CTC and Qwen3 all mangle the word idempotence differently
+reviewer_notes -> Reference badly garbles idempotence into nonsense and changes the wording of a sentence. Large and Medium get idempotence right.
+
+=== row 45  (LxPwYoHAx-U) ===
+normalised_corrected_reference: that is the size of lines you can mark on the chip and these are based on that and they use something called so basically now people are able to make nineteen nanometer eight gb flash chips and there are various types of flash designs something called single level cell and multiple level cell single
+reference_check = Incorrect  (wer_true=12.73, wer_orig=42.13)
+hyp_large        _check = Incorrect          (wer_true=25.45, wer_orig=53.19)
+hyp_parakeet     _check = Partially correct  (wer_true=9.09, wer_orig=38.3)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=10.91, wer_orig=40.43)
+hyp_qwen3        _check = Partially correct  (wer_true=16.36, wer_orig=42.55)
+hyp_medium       _check = Correct            (wer_true=1.82, wer_orig=36.17)
+error_type -> Reference error, Technical vocabulary (jargon, numbers, names)
+reviewer_decision -> Reference error - Large hallucinates nonsense at the end, and Parakeet and Qwen3 both mishear 19 as 90 nanometer
+reviewer_notes -> Reference drops the multiple-level cell part entirely and adds an abbreviation that is not said. A wrong number like 90 instead of 19 nanometer is a real mistake, not just wording. Medium matches the truth best.
+
+=== row 46  (wckzrp9zBqk) ===
+normalised_corrected_reference: so we have reiterated more than once okay so what is that voltage vp zero in terms of vdsat at the source end it is vbi minus vgs at the drain end it is vdsat and that sum of the voltage should be equal to vp zero that is what we have said so that is what we have said here this voltage must be equal to vp zero
+reference_check = Incorrect  (wer_true=22.32, wer_orig=45.72)
+hyp_large        _check = Correct            (wer_true=24.64, wer_orig=26.79)
+hyp_parakeet     _check = Correct            (wer_true=30.43, wer_orig=64.29)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=28.99, wer_orig=55.36)
+hyp_qwen3        _check = Partially correct  (wer_true=11.59, wer_orig=46.43)
+hyp_medium       _check = Correct            (wer_true=15.94, wer_orig=35.71)
+error_type -> Reference error
+reviewer_decision -> Reference error - Parakeet-CTC mixes up the letters V and B near the end
+reviewer_notes -> Reference drops a whole sentence and changes we to you. It also cuts off before finishing. Large, Parakeet and Medium all match the truth exactly.
+
+=== row 47  (fMJl01wbmWE) ===
+normalised_corrected_reference: a and you produce s a and i call that srda how is srda obtained from a what you do first is that you take a and you obtain or rather pass it through the mapping g we have already defined how g a works you represent that you obtain either a inverse if a not equal to zero or if a equal to zero then you straight away pass zero and then what you do is that you take this
+reference_check = Partially correct  (wer_true=16.79, wer_orig=39.74)
+hyp_large        _check = Correct            (wer_true=17.28, wer_orig=36.84)
+hyp_parakeet     _check = Correct            (wer_true=19.75, wer_orig=42.11)
+hyp_parakeet_ctc _check = Correct            (wer_true=18.52, wer_orig=40.79)
+hyp_qwen3        _check = Correct            (wer_true=20.99, wer_orig=40.79)
+hyp_medium       _check = Correct            (wer_true=7.41, wer_orig=38.16)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference drops a couple of small words but the meaning is still basically right here. All five models match the truth well.
+
+=== row 48  (6CwSfoOR7-U) ===
+normalised_corrected_reference: this for therefore if you look at the sway moments okay if you look at the sway moments they turn out to be equal to m
+reference_check = Incorrect  (wer_true=21.54, wer_orig=56)
+hyp_large        _check = Partially correct  (wer_true=42.31, wer_orig=20)
+hyp_parakeet     _check = Correct            (wer_true=11.54, wer_orig=86.67)
+hyp_parakeet_ctc _check = Correct            (wer_true=11.54, wer_orig=73.33)
+hyp_qwen3        _check = Correct            (wer_true=3.85, wer_orig=86.67)
+hyp_medium       _check = Partially correct  (wer_true=38.46, wer_orig=13.33)
+error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> Reference is missing the start and one of the repeats. It also ends with a garbled character instead of the real answer M, looks like a typo that loses the actual answer.
+
+=== row 49  (bJom-GAZ2eU) ===
+normalised_corrected_reference: these are the various cities within the kutch region anjar bhuj dholavira gandhidham and mandvi in the saurashtra region amreli bhavnagar dholera dwarka jamnagar junagadh morbi porbandar rajkot surendranagar and veraval and within mainland gujarat ahmedabad bharuch and gandhinagar
+reference_check = Partially correct  (wer_true=38.97, wer_orig=37.06)
+hyp_large        _check = Incorrect          (wer_true=46.15, wer_orig=47.06)
+hyp_parakeet     _check = Partially correct  (wer_true=41.03, wer_orig=44.12)
+hyp_parakeet_ctc _check = Partially correct  (wer_true=46.15, wer_orig=41.18)
+hyp_qwen3        _check = Incorrect          (wer_true=33.33, wer_orig=32.35)
+hyp_medium       _check = Correct            (wer_true=28.21, wer_orig=20.59)
+error_type -> Reference error
+reviewer_decision -> Genuine model error - Large lists an unrelated place name six times in a row, and Qwen3 confuses Saurashtra with Maharashtra, a different state entirely
+reviewer_notes -> This is a list of place names so some spelling variation is normal. But Large goes off track and Qwen3 mixes up two different regions, both real mistakes not just spelling.
