@@ -212,6 +212,20 @@ def main(dataset: str, models: tuple | None = None) -> None:
         print("Done.")
         return
 
+    # Default (registry) run: refuse to publish a partial panel as the canonical
+    # summary. Without this a missing Stage-1 file is one [SKIP] line among
+    # hundreds and wer_summary_all_models.csv still reads as the full registry set.
+    scored = set(df_summary["model"])
+    absent = [m for m in models if m not in scored]
+    if absent:
+        raise FileNotFoundError(
+            f"[normalize_and_score] {dataset}: no Stage-1 transcripts for {absent}. "
+            f"wer_summary_all_models.csv is the canonical panel that compare_all, the "
+            f"figures and SUMMARY.md all read, so it is not written from a partial run. "
+            f"Transcribe the missing models, or score the ones you have with "
+            f"--models {' '.join(sorted(scored))}."
+        )
+
     df_summary.to_csv(os.path.join(s2, "wer_summary_all_models.csv"), index=False)
     with open(os.path.join(s2, "wer_summary_all_models.md"), "w") as f:
         f.write(f"# WER Summary: {spec.display}, all models x modes\n\n")

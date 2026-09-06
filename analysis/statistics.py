@@ -40,7 +40,8 @@ import jiwer
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from utils.registry import PRIMARY_MODE, MODEL_BY_KEY, MODEL_DISPLAY, models_for_dataset, get_dataset
+from utils.registry import (PRIMARY_MODE, MODEL_BY_KEY, MODEL_DISPLAY, models_for_dataset,
+                            get_dataset, modes_for_dataset)
 from utils.io_helpers import stage2_dir, analysis_dir, build_md_table, text_value
 
 B_DEFAULT = 2000
@@ -118,12 +119,23 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
     # controlled comparison with its own paired test (analysis/compare_finetune.py);
     # mixing the families would penalize the headline comparisons for tests that
     # belong to a different question.
-    for m in models_for_dataset(dataset):
-        if not MODEL_BY_KEY[m].chart:
-            continue
+    expected = [m for m in models_for_dataset(dataset) if MODEL_BY_KEY[m].chart]
+    for m in expected:
         t = _load_clip_table(dataset, m, mode)
         if t is not None:
             tables[m] = t
+    # A missing model must not pass silently. Dropping one shrinks the family, which
+    # shrinks the number of pairwise tests, which makes every Holm-adjusted p-value
+    # smaller. The report would still read as internally consistent because its
+    # header is generated from len(pairwise).
+    absent = [m for m in expected if m not in tables]
+    if absent:
+        raise FileNotFoundError(
+            f"[statistics] {dataset}/{mode}: missing Stage-2 output for {absent}. "
+            f"Holm correction is computed over the whole model family, so running "
+            f"without them would silently deflate every adjusted p-value. "
+            f"Run normalize_and_score.py for these models first."
+        )
     models = list(tables)
     if not models:
         return None
@@ -248,6 +260,13 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
 
 def main(dataset: str, mode: str, B: int) -> None:
     spec = get_dataset(dataset)
+    # An unknown mode name otherwise finds no clip tables, prints "nothing to
+    # analyze" and exits 0, so a typo looks like a successful no-op run.
+    valid = list(modes_for_dataset(dataset))
+    if mode not in valid:
+        raise SystemExit(
+            f"[statistics] '{mode}' is not a mode of {dataset}. Valid: {valid}"
+        )
     res = analyze(dataset, mode, B)
     out = analysis_dir(dataset)
 

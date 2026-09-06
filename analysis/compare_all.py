@@ -145,6 +145,17 @@ def main(dataset: str) -> None:
     # mode must not appear as a zero-valued (apparently perfect) primary result.
     chart_models = _ordered_chart_models({m for (m, mode) in all_data
                                            if mode == PRIMARY_MODE})
+    # A headline model with no primary-mode table drops out of every chart and every
+    # downstream table without warning, and the leaderboard still renders as if it
+    # were the full panel.
+    absent_chart = [m for m in models
+                    if MODEL_BY_KEY[m].chart and m not in chart_models]
+    if absent_chart:
+        raise FileNotFoundError(
+            f"[compare_all] {dataset}: no '{PRIMARY_MODE}' table for headline "
+            f"model(s) {absent_chart}. They would silently vanish from the "
+            f"leaderboard and every chart. Run normalize_and_score.py first."
+        )
 
     # ---- 2. subgroup breakdowns (registry-driven) + duration ------------------
     for col, label in spec.subgroup_dims:
