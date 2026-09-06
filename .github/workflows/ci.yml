@@ -52,7 +52,10 @@ jobs:
       - name: Run the test suite
         # Pins the normalization and WER contracts, registry integrity, the committed
         # headline numbers, and the multi-seed aggregation guards.
-        run: pytest tests/ -q
+        # -rs prints the reason for any skipped test. A silently skipped module is
+        # indistinguishable from a passing one in -q output, which is how the AESRC
+        # accent-filter tests went uncovered.
+        run: pytest tests/ -q -rs
 
   reproducibility:
     name: stage 2 rebuilds from committed stage 1
