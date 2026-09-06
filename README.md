@@ -55,12 +55,12 @@ much as swapping the model itself. Full detail in [Normalization](SUMMARY.md#nor
 ## Key features
 
 - Three datasets share one pipeline: TIE_shorts (scraped lecture speech), Svarah (curated read speech), and the AESRC2020 Indian subset (short prompted speech), all scored identically.
-- Nine pretrained models run head to head: Whisper across five sizes, both Parakeet variants (TDT and CTC), and Qwen3-ASR.
+- Nine pretrained models run head to head: Whisper across six sizes (Tiny, Base, Small, Medium, Large-v3, large-v3-turbo), both Parakeet variants (TDT and CTC), and Qwen3-ASR.
 - Up to five normalization modes apply symmetrically to reference and hypothesis, so ranking artifacts from text cleanup are visible instead of hidden.
 - Significance testing uses a speaker- or recording-clustered paired bootstrap, Holm-corrected across every pairwise model comparison, and is run under both normalizers rather than only the primary one.
 - A cross-model consensus classifier flags reference/audio mismatches from agreement patterns across all nine models, without hand review.
 - Split design is treated as an evaluation-validity property: TIE's official splits are shown to be speaker-entangled, and the fine-tuning capacity study (Tiny, Small, Medium) runs on AESRC, whose test set is natively speaker-disjoint from training.
-- Inference cost sits next to accuracy: the existing 200-clip results measure batch-1 single-stream latency; the registered 512-clip batch sweep separately measures quality-gated saturated throughput, GPU utilization, memory and power on a controlled A100-40GB setup.
+- Inference cost sits next to accuracy, measured two ways that are reported separately and never mixed: a 200-clip batch-1 single-stream latency benchmark covering all nine systems on all three corpora, and a 512-clip quality-gated batch sweep for saturated offline throughput, GPU utilization, memory and power on a controlled A100-40GB setup. The sweep is partially complete (see below).
 - Every table and chart regenerates on CPU from the committed Stage-1 transcripts; no GPU or re-transcription needed.
 
 ---
@@ -316,8 +316,14 @@ documented in [INFERENCE_EFFICIENCY_PROTOCOL.md](INFERENCE_EFFICIENCY_PROTOCOL.m
 
 ```bash
 PROJECT=<nscc_project_id> bash hpc/submit_throughput.sh
-python analysis/compare_throughput.py --dataset tie --require-complete
+python analysis/compare_throughput.py --dataset tie          # aggregate what has landed
+python analysis/compare_throughput.py --dataset tie --require-complete   # gate on all nine
 ```
+
+The sweep is **not yet complete**: Qwen3-ASR is missing on all three corpora and
+large-v3-turbo on Svarah and AESRC, so `--require-complete` still exits with
+`missing headline models`. Drop the flag to aggregate what has landed; the
+generated report carries an explicit incomplete-panel banner.
 
 Keep `--clips` and `--seed` identical across models. The batch-1 aggregator places
 comparability warnings in its report; the publication throughput aggregator fails if
