@@ -23,30 +23,7 @@ pytest.importorskip("soundfile")
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import datasets as hf_datasets
-from datasets import Audio, Dataset, Features, Value
-
-# Whether this environment can write an Audio feature into Arrow, probed rather than inferred
-# from a version number. datasets 4.x routes Audio.encode_example through torchcodec, which
-# ships with the engine stacks and not with requirements.txt; datasets 3.x needs nothing extra.
-# The production path never hits this (utils.io_helpers.raw_audio_column reads the arrow column
-# directly, precisely to bypass the Audio feature), so it is only the synthetic fixture below
-# that depends on it. Probe once so light environments skip instead of erroring at collection.
-try:
-    Dataset.from_dict(
-        {"audio": [{"bytes": b"RIFF\x00\x00\x00\x00WAVE", "path": "probe.wav"}]},
-        features=Features({"audio": Audio(sampling_rate=16000)}),
-    )
-    _CAN_ENCODE_AUDIO = True
-except ImportError:
-    _CAN_ENCODE_AUDIO = False
-except Exception:
-    _CAN_ENCODE_AUDIO = True  # a malformed-probe error still means encoding is available
-
-pytestmark = pytest.mark.skipif(
-    not _CAN_ENCODE_AUDIO,
-    reason="datasets>=4 needs torchcodec to encode Audio features; install the engine stack "
-           "(see whisper_asr/requirements.txt) to run these",
-)
+from datasets import Dataset, Features, Value
 
 from utils.datasets import load_split  # noqa: E402
 from utils.finetune_data import filter_finetune_split, filter_tie_split  # noqa: E402
@@ -76,7 +53,14 @@ def _aesrc_like(rows: list[dict]) -> Dataset:
     """Dataset with AESRC's exact schema. `audio` entries are wav-bytes dicts or None."""
     features = Features({
         "id": Value("string"),
-        "audio": Audio(sampling_rate=SR),
+        # The arrow struct that datasets' Audio feature stores, declared directly
+        # instead of via Audio(...). datasets 4.x routes Audio.encode_example through
+        # torchcodec, which requirements.txt deliberately does not carry, so using
+        # Audio here made this whole module skip in CI and left the AESRC accent
+        # filter untested. The code under test reads the arrow column raw
+        # (utils.io_helpers.raw_audio_column) and never invokes the Audio decoder,
+        # so the storage layout is what these tests actually depend on.
+        "audio": {"bytes": Value("binary"), "path": Value("string")},
         "transcription": Value("string"),
         "speaker": Value("string"),
         "accent": Value("string"),

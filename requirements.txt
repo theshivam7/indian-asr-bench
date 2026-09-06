@@ -15,6 +15,11 @@ num2words==0.5.14
 whisper_normalizer==0.1.0   # Whisper EnglishTextNormalizer for the whisper_norm mode (no torch)
 soundfile==0.13.1           # audio decode for scripts/smoke_test.py + validation audio extraction
 librosa==0.11.0             # resampling for the same tools (not needed for scoring)
+openpyxl==3.1.5             # .xlsx review sheets written by analysis/*_validation/build_sample.py
+# Imported directly by utils/io_helpers.raw_audio_column and utils/finetune_data, not
+# just pulled in transitively. Left unpinned on purpose: datasets owns the version, and
+# an exact pin here fights it (datasets 4.8.5 needs pa.json_(), absent before pyarrow 19).
+pyarrow
 # Optional: spaCy adds named-entity tokens to the Svarah NEER metric
 #   pip install spacy && python -m spacy download en_core_web_sm
 
