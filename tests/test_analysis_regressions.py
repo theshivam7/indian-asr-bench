@@ -256,13 +256,32 @@ def test_hardware_provenance_always_has_base_keys():
 # analysis/compare_efficiency.py: comparability checks + provenance aggregation.
 # --------------------------------------------------------------------------- #
 def _report(model_key, fingerprint="abc123", gpu="A100", batch=1, cuda="12.4",
-            driver="570.1", audio_total=100.0, torch_ver="2.5.1"):
+            driver="570.1", audio_total=100.0, torch_ver="2.5.1",
+            precision="float16", cudnn=True):
+    # precision and cudnn_enabled_during_inference are part of a clean protocol block:
+    # check_comparability warns when they are absent, because results that do not record
+    # them cannot be shown to have been measured under the same numerics.
+    protocol = {"subset_fingerprint": fingerprint, "batch_size": batch}
+    if precision is not None:
+        protocol["precision"] = precision
+    if cudnn is not None:
+        protocol["cudnn_enabled_during_inference"] = cudnn
     return {
         "model_key": model_key,
-        "protocol": {"subset_fingerprint": fingerprint, "batch_size": batch},
+        "protocol": protocol,
         "hardware": {"gpu_name": gpu, "torch_cuda": cuda, "nvidia_driver": driver, "torch": torch_ver},
         "metrics": {"audio_seconds_total": audio_total},
     }
+
+
+def test_check_comparability_flags_unrecorded_precision():
+    """The committed batch-1 results predate the precision/cuDNN fields. Their absence
+    must surface as a warning rather than read as 'nothing to report'."""
+    reports = [_report("a", precision=None, cudnn=None),
+               _report("b", precision=None, cudnn=None)]
+    warnings = compare_efficiency.check_comparability(reports)
+    assert any("Precision is not recorded" in w for w in warnings)
+    assert any("cuDNN state during inference is not recorded" in w for w in warnings)
 
 
 def test_check_comparability_clean_run_has_no_warnings():

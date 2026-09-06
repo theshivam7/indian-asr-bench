@@ -57,7 +57,6 @@ def main():
     args = ap.parse_args()
 
     warnings.filterwarnings("ignore")
-    torch.backends.cudnn.enabled = False
 
     from qwen_asr import Qwen3ASRModel
     from utils.registry import MODEL_BY_KEY, get_dataset
@@ -67,11 +66,19 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Loading {model_id} on {device} ...")
     load_timing = []
-    with timed(load_timing):
-        if device == "cuda":
-            model = Qwen3ASRModel.from_pretrained(model_id, dtype=torch.bfloat16, device_map="auto", max_new_tokens=512)
-        else:
-            model = Qwen3ASRModel.from_pretrained(model_id, device_map="cpu", max_new_tokens=512)
+    # cuDNN is disabled for the load only, then restored. Leaving it off would time
+    # every clip on a different backend from the Whisper drivers, which never touch
+    # it, and the efficiency numbers are compared directly across engines.
+    original_cudnn = torch.backends.cudnn.enabled
+    try:
+        torch.backends.cudnn.enabled = False
+        with timed(load_timing):
+            if device == "cuda":
+                model = Qwen3ASRModel.from_pretrained(model_id, dtype=torch.bfloat16, device_map="auto", max_new_tokens=512)
+            else:
+                model = Qwen3ASRModel.from_pretrained(model_id, device_map="cpu", max_new_tokens=512)
+    finally:
+        torch.backends.cudnn.enabled = original_cudnn
     print(f"Model loaded in {load_timing[0]:.1f}s.\n")
 
     audio_col = get_dataset(args.dataset).audio_col

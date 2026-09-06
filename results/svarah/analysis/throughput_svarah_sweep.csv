@@ -1,0 +1,57 @@
+dataset,model,model_display,batch_size,status,rtfx_audio_s_per_s,utterances_per_s,completion_latency_p95_s,gpu_util_mean_pct,device_memory_peak_mib,corpus_wer_pct,wer_delta_pp_vs_batch1,empty_hypotheses,quality_valid,gate_reject_reason,sensitivity_valid,is_selected
+svarah,tiny,Whisper Tiny,1,ok,41.943,7.917,0.2007,15.58,641.0,19.5282,0.0,0,True,,True,False
+svarah,tiny,Whisper Tiny,2,ok,52.364,9.884,0.2913,12.35,643.0,19.4573,-0.0709,0,True,,True,False
+svarah,tiny,Whisper Tiny,4,ok,61.989,11.701,0.4574,8.61,695.0,19.4573,-0.0709,0,True,,True,False
+svarah,tiny,Whisper Tiny,8,ok,68.911,13.008,0.7585,5.77,819.0,19.4573,-0.0709,0,True,,True,False
+svarah,tiny,Whisper Tiny,16,ok,73.81,13.932,1.3363,3.83,1063.0,19.4573,-0.0709,0,True,,True,False
+svarah,tiny,Whisper Tiny,32,ok,75.873,14.322,2.4922,2.88,1541.0,19.4573,-0.0709,0,True,,True,False
+svarah,tiny,Whisper Tiny,64,ok,77.276,14.587,4.6714,2.0,2491.0,19.4573,-0.0709,0,True,,True,False
+svarah,tiny,Whisper Tiny,128,ok,78.742,14.863,8.9917,1.77,4385.0,19.5105,-0.0177,0,True,,True,True
+svarah,base,Whisper Base,1,ok,35.201,6.644,0.2493,17.36,717.0,13.8702,0.0,0,True,,True,False
+svarah,base,Whisper Base,2,ok,45.917,8.667,0.3376,14.12,733.0,13.7992,-0.071,0,True,,True,False
+svarah,base,Whisper Base,4,ok,56.754,10.713,0.5212,10.73,801.0,13.8347,-0.0355,0,True,,True,False
+svarah,base,Whisper Base,8,ok,65.178,12.303,0.834,7.67,965.0,13.817,-0.0532,0,True,,True,False
+svarah,base,Whisper Base,16,ok,70.882,13.38,1.4058,5.52,1287.0,13.8524,-0.0178,0,True,,True,False
+svarah,base,Whisper Base,32,ok,73.918,13.953,2.6124,4.1,1917.0,13.7992,-0.071,0,True,,True,False
+svarah,base,Whisper Base,64,ok,75.82,14.312,4.8203,3.5,3171.0,13.8347,-0.0355,0,True,,True,False
+svarah,base,Whisper Base,128,ok,76.919,14.519,9.2132,3.04,5671.0,13.8347,-0.0355,0,True,,True,True
+svarah,small,Whisper Small,1,ok,27.256,5.145,0.3579,22.73,1089.0,10.2341,0.0,0,True,,True,False
+svarah,small,Whisper Small,2,ok,36.651,6.918,0.464,20.4,1173.0,10.2519,0.0178,0,True,,True,False
+svarah,small,Whisper Small,4,ok,48.267,9.111,0.6964,16.96,1299.0,10.2164,-0.0177,0,True,,True,False
+svarah,small,Whisper Small,8,ok,57.761,10.903,1.0695,13.36,1571.0,10.2341,0.0,0,True,,True,False
+svarah,small,Whisper Small,16,ok,64.922,12.255,1.7046,9.75,2259.0,10.2341,0.0,0,True,,True,False
+svarah,small,Whisper Small,32,ok,68.178,12.869,2.9289,8.93,3627.0,10.2341,0.0,0,True,,True,False
+svarah,small,Whisper Small,64,ok,71.457,13.488,5.2775,8.23,6345.0,10.2341,0.0,0,True,,True,False
+svarah,small,Whisper Small,128,ok,72.602,13.704,9.9319,7.54,11763.0,10.2519,0.0178,0,True,,True,True
+svarah,medium,Whisper Medium,1,ok,18.217,3.439,0.5839,28.8,2171.0,7.8929,0.0,0,True,,True,False
+svarah,medium,Whisper Medium,2,ok,26.72,5.044,0.7042,28.95,2361.0,7.8574,-0.0355,0,True,,True,False
+svarah,medium,Whisper Medium,4,ok,37.224,7.026,0.9677,24.25,2779.0,7.8929,0.0,0,True,,True,False
+svarah,medium,Whisper Medium,8,ok,47.807,9.024,1.381,20.86,3901.0,7.9106,0.0177,0,True,,True,False
+svarah,medium,Whisper Medium,16,ok,56.183,10.605,2.0342,20.53,6015.0,7.8929,0.0,0,True,,True,False
+svarah,medium,Whisper Medium,32,ok,60.351,11.392,3.5536,19.04,10079.0,7.8929,0.0,0,True,,True,False
+svarah,medium,Whisper Medium,64,ok,64.057,12.091,6.0866,18.22,18195.0,7.8751,-0.0178,0,True,,True,True
+svarah,medium,Whisper Medium,128,ok,64.363,12.149,11.6177,18.55,34419.0,7.9106,0.0177,0,True,,True,False
+svarah,large,Whisper Large-v3,1,ok,14.48,2.733,0.7504,33.51,4039.0,6.8819,0.0,0,True,,True,False
+svarah,large,Whisper Large-v3,2,ok,21.917,4.137,0.8955,31.77,4393.0,6.9173,0.0354,0,True,,True,False
+svarah,large,Whisper Large-v3,4,ok,31.39,5.925,1.2013,30.07,4991.0,6.8996,0.0177,0,True,,True,False
+svarah,large,Whisper Large-v3,8,ok,39.13,7.386,1.79,28.32,6771.0,6.9173,0.0354,0,True,,True,False
+svarah,large,Whisper Large-v3,16,ok,47.019,8.875,2.5456,29.16,10319.0,6.9173,0.0354,0,True,,True,False
+svarah,large,Whisper Large-v3,32,ok,52.225,9.858,4.2979,29.18,17309.0,6.8996,0.0177,0,True,,True,False
+svarah,large,Whisper Large-v3,64,ok,55.668,10.508,7.1769,29.52,31273.0,6.9173,0.0354,0,True,,True,True
+svarah,large,Whisper Large-v3,128,ok,55.455,10.468,13.831,30.43,36385.0,6.9173,0.0354,0,True,,True,False
+svarah,parakeet,Parakeet-TDT-0.6B-v2,1,ok,84.59,15.967,0.0752,36.77,3133.0,12.9124,0.0,0,True,,True,False
+svarah,parakeet,Parakeet-TDT-0.6B-v2,2,ok,157.913,29.808,0.0818,37.36,3245.0,13.0011,0.0887,0,True,,True,False
+svarah,parakeet,Parakeet-TDT-0.6B-v2,4,ok,294.892,55.664,0.092,38.71,3433.0,12.7173,-0.1951,0,False,wer -0.1951 pp,True,False
+svarah,parakeet,Parakeet-TDT-0.6B-v2,8,ok,537.089,101.38,0.1081,40.81,3777.0,12.9301,0.0177,0,True,,True,True
+svarah,parakeet,Parakeet-TDT-0.6B-v2,16,ok,907.168,171.236,0.156,43.5,4473.0,13.0188,0.1064,0,False,wer +0.1064 pp,True,False
+svarah,parakeet,Parakeet-TDT-0.6B-v2,32,ok,1326.691,250.425,0.3597,46.88,5823.0,13.0365,0.1241,0,False,wer +0.1241 pp,True,False
+svarah,parakeet,Parakeet-TDT-0.6B-v2,64,ok,1580.31,298.298,0.6451,49.88,8473.0,13.0188,0.1064,0,False,wer +0.1064 pp,True,False
+svarah,parakeet,Parakeet-TDT-0.6B-v2,128,ok,1384.524,261.341,1.1833,63.88,9963.0,13.0188,0.1064,0,False,wer +0.1064 pp,True,False
+svarah,parakeet_ctc,Parakeet-CTC-1.1B,1,ok,53.62,10.121,0.1066,34.38,4711.0,15.165,0.0,0,True,,True,False
+svarah,parakeet_ctc,Parakeet-CTC-1.1B,2,ok,104.358,19.698,0.106,35.72,4765.0,15.1827,0.0177,0,True,,True,False
+svarah,parakeet_ctc,Parakeet-CTC-1.1B,4,ok,201.897,38.11,0.1108,36.76,4871.0,15.2182,0.0532,0,True,,True,True
+svarah,parakeet_ctc,Parakeet-CTC-1.1B,8,ok,382.414,72.184,0.1209,38.78,5121.0,15.3246,0.1596,0,False,wer +0.1596 pp,True,False
+svarah,parakeet_ctc,Parakeet-CTC-1.1B,16,ok,677.219,127.831,0.1754,43.81,5537.0,15.3778,0.2128,0,False,wer +0.2128 pp,True,False
+svarah,parakeet_ctc,Parakeet-CTC-1.1B,32,ok,1029.938,194.41,0.4662,57.09,6537.0,15.3246,0.1596,0,False,wer +0.1596 pp,True,False
+svarah,parakeet_ctc,Parakeet-CTC-1.1B,64,ok,1175.276,221.844,0.8911,61.5,8201.0,15.2714,0.1064,0,False,wer +0.1064 pp,True,False
+svarah,parakeet_ctc,Parakeet-CTC-1.1B,128,ok,1032.379,194.871,1.6989,71.73,12199.0,15.3423,0.1773,0,False,wer +0.1773 pp,True,False

@@ -1,0 +1,65 @@
+dataset,model,model_display,batch_size,status,rtfx_audio_s_per_s,utterances_per_s,completion_latency_p95_s,gpu_util_mean_pct,device_memory_peak_mib,corpus_wer_pct,wer_delta_pp_vs_batch1,empty_hypotheses,quality_valid,gate_reject_reason,sensitivity_valid,is_selected
+tie,tiny,Whisper Tiny,1,ok,77.093,3.322,0.3848,25.8,645.0,20.2284,0.0,0,True,,True,False
+tie,tiny,Whisper Tiny,2,ok,111.254,4.795,0.4833,24.44,649.0,20.2134,-0.015,0,True,,True,False
+tie,tiny,Whisper Tiny,4,ok,157.212,6.775,0.6523,19.79,703.0,20.1833,-0.0451,0,True,,True,False
+tie,tiny,Whisper Tiny,8,ok,204.429,8.81,0.945,15.37,825.0,20.2209,-0.0075,0,True,,True,False
+tie,tiny,Whisper Tiny,16,ok,243.661,10.501,2.739,11.18,1067.0,20.2021,-0.0263,0,True,,True,False
+tie,tiny,Whisper Tiny,32,ok,267.288,11.519,4.0016,8.21,1545.0,20.2134,-0.015,0,True,,True,False
+tie,tiny,Whisper Tiny,64,ok,283.931,12.237,6.3308,6.99,2493.0,20.2246,-0.0038,0,True,,True,False
+tie,tiny,Whisper Tiny,128,ok,291.156,12.548,11.061,7.78,4387.0,20.2096,-0.0188,0,True,,True,True
+tie,base,Whisper Base,1,ok,64.408,2.776,0.472,27.94,723.0,17.1331,0.0,0,True,,True,False
+tie,base,Whisper Base,2,ok,95.532,4.117,0.5778,26.31,743.0,17.1444,0.0113,0,True,,True,False
+tie,base,Whisper Base,4,ok,138.957,5.989,0.7457,22.24,811.0,17.1519,0.0188,0,True,,True,False
+tie,base,Whisper Base,8,ok,187.05,8.061,1.0734,15.94,973.0,17.1556,0.0225,0,True,,True,False
+tie,base,Whisper Base,16,ok,231.945,9.996,1.6461,12.57,1289.0,17.1481,0.015,0,True,,True,False
+tie,base,Whisper Base,32,ok,260.352,11.221,4.5594,10.36,1919.0,17.1556,0.0225,0,True,,True,False
+tie,base,Whisper Base,64,ok,280.926,12.107,6.9073,9.7,3173.0,17.1368,0.0037,0,True,,True,False
+tie,base,Whisper Base,128,ok,289.366,12.471,11.9203,10.1,5673.0,17.1669,0.0338,0,True,,True,True
+tie,small,Whisper Small,1,ok,41.504,1.789,0.7511,28.8,1091.0,13.403,0.0,0,True,,True,False
+tie,small,Whisper Small,2,ok,64.76,2.791,0.8871,30.06,1177.0,13.448,0.045,0,True,,True,False
+tie,small,Whisper Small,4,ok,101.545,4.376,1.0528,27.65,1311.0,13.418,0.015,0,True,,True,False
+tie,small,Whisper Small,8,ok,147.383,6.352,1.4348,22.45,1571.0,13.4405,0.0375,0,True,,True,False
+tie,small,Whisper Small,16,ok,198.664,8.562,2.073,17.98,2259.0,13.4105,0.0075,0,True,,True,False
+tie,small,Whisper Small,32,ok,232.943,10.039,3.4458,15.99,3627.0,13.3954,-0.0076,0,True,,True,False
+tie,small,Whisper Small,64,ok,263.466,11.355,5.9068,14.39,6345.0,13.4067,0.0037,0,True,,True,False
+tie,small,Whisper Small,128,ok,279.1,12.029,10.8749,13.84,11763.0,13.4405,0.0375,0,True,,True,True
+tie,medium,Whisper Medium,1,ok,24.251,1.045,1.2893,31.04,2177.0,12.5315,0.0,0,True,,True,False
+tie,medium,Whisper Medium,2,ok,39.364,1.696,1.4666,34.28,2371.0,12.5127,-0.0188,0,True,,True,False
+tie,medium,Whisper Medium,4,ok,65.121,2.807,1.6632,30.84,2795.0,12.5052,-0.0263,0,True,,True,False
+tie,medium,Whisper Medium,8,ok,102.729,4.427,1.9892,29.27,3901.0,12.5315,0.0,0,True,,True,False
+tie,medium,Whisper Medium,16,ok,148.742,6.41,2.7669,30.4,6015.0,12.5089,-0.0226,0,True,,True,False
+tie,medium,Whisper Medium,32,ok,186.814,8.051,4.2176,28.54,10079.0,12.5014,-0.0301,0,True,,True,False
+tie,medium,Whisper Medium,64,ok,222.406,9.585,7.0445,28.91,18195.0,12.5202,-0.0113,0,True,,True,False
+tie,medium,Whisper Medium,128,ok,235.633,10.155,12.9078,28.62,34419.0,12.5202,-0.0113,0,True,,True,True
+tie,large,Whisper Large-v3,1,ok,18.902,0.815,1.669,35.07,4047.0,12.986,0.0,0,True,,True,False
+tie,large,Whisper Large-v3,2,ok,31.233,1.346,1.8525,35.26,4411.0,12.9897,0.0037,0,True,,True,False
+tie,large,Whisper Large-v3,4,ok,52.509,2.263,2.0714,34.22,4993.0,13.016,0.03,0,True,,True,False
+tie,large,Whisper Large-v3,8,ok,76.446,3.295,2.6878,32.79,6773.0,12.9672,-0.0188,0,True,,True,False
+tie,large,Whisper Large-v3,16,ok,118.224,5.095,3.4954,36.68,10321.0,12.9672,-0.0188,0,True,,True,False
+tie,large,Whisper Large-v3,32,ok,156.535,6.746,5.1198,40.47,17311.0,12.9747,-0.0113,0,True,,True,False
+tie,large,Whisper Large-v3,64,ok,187.397,8.076,8.2031,41.97,31275.0,12.9634,-0.0226,0,True,,True,False
+tie,large,Whisper Large-v3,128,ok,192.765,8.308,15.8089,40.49,38155.0,12.9597,-0.0263,0,True,,True,True
+tie,large_v3_turbo,Whisper large-v3-turbo,1,ok,76.602,3.301,0.3896,33.51,2295.0,13.5344,0.0,0,True,,True,False
+tie,large_v3_turbo,Whisper large-v3-turbo,2,ok,111.35,4.799,0.4912,31.4,2359.0,13.5419,0.0075,0,True,,True,False
+tie,large_v3_turbo,Whisper large-v3-turbo,4,ok,152.166,6.558,0.6708,28.87,2571.0,13.5682,0.0338,0,True,,True,False
+tie,large_v3_turbo,Whisper large-v3-turbo,8,ok,186.748,8.048,1.0498,27.51,2971.0,13.557,0.0226,0,True,,True,False
+tie,large_v3_turbo,Whisper large-v3-turbo,16,ok,217.073,9.355,1.7645,25.28,3759.0,13.572,0.0376,0,True,,True,False
+tie,large_v3_turbo,Whisper large-v3-turbo,32,ok,233.679,10.071,3.2527,24.53,5321.0,13.5194,-0.015,0,True,,True,False
+tie,large_v3_turbo,Whisper large-v3-turbo,64,ok,246.344,10.617,6.0941,22.93,8429.0,13.5382,0.0038,0,True,,True,False
+tie,large_v3_turbo,Whisper large-v3-turbo,128,ok,249.957,10.773,12.1258,22.62,14631.0,13.5757,0.0413,0,True,,True,True
+tie,parakeet,Parakeet-TDT-0.6B-v2,1,ok,271.445,11.699,0.0958,50.14,3641.0,15.1159,0.0,0,True,,True,False
+tie,parakeet,Parakeet-TDT-0.6B-v2,2,ok,474.273,20.44,0.1068,54.87,5139.0,15.1459,0.03,0,True,,True,False
+tie,parakeet,Parakeet-TDT-0.6B-v2,4,ok,836.204,36.038,0.1217,62.39,10087.0,15.1084,-0.0075,0,True,,True,False
+tie,parakeet,Parakeet-TDT-0.6B-v2,8,ok,1264.535,54.498,0.1688,64.24,21177.0,15.2286,0.1127,0,False,wer +0.1127 pp,True,False
+tie,parakeet,Parakeet-TDT-0.6B-v2,16,ok,1645.752,70.928,0.2828,64.4,22499.0,15.2211,0.1052,0,False,wer +0.1052 pp,True,False
+tie,parakeet,Parakeet-TDT-0.6B-v2,32,ok,1958.019,84.386,0.4742,62.88,23167.0,15.2398,0.1239,0,False,wer +0.1239 pp,True,False
+tie,parakeet,Parakeet-TDT-0.6B-v2,64,ok,2121.344,91.425,0.8327,59.39,24351.0,15.2248,0.1089,0,False,wer +0.1089 pp,True,False
+tie,parakeet,Parakeet-TDT-0.6B-v2,128,ok,2251.261,97.024,1.6044,60.59,16257.0,15.2098,0.0939,0,True,,True,True
+tie,parakeet_ctc,Parakeet-CTC-1.1B,1,ok,228.145,9.833,0.1031,38.11,4737.0,17.1744,0.0,6,True,,True,True
+tie,parakeet_ctc,Parakeet-CTC-1.1B,2,ok,439.004,18.92,0.1104,41.46,4849.0,17.366,0.1916,8,False,wer +0.1916 pp; empty 6->8,True,False
+tie,parakeet_ctc,Parakeet-CTC-1.1B,4,ok,819.161,35.304,0.1162,52.81,5063.0,17.5162,0.3418,9,False,wer +0.3418 pp; empty 6->9,True,False
+tie,parakeet_ctc,Parakeet-CTC-1.1B,8,ok,1243.652,53.598,0.1777,64.16,5487.0,17.4749,0.3005,9,False,wer +0.3005 pp; empty 6->9,True,False
+tie,parakeet_ctc,Parakeet-CTC-1.1B,16,ok,1482.913,63.91,0.3023,68.03,6331.0,17.5275,0.3531,9,False,wer +0.3531 pp; empty 6->9,True,False
+tie,parakeet_ctc,Parakeet-CTC-1.1B,32,ok,1674.398,72.162,0.5525,68.34,8525.0,17.5238,0.3494,9,False,wer +0.3494 pp; empty 6->9,True,False
+tie,parakeet_ctc,Parakeet-CTC-1.1B,64,ok,1719.067,74.088,1.0809,74.25,13059.0,17.505,0.3306,9,False,wer +0.3306 pp; empty 6->9,True,False
+tie,parakeet_ctc,Parakeet-CTC-1.1B,128,ok,1722.69,74.244,2.079,74.39,22539.0,17.5012,0.3268,9,False,wer +0.3268 pp; empty 6->9,True,False
