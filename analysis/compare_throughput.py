@@ -84,6 +84,66 @@ EXPECTED_PROTOCOL = {
 }
 
 
+# Post-hoc sensitivity gate.
+#
+# The pre-registered gate (utils/throughput.py) is two-sided at 0.10 pp and forbids
+# any increase in empty hypotheses. It is architecture-asymmetric in practice:
+# Whisper pads every clip to a fixed 30 s window, so batching cannot perturb its
+# output and the gate never binds; the NeMo models pad to batch-max, so batching
+# moves their corpus WER by 0.1-0.3 pp and the gate clamps them to a small batch.
+# On TIE that costs Parakeet-CTC a factor of 7.5 (batch 1 at 228 RTFx published,
+# batch 128 measured at 1723 RTFx and rejected at +0.33 pp).
+#
+# Three observations say the gate is filtering noise rather than decode drift: it
+# is non-monotonic in batch size, it is two-sided (a Svarah batch scoring 0.195 pp
+# BETTER than batch 1 was rejected), and the same two models pass at batch 128 on
+# AESRC while being clamped on TIE and Svarah.
+#
+# The pre-registered result stays the headline and is still what validate()
+# enforces. These constants only drive an additional, clearly-labelled column so
+# the cost of the pre-registered choice is visible rather than hidden.
+SENSITIVITY_MAX_WER_INCREASE_PP = 0.5
+SENSITIVITY_MAX_EMPTY_INCREASE_FRAC = 0.01
+
+
+def gate_reasons(entry: dict, baseline: dict, n_clips: int) -> list[str]:
+    """Why the pre-registered gate rejected this batch. Empty list means it passed."""
+    if entry.get("status") != "ok":
+        return [str(entry.get("status") or "not run")]
+    quality = entry.get("quality", {})
+    reasons = []
+    delta = quality.get("wer_delta_pp_vs_batch1")
+    if delta is not None and abs(delta) > EXPECTED_PROTOCOL["quality_gate_max_abs_wer_delta_pp_vs_batch1"]:
+        reasons.append(f"wer {delta:+.4f} pp")
+    empty = quality.get("empty_hypotheses")
+    base_empty = baseline.get("quality", {}).get("empty_hypotheses")
+    if empty is not None and base_empty is not None and empty > base_empty:
+        reasons.append(f"empty {base_empty}->{empty}")
+    if not quality.get("repeat_hypotheses_identical", True):
+        reasons.append("repeats differ")
+    return reasons
+
+
+def sensitivity_valid(entry: dict, baseline: dict, n_clips: int) -> bool:
+    """One-sided, wider re-derivation of the quality gate. See the note above."""
+    if entry.get("status") != "ok":
+        return False
+    quality = entry.get("quality", {})
+    if not quality.get("repeat_hypotheses_identical", True):
+        return False
+    delta = quality.get("wer_delta_pp_vs_batch1")
+    # One-sided: a batch that scores better than batch 1 is not a quality failure.
+    if delta is not None and delta > SENSITIVITY_MAX_WER_INCREASE_PP:
+        return False
+    empty = quality.get("empty_hypotheses")
+    base_empty = baseline.get("quality", {}).get("empty_hypotheses")
+    if empty is not None and base_empty is not None:
+        allowed = base_empty + max(1, int(round(n_clips * SENSITIVITY_MAX_EMPTY_INCREASE_FRAC)))
+        if empty > allowed:
+            return False
+    return True
+
+
 def _runtime_package(r: dict) -> str:
     if r["runtime"] == "huggingface_transformers_whisper_pipeline":
         return f"transformers={r['software'].get('transformers')}"
@@ -320,6 +380,11 @@ def aggregate(results: list[dict], dataset: str) -> pd.DataFrame:
         best_size = selection["best_batch_size"]
         best = next(e for e in r["batch_results"] if e["batch_size"] == best_size)
         b1 = next(e for e in r["batch_results"] if e["batch_size"] == 1)
+        n_clips = r["workload"]["n_clips"]
+        sens_entries = [
+            e for e in r["batch_results"] if sensitivity_valid(e, b1, n_clips)
+        ]
+        sens = select_best_entry(sens_entries) if sens_entries else best
         rows.append(
             {
                 "dataset": dataset,
@@ -359,6 +424,17 @@ def aggregate(results: list[dict], dataset: str) -> pd.DataFrame:
                 "wer_delta_pp_vs_batch1": best["quality"]["wer_delta_pp_vs_batch1"],
                 "empty_hypotheses": best["quality"]["empty_hypotheses"],
                 "quality_valid": best["quality_valid"],
+                # Post-hoc sensitivity, not the pre-registered result. See the note
+                # above SENSITIVITY_MAX_WER_INCREASE_PP.
+                "sens_batch_size": sens["batch_size"],
+                "sens_rtfx_audio_s_per_s": sens["median"]["rtfx_audio_s_per_s"],
+                "sens_utterances_per_s": sens["median"]["utterances_per_s"],
+                "sens_wer_delta_pp_vs_batch1": sens["quality"]["wer_delta_pp_vs_batch1"],
+                "sens_vs_published_x": round(
+                    sens["median"]["rtfx_audio_s_per_s"]
+                    / best["median"]["rtfx_audio_s_per_s"],
+                    3,
+                ),
                 "model_load_seconds": r.get("model_load_seconds"),
                 "gpu_name": r["hardware"].get("gpu_name"),
                 "driver": r["hardware"].get("nvidia_driver"),
@@ -377,6 +453,55 @@ def aggregate(results: list[dict], dataset: str) -> pd.DataFrame:
     )
 
 
+def sweep_frame(results: list[dict], dataset: str) -> pd.DataFrame:
+    """Every batch size that was measured, not only the selected one.
+
+    INFERENCE_EFFICIENCY_PROTOCOL.md requires the observed WER delta to be shown
+    rather than a bare pass/fail. Reporting only the selected batch hides that a
+    much faster configuration was measured and discarded.
+    """
+    rows = []
+    for r in results:
+        b1 = next(e for e in r["batch_results"] if e["batch_size"] == 1)
+        n_clips = r["workload"]["n_clips"]
+        selected = r["selection"]["best_batch_size"]
+        for e in sorted(r["batch_results"], key=lambda x: x["batch_size"]):
+            reasons = gate_reasons(e, b1, n_clips)
+            median = e.get("median") or {}
+            quality = e.get("quality") or {}
+            rows.append(
+                {
+                    "dataset": dataset,
+                    "model": r["model_key"],
+                    "model_display": r["model_display"],
+                    "batch_size": e["batch_size"],
+                    "status": e.get("status"),
+                    "rtfx_audio_s_per_s": median.get("rtfx_audio_s_per_s"),
+                    "utterances_per_s": median.get("utterances_per_s"),
+                    "completion_latency_p95_s": median.get("completion_latency_p95_s"),
+                    "gpu_util_mean_pct": median.get("gpu_util_mean_pct"),
+                    "device_memory_peak_mib": median.get("device_memory_peak_mib"),
+                    "corpus_wer_pct": quality.get("corpus_wer_pct"),
+                    "wer_delta_pp_vs_batch1": quality.get("wer_delta_pp_vs_batch1"),
+                    "empty_hypotheses": quality.get("empty_hypotheses"),
+                    "quality_valid": e.get("quality_valid"),
+                    "gate_reject_reason": "; ".join(reasons),
+                    "sensitivity_valid": sensitivity_valid(e, b1, n_clips),
+                    "is_selected": e["batch_size"] == selected,
+                }
+            )
+    order = {m: MODEL_BY_KEY[m].order for m in CHART_MODELS}
+    return (
+        pd.DataFrame(rows)
+        .sort_values(
+            ["model", "batch_size"],
+            key=lambda s: s.map(order) if s.name == "model" else s,
+            kind="stable",
+        )
+        .reset_index(drop=True)
+    )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", required=True, choices=("tie", "svarah", "aesrc"))
@@ -385,9 +510,14 @@ def main() -> None:
     results = load_results(args.dataset)
     validate(results, args.dataset, args.require_complete)
     df = aggregate(results, args.dataset)
+    sweep = sweep_frame(results, args.dataset)
     out_csv = os.path.join(analysis_dir(args.dataset), f"throughput_{args.dataset}.csv")
     out_md = os.path.join(analysis_dir(args.dataset), f"throughput_{args.dataset}.md")
+    sweep_csv = os.path.join(
+        analysis_dir(args.dataset), f"throughput_{args.dataset}_sweep.csv"
+    )
     df.to_csv(out_csv, index=False)
+    sweep.to_csv(sweep_csv, index=False)
     display = df[
         [
             "model_display",
@@ -396,6 +526,7 @@ def main() -> None:
             "best_rtfx_min",
             "best_rtfx_max",
             "batching_speedup_x",
+            "utterances_per_s",
             "gpu_util_mean_pct",
             "device_memory_peak_mib",
             "estimated_gpu_wh_per_audio_hour",
@@ -404,18 +535,86 @@ def main() -> None:
             "wer_delta_pp_vs_batch1",
         ]
     ]
+    clamped = df[df["sens_vs_published_x"] > 1.01]
+    missing = [m for m in CHART_MODELS if m not in set(df["model"])]
     with open(out_md, "w") as f:
         f.write(f"# Offline throughput: {args.dataset}\n\n")
+        if missing:
+            f.write(
+                f"> **Incomplete panel.** {len(df)} of {len(CHART_MODELS)} systems. "
+                f"Missing: {', '.join(MODEL_BY_KEY[m].display for m in missing)}. "
+                "Do not read this as a full comparison until the remaining runs land.\n\n"
+            )
         f.write(
-            "Best quality-valid batch size on the common duration-sorted workload. "
+            "Best quality-valid batch size on the common duration-sorted workload, "
+            "under the pre-registered gate. RTFx is audio seconds processed per "
+            "wall-clock second; higher is better.\n\n"
         )
         f.write(
-            "RTFx is audio seconds processed per wall-clock second; higher is better.\n\n"
+            "> **Read RTFx together with utterances/s.** The Whisper systems run the "
+            "short-form Transformers path, which zero-pads every clip to 30 s, so "
+            "their cost is per utterance and does not fall when clips get shorter. "
+            "The NeMo systems pad to the longest clip in the batch, so their cost "
+            "tracks real audio. RTFx divides by real audio seconds, which flatters "
+            "the padded systems on short-clip corpora. Whisper's mean GPU "
+            "utilization on the curated corpora is under 2%, so those numbers are "
+            "largely bounded by CPU-side audio decode rather than by the A100.\n\n"
         )
         f.write(build_md_table(display))
         f.write("\n")
+        f.write("## Gate sensitivity\n\n")
+        f.write(
+            "The pre-registered gate rejects any batch whose corpus WER moves more "
+            f"than {EXPECTED_PROTOCOL['quality_gate_max_abs_wer_delta_pp_vs_batch1']} pp "
+            "from batch 1 in either direction, and any batch that adds an empty "
+            "hypothesis. Whisper pads to a fixed window so batching cannot move its "
+            "output and the gate never binds; the NeMo systems pad dynamically, so "
+            "it binds only on them. The columns below re-derive the selection with a "
+            "one-sided tolerance of "
+            f"{SENSITIVITY_MAX_WER_INCREASE_PP} pp (a batch that scores better than "
+            "batch 1 is not treated as a failure). This is a post-hoc sensitivity "
+            "check, not the pre-registered result; cite the table above.\n\n"
+        )
+        if len(clamped):
+            f.write(
+                build_md_table(
+                    clamped[
+                        [
+                            "model_display",
+                            "best_batch_size",
+                            "best_rtfx_audio_s_per_s",
+                            "sens_batch_size",
+                            "sens_rtfx_audio_s_per_s",
+                            "sens_wer_delta_pp_vs_batch1",
+                            "sens_vs_published_x",
+                        ]
+                    ]
+                )
+            )
+            f.write("\n")
+        else:
+            f.write("No model's selection changes under the wider gate.\n")
+        f.write("\n")
+        f.write(
+            f"Per-batch measurements for every model, including the ones the gate "
+            f"rejected and why, are in `throughput_{args.dataset}_sweep.csv`.\n"
+        )
     print(display.to_string(index=False))
-    print(f"\nSaved {out_csv}\nSaved {out_md}")
+    if len(clamped):
+        print("\nGate-clamped models (post-hoc sensitivity, not the headline):")
+        print(
+            clamped[
+                [
+                    "model_display",
+                    "best_batch_size",
+                    "best_rtfx_audio_s_per_s",
+                    "sens_batch_size",
+                    "sens_rtfx_audio_s_per_s",
+                    "sens_vs_published_x",
+                ]
+            ].to_string(index=False)
+        )
+    print(f"\nSaved {out_csv}\nSaved {out_md}\nSaved {sweep_csv}")
 
 
 if __name__ == "__main__":

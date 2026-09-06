@@ -146,6 +146,29 @@ def check_comparability(reports: list[dict]) -> list[str]:
                 "until the discrepancy is explained."
             )
 
+    # Precision and cuDNN state are not in the batch-1 artifacts at all, so they
+    # cannot be diffed the way GPU/driver/CUDA are above. They are not constant
+    # across engines either: each driver takes its reference implementation's
+    # default, which means fp32-resident weights for Whisper and Parakeet and bf16
+    # for Qwen3-ASR, so the peak-memory column is not like-for-like. Warn from the
+    # absence of the field, so this clears itself once the harness records it.
+    if any("precision" not in r.get("protocol", {}) for r in reports):
+        warnings.append(
+            "Precision is not recorded in these results. Each engine runs at its "
+            "reference implementation's default, which is not the same across "
+            "engines (fp32-resident weights for the Whisper and Parakeet drivers, "
+            "bf16 for Qwen3-ASR). Peak GPU memory is therefore not a like-for-like "
+            "comparison; treat it as each system's default footprint, not as an "
+            "architecture-controlled measurement."
+        )
+    if any("cudnn_enabled_during_inference" not in r.get("protocol", {}) for r in reports):
+        warnings.append(
+            "cuDNN state during inference is not recorded. Results produced before "
+            "the cuDNN fix in the Parakeet and Qwen3 drivers were timed with cuDNN "
+            "disabled, while the Whisper runs had it enabled; those Parakeet and "
+            "Qwen3 latencies are pessimistic. Re-run to remove this caveat."
+        )
+
     return warnings
 
 
@@ -222,8 +245,9 @@ def to_markdown(df: pd.DataFrame, dataset: str, reports: list[dict], warnings: l
         verb = "supports" if len(batched) == 1 else "support"
         lines += [
             f"Note: {subject} {verb} batched inference but {'was' if len(batched) == 1 else 'were'} "
-            "measured one clip at a time, so every engine is timed under identical single-stream "
-            "conditions. Throughput under batching is higher than reported here.",
+            "measured one clip at a time, so every engine sees the same single-stream batch size. "
+            "Batch size is the only thing equalized here; see the comparability warnings above for "
+            "what is not. Throughput under batching is higher than reported here.",
             "",
         ]
     return "\n".join(lines)
