@@ -127,6 +127,7 @@ echo "git commit: ${GIT_COMMIT} source_sha256: ${SOURCE_SHA256}"
 
 # Colon avoids PBS's comma separator for the qsub -v variable list.
 IFS=':' read -r -a DATASET_LIST <<< "${DATASETS}"
+FAILED=""
 for DATASET in "${DATASET_LIST[@]}"; do
     echo "=== ${MODEL} / ${DATASET} start $(date -Is) ==="
     python "${DRIVER}" \
@@ -137,7 +138,14 @@ for DATASET in "${DATASET_LIST[@]}"; do
       --warmup-batches "${WARMUP_BATCHES}" \
       --repeats "${REPEATS}" \
       --seed "${SEED}" \
-      --telemetry-ms "${TELEMETRY_MS}" || exit $?
+      --telemetry-ms "${TELEMETRY_MS}" || FAILED="${FAILED} ${DATASET}"
 done
 
+# One dataset's failure used to abort the rest, so a transient telemetry stall on
+# the second corpus threw away the third as well. Run every corpus, then exit
+# non-zero: compare_throughput.py rejects any incomplete result on its own.
+if [ -n "${FAILED}" ]; then
+    echo "=== throughput job FAILED for:${FAILED} $(date -Is) ==="
+    exit 1
+fi
 echo "=== throughput job complete $(date -Is) ==="
