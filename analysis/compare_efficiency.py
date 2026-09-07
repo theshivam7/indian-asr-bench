@@ -192,6 +192,19 @@ def build_table(reports: list[dict]) -> pd.DataFrame:
 def to_markdown(df: pd.DataFrame, dataset: str, reports: list[dict], warnings: list[str]) -> str:
     present = [(c, h) for c, h in REPORT_COLUMNS if c in df.columns and df[c].notna().any()]
     lines = [f"# Inference efficiency: {dataset}", ""]
+    # Archive banner. Whisper was measured on CUDA 11.8 and NeMo/Qwen3 on 12.4, and
+    # no run recorded its dtype, so nothing in this table is comparable across models.
+    lines += [
+        "> **Superseded.** This single-stream table is kept as an archive, not as a",
+        "> publication result. The engines ran on different CUDA runtimes (Whisper on",
+        "> 11.8, NeMo and Qwen3 on 12.4) and precision was neither controlled nor",
+        "> recorded, so speed and memory are not comparable across models here.",
+        ">",
+        "> The published latency and throughput numbers come from the quality-gated",
+        "> batch sweep instead (`analysis/compare_throughput.py`), whose batch-1 row is",
+        "> the same single-stream measurement taken under one controlled environment.",
+        "",
+    ]
 
     if reports:
         proto = reports[0].get("protocol", {})
