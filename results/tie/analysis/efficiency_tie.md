@@ -1,5 +1,14 @@
 # Inference efficiency: tie
 
+> **Superseded.** This single-stream table is kept as an archive, not as a
+> publication result. The engines ran on different CUDA runtimes (Whisper on
+> 11.8, NeMo and Qwen3 on 12.4) and precision was neither controlled nor
+> recorded, so speed and memory are not comparable across models here.
+>
+> The published latency and throughput numbers come from the quality-gated
+> batch sweep instead (`analysis/compare_throughput.py`), whose batch-1 row is
+> the same single-stream measurement taken under one controlled environment.
+
 Measured on NVIDIA A100-SXM4-40GB, driver 570.124.06, torch 2.5.1, 2.5.1+cu124, CUDA 11.8, 12.4.
 
 Protocol: 200 clips sampled with seed 42 (fingerprint `46c6f70a710f`), 3 untimed warmup clips, batch size 1.
