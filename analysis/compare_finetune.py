@@ -45,7 +45,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from utils.wer_compute import compute_corpus_wer  # noqa: E402
 from utils.registry import ALL_MODES as MODES, PRIMARY_MODE, MODEL_ORDER, MODEL_BY_KEY  # noqa: E402
 from utils.io_helpers import stage2_dir, analysis_dir  # noqa: E402
-from analysis.statistics import _clip_errors, _holm, analyze  # noqa: E402
+from analysis.statistics import B_DEFAULT, _clip_errors, _holm, analyze  # noqa: E402
 
 # One entry per model size, each running the same minimal protocol: one official-split
 # fine-tune vs its own HF-pipeline pretrained baseline. For TIE, out_stem=
@@ -524,7 +524,7 @@ def main(dataset: str) -> None:
                 "## Pretrained capacity curve (for context; not a fine-tuning statistic)",
                 "",
                 f"Speaker-clustered bootstrap CIs from `analysis/statistics.py:analyze()` "
-                f"(N={res['N']} clips, G={res['G']} {res['cluster_unit']}s, B=2000). Point estimates only "
+                f"(N={res['N']} clips, G={res['G']} {res['cluster_unit']}s, B={B_DEFAULT}). Point estimates only "
                 ", no Holm correction applied or needed here (these are per-model CIs, not pairwise tests).",
                 "",
                 "| Model | Params | Corpus WER | 95% CI |",

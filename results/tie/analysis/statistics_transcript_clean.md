@@ -1,18 +1,18 @@
 # Statistical significance: TIE_shorts, mode `transcript_clean`
 
-Corpus WER with 95% bootstrap CI: 2000 resamples, seed 42, N=985 clips, resampled by **speaker** (280 clusters). Headline (chart) models only, the fine-tuning study is a separate hypothesis family with its own paired test in `finetune_comparison.md`. Speaker-level resampling accounts for within-speaker correlation (clips from one speaker share accent/channel); clip-level CIs are in the CSV for comparison and are narrower, i.e. anti-conservative.
+Corpus WER with 95% bootstrap CI: 10000 resamples, seed 42, N=985 clips, resampled by **speaker** (280 clusters). Headline (chart) models only, the fine-tuning study is a separate hypothesis family with its own paired test in `finetune_comparison.md`. Speaker-level resampling accounts for within-speaker correlation (clips from one speaker share accent/channel); clip-level CIs are in the CSV for comparison and are narrower, i.e. anti-conservative.
 
 | Model | Corpus WER % | CI low | CI high | ±pp |
 | --- | --- | --- | --- | --- |
-| Whisper Medium | 14.76 | 13.69 | 15.87 | 1.09 |
-| Parakeet-TDT-0.6B-v2 | 15.6 | 14.49 | 16.71 | 1.11 |
-| Whisper Large-v3 | 15.93 | 14.72 | 17.16 | 1.22 |
-| Whisper Small | 16.05 | 14.85 | 17.34 | 1.24 |
-| Parakeet-CTC-1.1B | 16.45 | 15.33 | 17.59 | 1.13 |
-| Qwen3-ASR-1.7B | 16.66 | 15.57 | 17.79 | 1.11 |
-| Whisper Base | 17.53 | 16.3 | 18.8 | 1.25 |
-| Whisper large-v3-turbo | 17.98 | 16.49 | 19.47 | 1.49 |
-| Whisper Tiny | 19.43 | 18.12 | 20.79 | 1.33 |
+| Whisper Medium | 14.76 | 13.7 | 15.86 | 1.08 |
+| Parakeet-TDT-0.6B-v2 | 15.6 | 14.52 | 16.71 | 1.1 |
+| Whisper Large-v3 | 15.93 | 14.74 | 17.19 | 1.23 |
+| Whisper Small | 16.05 | 14.87 | 17.29 | 1.21 |
+| Parakeet-CTC-1.1B | 16.45 | 15.35 | 17.57 | 1.11 |
+| Qwen3-ASR-1.7B | 16.66 | 15.58 | 17.78 | 1.1 |
+| Whisper Base | 17.53 | 16.34 | 18.75 | 1.21 |
+| Whisper large-v3-turbo | 17.98 | 16.49 | 19.5 | 1.51 |
+| Whisper Tiny | 19.43 | 18.18 | 20.72 | 1.27 |
 
 ## Pairwise paired significance
 
@@ -20,39 +20,39 @@ Difference = WER(A) − WER(B) in pp; paired bootstrap on identical speaker-leve
 
 | model_a | model_b | diff_pp | ci_lo_pp | ci_hi_pp | p_value | p_holm | significant_holm_0.05 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| tiny | base | 1.91 | 1.37 | 2.45 | 0.001 | 0.036 | yes |
-| tiny | small | 3.38 | 2.65 | 4.07 | 0.001 | 0.036 | yes |
-| tiny | medium | 4.67 | 3.98 | 5.34 | 0.001 | 0.036 | yes |
-| tiny | large | 3.5 | 2.5 | 4.44 | 0.001 | 0.036 | yes |
-| tiny | large_v3_turbo | 1.46 | 0.26 | 2.57 | 0.019 | 0.19 | no |
-| tiny | parakeet | 3.84 | 3.19 | 4.49 | 0.001 | 0.036 | yes |
-| tiny | parakeet_ctc | 2.99 | 2.41 | 3.57 | 0.001 | 0.036 | yes |
-| tiny | qwen3 | 2.77 | 2.11 | 3.45 | 0.001 | 0.036 | yes |
-| base | small | 1.47 | 0.75 | 2.16 | 0.002 | 0.036 | yes |
-| base | medium | 2.77 | 2.1 | 3.41 | 0.001 | 0.036 | yes |
-| base | large | 1.59 | 0.71 | 2.46 | 0.001 | 0.036 | yes |
-| base | large_v3_turbo | -0.45 | -1.66 | 0.65 | 0.4168 | 1.0 | no |
-| base | parakeet | 1.93 | 1.34 | 2.51 | 0.001 | 0.036 | yes |
-| base | parakeet_ctc | 1.08 | 0.56 | 1.61 | 0.001 | 0.036 | yes |
-| base | qwen3 | 0.86 | 0.29 | 1.45 | 0.004 | 0.052 | no |
-| small | medium | 1.29 | 0.75 | 1.89 | 0.001 | 0.036 | yes |
-| small | large | 0.12 | -0.64 | 0.88 | 0.7166 | 1.0 | no |
-| small | large_v3_turbo | -1.92 | -2.99 | -0.89 | 0.001 | 0.036 | yes |
-| small | parakeet | 0.46 | -0.15 | 1.05 | 0.1529 | 1.0 | no |
-| small | parakeet_ctc | -0.39 | -1.0 | 0.21 | 0.2039 | 1.0 | no |
-| small | qwen3 | -0.61 | -1.28 | 0.08 | 0.098 | 0.882 | no |
-| medium | large | -1.17 | -1.94 | -0.46 | 0.002 | 0.036 | yes |
-| medium | large_v3_turbo | -3.22 | -4.3 | -2.21 | 0.001 | 0.036 | yes |
-| medium | parakeet | -0.84 | -1.37 | -0.31 | 0.004 | 0.052 | no |
-| medium | parakeet_ctc | -1.69 | -2.23 | -1.14 | 0.001 | 0.036 | yes |
-| medium | qwen3 | -1.9 | -2.5 | -1.3 | 0.001 | 0.036 | yes |
-| large | large_v3_turbo | -2.04 | -3.23 | -0.93 | 0.001 | 0.036 | yes |
-| large | parakeet | 0.34 | -0.44 | 1.21 | 0.4018 | 1.0 | no |
-| large | parakeet_ctc | -0.51 | -1.32 | 0.37 | 0.2389 | 1.0 | no |
-| large | qwen3 | -0.73 | -1.55 | 0.14 | 0.1089 | 0.882 | no |
-| large_v3_turbo | parakeet | 2.38 | 1.34 | 3.57 | 0.001 | 0.036 | yes |
-| large_v3_turbo | parakeet_ctc | 1.53 | 0.5 | 2.67 | 0.003 | 0.042 | yes |
-| large_v3_turbo | qwen3 | 1.31 | 0.23 | 2.49 | 0.016 | 0.176 | no |
-| parakeet | parakeet_ctc | -0.85 | -1.26 | -0.44 | 0.002 | 0.036 | yes |
-| parakeet | qwen3 | -1.07 | -1.66 | -0.53 | 0.001 | 0.036 | yes |
-| parakeet_ctc | qwen3 | -0.22 | -0.7 | 0.24 | 0.3608 | 1.0 | no |
+| tiny | base | 1.91 | 1.35 | 2.46 | 0.0002 | 0.0072 | yes |
+| tiny | small | 3.38 | 2.66 | 4.11 | 0.0002 | 0.0072 | yes |
+| tiny | medium | 4.67 | 3.99 | 5.36 | 0.0002 | 0.0072 | yes |
+| tiny | large | 3.5 | 2.51 | 4.46 | 0.0002 | 0.0072 | yes |
+| tiny | large_v3_turbo | 1.46 | 0.23 | 2.6 | 0.022 | 0.22 | no |
+| tiny | parakeet | 3.84 | 3.21 | 4.48 | 0.0002 | 0.0072 | yes |
+| tiny | parakeet_ctc | 2.99 | 2.42 | 3.57 | 0.0002 | 0.0072 | yes |
+| tiny | qwen3 | 2.77 | 2.11 | 3.44 | 0.0002 | 0.0072 | yes |
+| base | small | 1.47 | 0.76 | 2.2 | 0.0004 | 0.0076 | yes |
+| base | medium | 2.77 | 2.11 | 3.43 | 0.0002 | 0.0072 | yes |
+| base | large | 1.59 | 0.69 | 2.46 | 0.0006 | 0.0108 | yes |
+| base | large_v3_turbo | -0.45 | -1.64 | 0.65 | 0.4496 | 1.0 | no |
+| base | parakeet | 1.93 | 1.36 | 2.51 | 0.0002 | 0.0072 | yes |
+| base | parakeet_ctc | 1.08 | 0.55 | 1.63 | 0.0002 | 0.0072 | yes |
+| base | qwen3 | 0.86 | 0.29 | 1.46 | 0.0048 | 0.0576 | no |
+| small | medium | 1.29 | 0.74 | 1.89 | 0.0002 | 0.0072 | yes |
+| small | large | 0.12 | -0.66 | 0.86 | 0.7291 | 1.0 | no |
+| small | large_v3_turbo | -1.92 | -3.03 | -0.89 | 0.0002 | 0.0072 | yes |
+| small | parakeet | 0.46 | -0.15 | 1.08 | 0.1412 | 0.9884 | no |
+| small | parakeet_ctc | -0.39 | -1.0 | 0.22 | 0.2088 | 1.0 | no |
+| small | qwen3 | -0.61 | -1.28 | 0.08 | 0.0858 | 0.7722 | no |
+| medium | large | -1.17 | -1.94 | -0.46 | 0.0012 | 0.0192 | yes |
+| medium | large_v3_turbo | -3.22 | -4.34 | -2.21 | 0.0002 | 0.0072 | yes |
+| medium | parakeet | -0.84 | -1.37 | -0.31 | 0.0022 | 0.0308 | yes |
+| medium | parakeet_ctc | -1.69 | -2.22 | -1.14 | 0.0002 | 0.0072 | yes |
+| medium | qwen3 | -1.9 | -2.49 | -1.31 | 0.0002 | 0.0072 | yes |
+| large | large_v3_turbo | -2.04 | -3.25 | -0.88 | 0.0012 | 0.0192 | yes |
+| large | parakeet | 0.34 | -0.44 | 1.19 | 0.4108 | 1.0 | no |
+| large | parakeet_ctc | -0.51 | -1.32 | 0.36 | 0.2364 | 1.0 | no |
+| large | qwen3 | -0.73 | -1.56 | 0.17 | 0.1072 | 0.8576 | no |
+| large_v3_turbo | parakeet | 2.38 | 1.33 | 3.55 | 0.0002 | 0.0072 | yes |
+| large_v3_turbo | parakeet_ctc | 1.53 | 0.5 | 2.67 | 0.0024 | 0.0312 | yes |
+| large_v3_turbo | qwen3 | 1.31 | 0.27 | 2.46 | 0.0124 | 0.1364 | no |
+| parakeet | parakeet_ctc | -0.85 | -1.26 | -0.43 | 0.0006 | 0.0108 | yes |
+| parakeet | qwen3 | -1.07 | -1.62 | -0.53 | 0.0002 | 0.0072 | yes |
+| parakeet_ctc | qwen3 | -0.22 | -0.68 | 0.23 | 0.349 | 1.0 | no |

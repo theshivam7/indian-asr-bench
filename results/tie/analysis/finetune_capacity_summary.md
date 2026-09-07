@@ -17,12 +17,12 @@ confound fine-tuning with an engine change, see `analysis/statistics.py`).
 
 ## Pretrained capacity curve (for context; not a fine-tuning statistic)
 
-Speaker-clustered bootstrap CIs from `analysis/statistics.py:analyze()` (N=985 clips, G=280 speakers, B=2000). Point estimates only , no Holm correction applied or needed here (these are per-model CIs, not pairwise tests).
+Speaker-clustered bootstrap CIs from `analysis/statistics.py:analyze()` (N=985 clips, G=280 speakers, B=10000). Point estimates only , no Holm correction applied or needed here (these are per-model CIs, not pairwise tests).
 
 | Model | Params | Corpus WER | 95% CI |
 |-------|:------:|:----------:|:------:|
-| Whisper Tiny | 39M | 19.43% | [18.12, 20.79] |
-| Whisper Base | 74M | 17.53% | [16.30, 18.80] |
-| Whisper Small | 244M | 16.05% | [14.85, 17.34] |
-| Whisper Medium | 769M | 14.76% | [13.69, 15.87] |
-| Whisper Large-v3 | 1.5B | 15.93% | [14.72, 17.16] |
+| Whisper Tiny | 39M | 19.43% | [18.18, 20.72] |
+| Whisper Base | 74M | 17.53% | [16.34, 18.75] |
+| Whisper Small | 244M | 16.05% | [14.87, 17.29] |
+| Whisper Medium | 769M | 14.76% | [13.70, 15.86] |
+| Whisper Large-v3 | 1.5B | 15.93% | [14.74, 17.19] |
