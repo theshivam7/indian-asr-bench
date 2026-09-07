@@ -60,7 +60,7 @@ much as swapping the model itself. Full detail in [Normalization](SUMMARY.md#nor
 - Significance testing uses a speaker- or recording-clustered paired bootstrap, Holm-corrected across every pairwise model comparison, and is run under both normalizers rather than only the primary one.
 - A cross-model consensus classifier flags reference/audio mismatches from agreement patterns across all nine models, without hand review.
 - Split design is treated as an evaluation-validity property: TIE's official splits are shown to be speaker-entangled, and the fine-tuning capacity study (Tiny, Small, Medium) runs on AESRC, whose test set is natively speaker-disjoint from training.
-- Inference cost sits next to accuracy, measured two ways that are reported separately and never mixed: a 200-clip batch-1 single-stream latency benchmark covering all nine systems on all three corpora, and a 512-clip quality-gated batch sweep for saturated offline throughput, GPU utilization, memory and power on a controlled A100-40GB setup. The sweep is partially complete (see below).
+- Inference cost sits next to accuracy, measured two ways that are reported separately and never mixed: a 200-clip batch-1 single-stream latency benchmark covering all nine systems on all three corpora, and a 512-clip quality-gated batch sweep for saturated offline throughput, GPU utilization, memory and power on a controlled A100-40GB setup. The sweep is complete: 9 models x 3 corpora x 8 batch sizes, one CUDA runtime, one provenance digest.
 - Every table and chart regenerates on CPU from the committed Stage-1 transcripts; no GPU or re-transcription needed.
 
 ---
@@ -173,6 +173,7 @@ A few things stood out across all three datasets:
 - The fine-tuning gain shrinks as the pretrained model grows: -39.3% relative at Tiny, -22.8% at Small, -21.7% at Medium. A bigger pretrained model has less WER left to recover.
 - Cost separates these systems far more than accuracy does: real-time factor spans 23.9x across the nine on TIE, against 1.32x for TIE corpus WER. What predicts inference cost is decoder class, not parameter count, and that holds on all three corpora.
 - But cost is a property of the corpus too, not just the model. The same spread is 12.3x on Svarah and 11.5x on AESRC, because short clips amortize fixed per-clip overhead badly and the fastest models suffer most. Two orderings invert between corpora. See [Inference efficiency](SUMMARY.md#inference-efficiency) in SUMMARY.md.
+- Batching reorders the cost ranking, so the measurement protocol decides the conclusion. Qwen3-ASR is the slowest system at batch 1 on every corpus and reaches parity with the best Whisper by batch 128, with the largest batching speedup (18.5x) and highest GPU utilization (83.8%) of anything tested. Whisper gains least from batching because its short-form path pads every clip to 30 seconds; on Svarah, Whisper Tiny runs at 1.8% mean GPU utilization.
 
 Fine-tuning, all three sizes retrained from 6 seeds each on AESRC's speaker-disjoint test set
 (`transcript_clean`; all 18 runs improve on their own baseline, and so do all 18 under the Whisper
@@ -316,14 +317,15 @@ documented in [INFERENCE_EFFICIENCY_PROTOCOL.md](INFERENCE_EFFICIENCY_PROTOCOL.m
 
 ```bash
 PROJECT=<nscc_project_id> bash hpc/submit_throughput.sh
-python analysis/compare_throughput.py --dataset tie          # aggregate what has landed
+python analysis/compare_throughput.py --dataset tie          # aggregate
 python analysis/compare_throughput.py --dataset tie --require-complete   # gate on all nine
 ```
 
-The sweep is **not yet complete**: Qwen3-ASR is missing on all three corpora and
-large-v3-turbo on Svarah and AESRC, so `--require-complete` still exits with
-`missing headline models`. Drop the flag to aggregate what has landed; the
-generated report carries an explicit incomplete-panel banner.
+The sweep is **complete** for all nine systems on all three corpora, so
+`--require-complete` succeeds on every dataset. Two known reporting caveats are
+documented in [Inference efficiency](SUMMARY.md#inference-efficiency): the 0.10 pp
+quality gate rejects only NeMo and Qwen3 configurations and never a Whisper one, and
+RTFx does not account for Whisper's fixed 30-second padding window.
 
 Keep `--clips` and `--seed` identical across models. The batch-1 aggregator places
 comparability warnings in its report; the publication throughput aggregator fails if
