@@ -44,7 +44,11 @@ from utils.registry import (PRIMARY_MODE, MODEL_BY_KEY, MODEL_DISPLAY, models_fo
                             get_dataset, modes_for_dataset)
 from utils.io_helpers import stage2_dir, analysis_dir, build_md_table, text_value
 
-B_DEFAULT = 2000
+# 10,000 rather than 2,000 so the two-sided p floor, 2/(B+1), sits at 0.0002 instead
+# of 0.001. At 2,000 every significant pair reported the same floored p and Holm
+# correction across 36 pairs pushed it to 0.036, close enough to 0.05 that the family
+# size, not the evidence, was setting the verdict.
+B_DEFAULT = 10000
 SEED = 42
 
 
