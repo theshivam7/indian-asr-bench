@@ -167,13 +167,13 @@ A few things stood out across all three datasets:
 
 - Bigger is not always better: on TIE, WER falls from Tiny to Medium, then rises again at Large-v3, and a smaller model wins outright.
 - The median clip beats corpus WER by 3 to 12 pp; a small tail of severe misses, largely reference artifacts, pulls the average up.
-- Human-verified check on TIE's 49 clips hardest for every model: correcting the reference drops mean WER on that subset from 64.8% to 17.0% (Wilcoxon p < 1e-8, every model individually significant after Holm correction). 46 of 49 clips trace to a bad reference, not a model failure. See [Classifier validation (human review)](SUMMARY.md#classifier-validation-human-review) in SUMMARY.md.
-- The normalizer changes conclusions, not just numbers: 5 of 36 Holm-corrected pairwise verdicts on TIE flip depending on which normalizer is used, against 0 of 36 on either curated corpus. What drives it is how tightly the leaderboard is packed, not how far WER moves.
+- Human-verified check on TIE's 49 clips that at least 3 of 4 strong models found hardest: correcting the reference drops mean WER on that subset from 64.8% to 17.0% (Wilcoxon p < 1e-8, every model individually significant after Holm correction). 46 of 49 clips trace to a bad reference, not a model failure. See [Classifier validation (human review)](SUMMARY.md#classifier-validation-human-review) in SUMMARY.md.
+- The normalizer changes conclusions, not just numbers: 6 of 36 Holm-corrected pairwise verdicts on TIE flip depending on which normalizer is used, against 0 of 36 on either curated corpus. What drives it is how tightly the leaderboard is packed, not how far WER moves.
 - Fine-tuning helps at every model size on AESRC's speaker-disjoint test set, so the gain is generalization to unseen speakers rather than memorization. The same question is unanswerable on TIE, whose official splits put every test speaker in training.
 - The fine-tuning gain shrinks as the pretrained model grows: -39.3% relative at Tiny, -22.8% at Small, -21.7% at Medium. A bigger pretrained model has less WER left to recover.
 - Cost separates these systems far more than accuracy does: real-time factor spans 23.9x across the nine on TIE, against 1.32x for TIE corpus WER. What predicts inference cost is decoder class, not parameter count, and that holds on all three corpora.
 - But cost is a property of the corpus too, not just the model. The same spread is 12.3x on Svarah and 11.5x on AESRC, because short clips amortize fixed per-clip overhead badly and the fastest models suffer most. Two orderings invert between corpora. See [Inference efficiency](SUMMARY.md#inference-efficiency) in SUMMARY.md.
-- Batching reorders the cost ranking, so the measurement protocol decides the conclusion. Qwen3-ASR is the slowest system at batch 1 on every corpus and reaches parity with the best Whisper by batch 128, with the largest batching speedup (18.5x) and highest GPU utilization (83.8%) of anything tested. Whisper gains least from batching because its short-form path pads every clip to 30 seconds; on Svarah, Whisper Tiny runs at 1.8% mean GPU utilization.
+- Batching reorders the cost ranking, so the measurement protocol decides the conclusion. Qwen3-ASR is near the bottom at batch 1 and reaches parity with the best Whisper by batch 128, with the largest batching speedup on TIE and Svarah and the highest GPU utilization (83.8%) of anything tested. Whisper gains least from batching because its short-form path pads every clip to 30 seconds; on Svarah, Whisper Tiny runs at 1.8% mean GPU utilization.
 
 Fine-tuning, all three sizes retrained from 6 seeds each on AESRC's speaker-disjoint test set
 (`transcript_clean`; all 18 runs improve on their own baseline, and so do all 18 under the Whisper
@@ -233,7 +233,7 @@ python analysis/compare_finetune.py --dataset aesrc  # fine-tuning report
 ```
 
 `statistics.py` defaults to the pre-registered primary mode. Add `--mode whisper_norm` to
-reproduce the cross-normalizer comparison where 5 of 36 TIE verdicts flip.
+reproduce the cross-normalizer comparison where 6 of 36 TIE verdicts flip.
 
 <details>
 <summary><b>Expected output</b> from the first command</summary>
