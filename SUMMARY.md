@@ -439,6 +439,70 @@ cross-runtime timing noise. All 27 runs used one A100-SXM4-40GB and one driver. 
 [`efficiency_svarah.md`](results/svarah/analysis/efficiency_svarah.md),
 [`efficiency_aesrc.md`](results/aesrc/analysis/efficiency_aesrc.md).
 
+### Offline batch throughput (complete panel)
+
+The batch-1 table above is a latency measurement and cannot say what any of these systems
+costs to run at scale. The quality-gated offline sweep answers that separately, and it is now
+**complete: 9 models x 3 corpora x 8 batch sizes (1 to 128) = 216 measurements, all finished,
+no OOM and no failed entries**. Every run used 512 clips, 2 untimed warmup batches, 3 timed
+repeats, one A100-SXM4-40GB, and a single CUDA 12.4 runtime for all three engines. All 27 result
+files carry one provenance digest, so unlike the batch-1 table these numbers are like-for-like
+across models.
+
+RTFx is audio seconds processed per wall second; higher is faster. `b1` is the batch-1 row of
+this same sweep, which is the controlled replacement for the archived table above.
+
+| Model | RTFx b1 TIE | RTFx best TIE | Batch | RTFx b1 Sva | RTFx best Sva | Batch | RTFx b1 AES | RTFx best AES | Batch |
+|---|---:|---:|:-:|---:|---:|:-:|---:|---:|:-:|
+| Whisper Tiny | 77.1 | 291 | 128 | 41.9 | 79 | 128 | 37.2 | 67 | 128 |
+| Whisper Base | 64.4 | 289 | 128 | 35.2 | 77 | 128 | 31.0 | 66 | 128 |
+| Whisper Small | 41.5 | 279 | 128 | 27.3 | 73 | 128 | 23.7 | 62 | 128 |
+| Whisper Medium | 24.3 | 236 | 128 | 18.2 | 64 | 64 | 16.4 | 56 | 128 |
+| Whisper Large-v3 | 18.9 | 193 | 128 | 14.5 | 56 | 64 | 13.0 | 48 | 64 |
+| Whisper large-v3-turbo | 76.6 | 250 | 128 | 37.0 | 62 | 64 | 32.6 | 53 | 64 |
+| Parakeet-TDT-0.6B-v2 | 271.4 | 2251 | 128 | 84.6 | 537 | 8 | 69.7 | 1958 | 128 |
+| Parakeet-CTC-1.1B | 228.1 | 228 | 1 | 53.6 | 202 | 4 | 44.7 | 1492 | 128 |
+| Qwen3-ASR-1.7B | 15.8 | 289 | 128 | 14.9 | 202 | 64 | 14.2 | 263 | 128 |
+
+**Batching changes the ranking that batch 1 reports.** Qwen3-ASR is the slowest system in the
+benchmark at batch 1 on every corpus (14 to 16 RTFx) and reaches parity with the best Whisper
+by batch 128. It has the largest batching speedup of any system tested (18.3x on TIE, 18.5x on
+AESRC, 13.6x on Svarah) and the highest sustained GPU utilization (83.8% mean SM on TIE). An
+LLM-based recognizer looks uncompetitive under a single-stream measurement and competitive under
+an offline one, so which protocol is used decides the conclusion.
+
+**Whisper barely uses the GPU on short clips.** Its short-form path pads every clip to a fixed
+30-second window, so on 4-second audio most of the batch is padding. Whisper Tiny sits at 1.8%
+mean SM utilization on Svarah and 2.0% on AESRC, against 37 to 61% for Parakeet and 52 to 63%
+for Qwen3, and its batching speedup on those corpora is only 1.8 to 1.9x against Parakeet-CTC's
+33.4x. Whisper's throughput numbers on the two short-clip corpora are close to a measurement of
+single-threaded host-side work, which is a property of the reference implementation rather than
+of the model.
+
+**The 0.10 pp quality gate binds asymmetrically and it decides headline numbers.** 25 of the 216
+sweep entries are rejected by the gate. Every one of them is a Parakeet or Qwen3 entry; not a
+single Whisper entry is ever rejected, because 30-second padding makes Whisper's numerics
+independent of batch size while NeMo pads to batch maximum. The gate is filtering batch-order
+noise, not decode drift, and three signatures show it: it is non-monotonic (TIE Parakeet-TDT
+fails at 8, 16, 32 and 64 and passes at 128), it is two-sided (Svarah Parakeet-TDT at batch 4 is
+rejected for scoring 0.195 pp *better* than batch 1, and Svarah Qwen3 at batch 128 for scoring
+0.479 pp better), and it is corpus-inconsistent (the same two Parakeet models pass at batch 128
+on AESRC and are clamped to batch 1 and 4 on TIE and Svarah). The published effect is that
+Parakeet-CTC on TIE is reported at 228 RTFx when batch 64 measured 1,719, a 7.5x understatement,
+with 5.8x on Svarah for the same model and 2.9x for Parakeet-TDT. The gate never costs Whisper
+anything, so it runs in the direction that flatters Whisper. One-sided sensitivity values are
+written to the gate-sensitivity section of each `throughput_<dataset>.md` and to
+`throughput_<dataset>_sweep.csv`; they are reported as a diagnostic and are not the headline.
+
+**Peak memory is a padding artifact too.** Whisper Large-v3 at batch 128 on TIE reaches 38,155 MiB
+of a 40,960 MiB card, which is why Svarah and AESRC select batch 64 for it. Those figures describe
+the padded window, not the model's weights.
+
+Full per-batch data: [`throughput_tie.md`](results/tie/analysis/throughput_tie.md),
+[`throughput_svarah.md`](results/svarah/analysis/throughput_svarah.md),
+[`throughput_aesrc.md`](results/aesrc/analysis/throughput_aesrc.md), with the raw sweep in the
+matching `throughput_<dataset>_sweep.csv`.
+
 ---
 
 ## Normalization
@@ -622,7 +686,7 @@ Stated so the numbers above are read correctly:
 - The human review that validates the artifact classifier ([Classifier validation](#classifier-validation-human-review)) is a single annotator working non-blind: the reviewer could see every model's hypothesis while correcting the reference, which risks anchoring the correction toward what the models already say. This was a deliberate tradeoff for diagnostic depth (seeing all 5 hypotheses side by side is what makes per-clip cause attribution possible at all), not an oversight, but it means the review supports "here is why these hard clips are hard," not a formally blind-validated precision/recall claim for the classifier. It also covers only a targeted 49-clip "hardest for strong models" sample, not a random one, so it cannot be used to estimate a reference-fault rate for the corpus as a whole.
 - Svarah can only be clustered by recording (3,232 clusters), not by its 117 true speakers, since the public release exposes no speaker IDs. True speaker clustering would widen the confidence intervals. TIE clusters are real speakers.
 - All three AESRC fine-tuning sizes have now been retrained across 6 seeds each (see [Fine-tuning and split design](#fine-tuning-and-split-design)): every seed improves on the pretrained baseline and none of the three ranges approaches zero, but no formal seed-level significance test exists yet, so this is reported as strong informal evidence rather than a confirmed result.
-- Inference-efficiency benchmarking covers all 9 models on all 3 corpora, but on 200-clip subsets rather than full corpora and at batch size 1. Parakeet and Qwen3-ASR support batching, so the current table is a single-stream latency comparison rather than a maximum-throughput comparison. The 27 runs share the A100-SXM4-40GB model and driver 570.124.06 but were spread across compute nodes, not pinned to one physical GPU. The runs also differ in precision and cuDNN state between engines, as described in that section. The quality-gated offline batch protocol has now been executed on NSCC for 8 of 9 systems on TIE and 7 of 9 on Svarah and AESRC; Qwen3-ASR is outstanding on all three corpora and large-v3-turbo on two, so no complete throughput panel exists yet.
+- Inference-efficiency benchmarking covers all 9 models on all 3 corpora, but on 200-clip subsets rather than full corpora and at batch size 1. Parakeet and Qwen3-ASR support batching, so the current table is a single-stream latency comparison rather than a maximum-throughput comparison. The 27 runs share the A100-SXM4-40GB model and driver 570.124.06 but were spread across compute nodes, not pinned to one physical GPU. The runs also differ in precision and cuDNN state between engines, as described in that section. The quality-gated offline batch protocol is now complete for all 9 systems on all 3 corpora under one CUDA runtime and one provenance digest, and it supersedes the batch-1 table for any cross-model cost claim; the batch-1 table is retained as an archive. Two caveats attach to the sweep itself rather than to its coverage. Its 0.10 pp quality gate rejects only NeMo and Qwen3 entries and never a Whisper one, understating Parakeet-CTC on TIE by 7.5x, so the published operating points are conservative for the batched engines and unaffected for Whisper. And RTFx divides by real audio seconds while Whisper's short-form path pads every clip to 30 seconds, so Whisper's throughput and peak-memory figures on the two short-clip corpora reflect the padded window rather than the audio.
 - AESRC checkpoint selection uses a validation split that shares all 38 train speakers, so it measures fit, not speaker generalization. The speaker-disjoint test set is untouched during training, so the reported deltas are unaffected.
 - The AESRC mirror (`pengyizhou/accented_english`) states no license and AESRC2020 is Datatang's corpus. Access and permission to use it for this research were confirmed through our advisor. Redistribution or commercial use beyond this study would still need separately clarified terms.
 - Training-data contamination is possible: NPTEL lectures are public and may appear in Whisper's training data. A small probe (n=10) found no memorization signal, but it is low-powered.
@@ -637,7 +701,9 @@ Stated so the numbers above are read correctly:
 - Turn the descriptive 49-clip human review into a formal, random or stratified, blind validation pass, to get an actual reference-fault rate for the corpus instead of a description of why the hardest clips are hard. The current review deliberately traded blindness for being able to see all 5 hypotheses per clip; a blind pass would need the reverse trade.
 - Build a formal seed-level significance test to replace the current descriptive mean/SD treatment of the 6-seed study. All three sizes now have 6 seeds ([Fine-tuning and split design](#fine-tuning-and-split-design)), so the data is there; what is missing is a test that treats the run, not the clip, as the sampling unit.
 - Explain Tiny's single anomalous seed. Under `transcript_clean` five of Tiny's six seeds land inside a 0.12 pp band and seed 42 alone sits 2.5 pp away, while under `whisper_norm` that same seed is unremarkable. A per-clip diff between seed 42 and its siblings would show which error class the normalizer is absorbing.
-- Finish the registered quality-gated offline-throughput protocol: Qwen3-ASR on all three corpora and large-v3-turbo on Svarah and AESRC are still outstanding. Also revisit the 0.10 pp quality gate, which in practice binds only on the dynamically padded NeMo engines and clamps Parakeet-CTC on TIE to batch 1 at 228 RTFx when batch 128 measured 1723 RTFx; the per-batch sweep and a wider one-sided sensitivity check are written to `throughput_<dataset>_sweep.csv` and the gate-sensitivity section of `throughput_<dataset>.md`. This remains an offline scenario; a later production-server experiment would additionally need controlled request arrivals, concurrency, queueing, and a latency SLO.
+- Replace the 0.10 pp quality gate's current role. The registered throughput protocol is now complete (27 runs, 216 sweep entries), but the gate rejects only NeMo and Qwen3 entries and never a Whisper one, is non-monotonic in batch size, and twice rejects a configuration for scoring *better* than batch 1. It is filtering batch-order noise while selecting the published operating point, which understates Parakeet-CTC on TIE by 7.5x. Reporting it as a per-batch diagnostic column and selecting on throughput alone would fix this from data already on disk, with no GPU time.
+- Report a padded-audio-seconds denominator alongside RTFx. Whisper's 30-second short-form window makes its cost per utterance rather than per audio second, which is why Whisper Tiny shows 1.8% GPU utilization on Svarah. A secondary metric would make the padding visible instead of letting it inflate Whisper's apparent efficiency on short-clip corpora.
+- Extend the offline sweep to a production-server scenario, which would additionally need controlled request arrivals, concurrency, queueing, and a latency SLO.
 - Run the transfer matrix: evaluate the AESRC fine-tuned checkpoints on TIE and Svarah (and the archived TIE checkpoints on AESRC), to see whether the gains carry across registers or stay domain-locked.
 - Activate the NEER entity metric ([`analysis/entity_analysis.py`](analysis/entity_analysis.py)) once a use-case register field is derived for Svarah. Entity-dense clips currently score far above 100% WER for spelling-convention reasons, not misrecognition.
 - Figure out why the HF chunked pipeline scores higher WER than `openai-whisper` on 60s+ clips with identical weights.
