@@ -23,7 +23,7 @@ After running this script, run normalize_and_score.py and compare_all.py to
 include youtube_aligned in the full model comparison.
 
 Usage:
-    python task4_youtube_captions/align_youtube_captions.py
+    python archived_tasks/youtube_captions/task_code/align_youtube_captions.py
 """
 
 import os
