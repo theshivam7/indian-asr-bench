@@ -140,9 +140,9 @@ All numbers are WER on the `test` split under **`transcript_clean`**, the gold m
 
 Statistical check: speaker-clustered paired bootstrap over 280 speakers, Holm-corrected across all 36 pairs ([full tables](results/tie/analysis/statistics_transcript_clean.md)).
 
-- 23 of the 36 pairs are significant.
+- 24 of the 36 pairs are significant.
 - Whisper Medium beats Small (-1.29 pp) and Large-v3 (-1.17 pp). A smaller model wins against bigger ones here.
-- Medium's edge over Parakeet-TDT (-0.84 pp) narrowly misses significance (p<sub>Holm</sub>=0.052).
+- Medium also beats Parakeet-TDT (-0.84 pp, p<sub>Holm</sub>=0.031), the narrowest significant margin on this corpus.
 - Small, Large-v3, both Parakeets, and Qwen3 are mutually indistinguishable in most pairings.
 - Whisper Base (74M) is statistically tied with large-v3-turbo (809M), diff -0.45 pp. Model size alone does not predict rank here.
 
@@ -162,14 +162,14 @@ Corpus WER under OpenAI's `EnglishTextNormalizer` instead of this project's `tra
 | Whisper large-v3-turbo | 17.98% | 17.75% | -0.23 pp |
 | Whisper Tiny | 19.43% | 19.01% | -0.42 pp |
 
-`whisper_norm` lowers every model's WER, but unevenly: Qwen3 moves the most (-1.26 pp), rising from 6th to 3rd place and passing both Large-v3 and Small, while the Whisper family barely shifts (~0.2 to 0.5 pp). `transcript_clean` remains the primary metric throughout.
+`whisper_norm` lowers every model's WER, but unevenly: Qwen3 moves the most (-1.26 pp), rising from 6th to 3rd place, passing Parakeet-CTC, Small and Large-v3, while the Whisper family barely shifts (~0.2 to 0.5 pp). `transcript_clean` remains the primary metric throughout.
 
 #### Key findings
 
 1. Whisper Medium wins at 14.76% corpus WER, and it is also the steadiest model here, with the lowest Std Dev and median of the nine.
-2. Parakeet-TDT (600M, 15.60%) edges out Whisper Large-v3 (~1.5B, 15.93%), though not by a significant margin.
+2. Parakeet-TDT (600M, 15.60%) edges out Whisper Large-v3 (~1.5B, 15.93%), though not by a significant margin. It does lose to Whisper Medium by a margin that is significant.
 3. WER falls as Whisper capacity grows, up to Medium (Tiny 19.43%, Base 17.53%, Small 16.05%, Medium 14.76%), then climbs back up at Large-v3 and large-v3-turbo. Bigger is not better on this data.
-4. large-v3-turbo is the least stable model in the study, with the highest Std Dev (23.62%). It hallucinates on hard clips more than anything else tested here.
+4. large-v3-turbo is the least stable model on this corpus, with the highest Std Dev (23.62%). It hallucinates on hard clips more than anything else tested here.
 5. Reference and normalizer choice alone move WER by 2.3 to 3.5 pp on this dataset (see [Normalization](#normalization)).
 
 The five breakdowns below use the top 5 models by corpus WER (Medium, Parakeet-TDT, Large-v3, Small, Parakeet-CTC).
@@ -247,7 +247,7 @@ Svarah has no alternate dataset-provided reference, so three modes apply: `trans
 
 Reading the distribution columns:
 
-- Median WER is 0.00% for six of nine models. Svarah has many short read prompts that good models get exactly right, so corpus WER is the more informative headline.
+- Median WER is 0.00% for five of nine models. Svarah has many short read prompts that good models get exactly right, so corpus WER is the more informative headline.
 - Std Dev is far higher than on TIE (Tiny: 212.89% vs 17.41%). On isolated-word items a single wrong word can score far above 100% WER (see [Error Analysis](#error-analysis)).
 
 #### By normalization mode
@@ -272,7 +272,7 @@ Same check on Svarah, this time recording-clustered because the public release e
 **Key findings:**
 
 1. Whisper Large-v3 wins at 7.11%, roughly half its own TIE score (15.93%). Controlled read speech is just an easier problem than scraped lecture audio.
-2. Normalization matters even more here. Parakeet-TDT drops from 13.03% (raw) to 8.35% (whisper_norm), a 4.7 pp swing, and Parakeet-CTC recovers 4.5 pp. Both transcribe fillers like "and uh" or "mm hmm" verbatim, which `transcript_clean` counts as insertions and `whisper_norm` strips out. Whisper models drop fillers by training, so they barely move either way.
+2. Normalization matters even more here. Parakeet-TDT drops from 13.03% (raw) to 8.35% (whisper_norm), a 4.7 pp swing, and Parakeet-CTC recovers 6.5 pp. Both transcribe fillers like "and uh" or "mm hmm" verbatim, which `transcript_clean` counts as insertions and `whisper_norm` strips out. Whisper models drop fillers by training, so they barely move either way.
 3. Svarah really is cleaner than TIE, once the classifier gets audited instead of trusted blindly. Its artifact share among classifiable clips is 0.8%, against TIE's 1.2%. Run the classifier naively and it reports 4.8%, but that is an instrument artifact: isolated-word items auto-flag on any single-word miss ("tree" heard as "three"). On those clips the models disagree with each other (inter-hypothesis distance 0.92), which is the opposite signature of a genuine reference fault (see [Error Analysis](#error-analysis)).
 
 ---
@@ -301,8 +301,8 @@ AESRC's Indian subset is short, prompted read speech (mean 4.47s/clip, filtered 
 
 Statistical check: speaker-clustered paired bootstrap over 481 speakers, Holm-corrected across all 36 pairs ([full tables](results/aesrc/analysis/statistics_transcript_clean.md)).
 
-- 30 of the 36 pairs come out significant, the finest resolution of any dataset in this benchmark, thanks to 481 real test speakers giving far more independent clusters than TIE's 280 or Svarah's 3,232 recording proxies for 117 true speakers.
-- Large-v3 and Qwen3 are joint leaders: statistically inseparable from each other (5.20% vs 5.23%, Holm p=1.0), and Large-v3 separates from every model below them. Qwen3 separates from all of them except Medium (p=0.124).
+- 30 of the 36 pairs come out significant, and the smallest difference this corpus can separate (0.53 pp) is finer than Svarah's (0.79 pp) or TIE's (0.84 pp). Its 481 clusters are real speakers, unlike Svarah's 3,232 recording proxies standing in for 117 true speakers, so the resolution is honest rather than inflated by counting one speaker many times.
+- Large-v3 and Qwen3 are joint leaders: statistically inseparable from each other (5.20% vs 5.23%, Holm p=1.0), and Large-v3 separates from every model below them. Qwen3 separates from all of them except Medium (p=0.103).
 - The chasing trio of Medium, large-v3-turbo, and Parakeet-TDT (5.73-6.26%) has no significant internal pair, and Whisper Small vs Parakeet-CTC (7.23% vs 7.50%) is the remaining tie.
 
 #### By normalization mode
@@ -324,7 +324,7 @@ Statistical check: speaker-clustered paired bootstrap over 481 speakers, Holm-co
 1. Whisper Large-v3 wins at 5.20%, the lowest corpus WER of any model on any dataset in this benchmark. Short, prompted read speech turns out to be the easiest condition tested here.
 2. Reference quality on this dataset is excellent. The consensus classifier flags only 0.1% of classifiable clips as artifacts (95% CI 0.0-0.4%), the lowest of all three datasets (TIE 1.2%, Svarah 0.8%), so AESRC's WER numbers need almost no artifact correction.
 3. Median WER is 0.00% for seven of nine models. Most clips are short enough that a competent model just gets them right, so corpus WER, pulled up by a harder minority, is again the more honest headline.
-4. Qwen3 and Parakeet-TDT buck the trend: both score slightly higher under `transcript_clean` than `transcript_raw` (5.14% to 5.23%, 6.19% to 6.26%). They are the only two of nine models where normalization does not help, which fits with output that is already clean and literal.
+4. Qwen3 and Parakeet-TDT buck the trend: both score slightly higher under `transcript_clean` than `transcript_raw` (5.14% to 5.23%, 6.19% to 6.26%). Parakeet-CTC does the same (7.38% to 7.50%), so three of nine models get no help from normalization, and all three are the ones whose output is already clean and literal.
 
 ---
 
@@ -409,10 +409,10 @@ end of this section. These are disclosed rather than corrected: correcting them 
 Peak GPU is the TIE run; it varies by under 15% across corpora. Rows are ordered by TIE RTF.
 
 **What holds on all three corpora.** A Parakeet variant is always fastest and Whisper Large-v3
-always slowest. Inside the encoder-decoder class, speed tracks size everywhere. And decoder class
+always slowest. Inside the encoder-decoder class, speed tracks size within the Tiny-to-Large-v3 ladder; large-v3-turbo is the exception and is discussed below. And decoder class
 outweighs parameter count everywhere: the 600M Parakeet-TDT beats the 39M Whisper Tiny by 3.7-4.6x,
 and Qwen3-ASR at 1.7B beats Whisper Medium at 769M. On TIE the two Parakeet decoders also land
-within half a point of Large-v3's WER in either direction (TDT 15.60% against 15.93%, CTC 16.45%),
+within about half a point of Large-v3's WER in either direction (TDT 15.60% against 15.93%, CTC 16.45%),
 so the speed comes at no accuracy cost there.
 
 **What does not transfer: the magnitudes.** The RTF spread across the nine models is 23.9x on TIE
@@ -444,7 +444,7 @@ cross-runtime timing noise. All 27 runs used one A100-SXM4-40GB and one driver. 
 The batch-1 table above is a latency measurement and cannot say what any of these systems
 costs to run at scale. The quality-gated offline sweep answers that separately, and it is now
 **complete: 9 models x 3 corpora x 8 batch sizes (1 to 128) = 216 measurements, all finished,
-no OOM and no failed entries**. Every run used 512 clips, 2 untimed warmup batches, 3 timed
+no OOM and no failed entries**. Every run used 512 clips, 3 untimed warmup batches, 3 timed
 repeats, one A100-SXM4-40GB, and a single CUDA 12.4 runtime for all three engines. All 27 result
 files carry one provenance digest, so unlike the batch-1 table these numbers are like-for-like
 across models.
@@ -465,9 +465,11 @@ this same sweep, which is the controlled replacement for the archived table abov
 | Qwen3-ASR-1.7B | 15.8 | 289 | 128 | 14.9 | 202 | 64 | 14.2 | 263 | 128 |
 
 **Batching changes the ranking that batch 1 reports.** Qwen3-ASR is the slowest system in the
-benchmark at batch 1 on every corpus (14 to 16 RTFx) and reaches parity with the best Whisper
-by batch 128. It has the largest batching speedup of any system tested (18.3x on TIE, 18.5x on
-AESRC, 13.6x on Svarah) and the highest sustained GPU utilization (83.8% mean SM on TIE). An
+benchmark at batch 1 on TIE (15.8 RTFx, against 18.9 for Large-v3) and sits within a point of
+Large-v3 at the bottom on the other two corpora, yet it reaches parity with the best Whisper by
+batch 128. Its batching speedup is the largest of any system on TIE (18.3x) and Svarah (13.6x),
+though on AESRC both Parakeet variants scale harder (33.4x and 28.1x against Qwen3's 18.5x). It
+holds the highest sustained GPU utilization anywhere in the panel (83.8% mean SM on TIE). An
 LLM-based recognizer looks uncompetitive under a single-stream measurement and competitive under
 an offline one, so which protocol is used decides the conclusion.
 
@@ -479,6 +481,14 @@ for Qwen3, and its batching speedup on those corpora is only 1.8 to 1.9x against
 single-threaded host-side work, which is a property of the reference implementation rather than
 of the model.
 
+The aggregator now quantifies that padding instead of leaving it as prose. Dividing the padded
+window by the real audio in each 512-clip workload gives a multiplier of 1.29x on TIE, 5.66x on
+Svarah and 6.62x on AESRC, so on AESRC a Whisper system credited with 67 RTFx is actually
+sustaining 442 RTFx of padded audio. That is reported as `padded_rtfx_audio_s_per_s`. It is left
+blank for the NeMo and Qwen3 rows because NeMo pads to batch maximum, which is dynamic, and the
+Qwen3 backend does not record its windowing per batch, so neither is guessed. Parakeet still
+leads on the padded basis; the gap simply narrows from roughly 20x to 3.5x.
+
 **The 0.10 pp quality gate binds asymmetrically and it decides headline numbers.** 25 of the 216
 sweep entries are rejected by the gate. Every one of them is a Parakeet or Qwen3 entry; not a
 single Whisper entry is ever rejected, because 30-second padding makes Whisper's numerics
@@ -487,15 +497,19 @@ noise, not decode drift, and three signatures show it: it is non-monotonic (TIE 
 fails at 8, 16, 32 and 64 and passes at 128), it is two-sided (Svarah Parakeet-TDT at batch 4 is
 rejected for scoring 0.195 pp *better* than batch 1, and Svarah Qwen3 at batch 128 for scoring
 0.479 pp better), and it is corpus-inconsistent (the same two Parakeet models pass at batch 128
-on AESRC and are clamped to batch 1 and 4 on TIE and Svarah). The published effect is that
+on AESRC and are clamped to batch 1, 4 and 8 on TIE and Svarah). The published effect is that
 Parakeet-CTC on TIE is reported at 228 RTFx when batch 64 measured 1,719, a 7.5x understatement,
 with 5.8x on Svarah for the same model and 2.9x for Parakeet-TDT. The gate never costs Whisper
-anything, so it runs in the direction that flatters Whisper. One-sided sensitivity values are
-written to the gate-sensitivity section of each `throughput_<dataset>.md` and to
-`throughput_<dataset>_sweep.csv`; they are reported as a diagnostic and are not the headline.
+anything, so it runs in the direction that flatters Whisper. The aggregator now reports a gate-free operating point for
+every model, not only the ones that happened to be clamped: `gate_cost_x` is the throughput the
+pre-registered gate gives up. It is exactly 1.00 for all 18 Whisper rows across all three
+corpora, and every value above 1.00 anywhere in the panel is a Parakeet row (TIE CTC 7.53,
+Svarah TDT 2.94, Svarah CTC 5.82), which is the asymmetry stated as a measurement rather
+than an argument. The gate-cost table, the one-sided sensitivity values and the per-batch reject
+reasons are in each `throughput_<dataset>.md` and `throughput_<dataset>_sweep.csv`.
 
 **Peak memory is a padding artifact too.** Whisper Large-v3 at batch 128 on TIE reaches 38,155 MiB
-of a 40,960 MiB card, which is why Svarah and AESRC select batch 64 for it. Those figures describe
+of the 40,442 MiB the driver reports as usable, which is why Svarah and AESRC select batch 64 for it. Those figures describe
 the padded window, not the model's weights.
 
 Full per-batch data: [`throughput_tie.md`](results/tie/analysis/throughput_tie.md),
@@ -509,7 +523,7 @@ matching `throughput_<dataset>_sweep.csv`.
 
 Every WER number above depends on the reference field and the normalizer chosen before comparison. At its worst the combination moves a model by several points: TIE's reference swap shifts every model 2.3 to 3.5 pp, and normalizer choice alone moves the verbatim models up to 6.5 pp on Svarah. That is as much as the gap between mid-tier models, so it is documented precisely.
 
-It also reaches the conclusions, not only the numbers. Re-running the full inference stack under both normalizers changes **5 of 36 Holm-corrected pairwise verdicts on TIE**, against 0 of 36 on Svarah and 0 of 36 on AESRC. Details in [Does the normalizer change what the benchmark concludes?](#does-the-normalizer-change-what-the-benchmark-concludes) below.
+It also reaches the conclusions, not only the numbers. Re-running the full inference stack under both normalizers changes **6 of 36 Holm-corrected pairwise verdicts on TIE**, against 0 of 36 on Svarah and 0 of 36 on AESRC. Details in [Does the normalizer change what the benchmark concludes?](#does-the-normalizer-change-what-the-benchmark-concludes) below.
 
 Three normalizers do all the work ([`utils/normalize.py`](utils/normalize.py)):
 
@@ -549,29 +563,30 @@ All normalization is applied symmetrically to reference and hypothesis. TIE has 
 
 Whether that choice matters was tested rather than assumed, by re-running the whole inference stack (cluster bootstrap, all 36 pairs, Holm correction) under both:
 
-| Corpus | Significant, `transcript_clean` | Significant, `whisper_norm` | Verdicts that change | WER span across 9 models |
+| Corpus | Significant, `transcript_clean` | Significant, `whisper_norm` | Verdicts that change | WER span, `whisper_norm` |
 |---|:---:|:---:|:---:|:---:|
-| TIE_shorts | 23/36 | 24/36 | **5** | 4.5 pp |
+| TIE_shorts | 24/36 | 24/36 | **6** | 4.5 pp |
 | Svarah | 34/36 | 34/36 | 0 | 12.7 pp |
 | AESRC2020 (Indian) | 30/36 | 30/36 | 0 | 8.4 pp |
 
-The five TIE pairs whose verdict depends on the normalizer:
+The six TIE pairs whose verdict depends on the normalizer:
 
 | Pair | `transcript_clean` | `whisper_norm` |
 |---|---|---|
-| Base vs Large-v3 | +1.59 pp, p=0.036, significant | +1.28 pp, p=0.077, not significant |
-| Base vs Qwen3 | +0.86 pp, p=0.052, not significant | +1.63 pp, p=0.036, significant |
-| large-v3-turbo vs Qwen3 | +1.31 pp, p=0.176, not significant | +2.35 pp, p=0.036, significant |
-| Parakeet-CTC vs Qwen3 | -0.22 pp, p=1.000, not significant | +0.79 pp, p=0.036, significant |
-| Parakeet-TDT vs Qwen3 | -1.07 pp, p=0.036, significant | -0.23 pp, p=1.000, not significant |
+| Base vs Large-v3 | +1.59 pp, p=0.011, significant | +1.28 pp, p=0.055, not significant |
+| Base vs Qwen3 | +0.86 pp, p=0.058, not significant | +1.63 pp, p=0.007, significant |
+| Medium vs Parakeet-TDT | -0.84 pp, p=0.031, significant | -0.69 pp, p=0.055, not significant |
+| large-v3-turbo vs Qwen3 | +1.31 pp, p=0.136, not significant | +2.35 pp, p=0.007, significant |
+| Parakeet-CTC vs Qwen3 | -0.22 pp, p=1.000, not significant | +0.79 pp, p=0.007, significant |
+| Parakeet-TDT vs Qwen3 | -1.07 pp, p=0.007, significant | -0.23 pp, p=1.000, not significant |
 
 The Parakeet-CTC versus Qwen3 pair reverses the sign of the difference as well as the verdict.
 
-What drives this is not the size of the WER movement. Svarah's models move most under the normalizer (mean 1.44 pp, up to 4.47 pp) and reorder nothing, because its nine systems are spread across 12.7 pp. TIE moves least (mean 0.42 pp) and flips five verdicts, because its nine systems are packed into 4.5 pp and the movement is uneven: Qwen3 gains 1.26 pp where its neighbours gain about 0.25 pp. Leaderboard fragility follows movement relative to the margins between systems, not movement alone, so a densely packed leaderboard is exactly the case where the choice of normalizer quietly decides the published result.
+What drives this is not the size of the WER movement. Svarah's models move most under the normalizer (mean 1.44 pp, up to 4.47 pp) and reorder nothing, because its nine systems are spread across 12.7 pp. TIE barely moves (mean 0.42 pp) and flips six verdicts, because its nine systems are packed into 4.7 pp and the movement is uneven: Qwen3 gains 1.26 pp where its neighbours gain about 0.25 pp. Leaderboard fragility follows movement relative to the margins between systems, not movement alone, so a densely packed leaderboard is exactly the case where the choice of normalizer quietly decides the published result.
 
 Both modes are therefore reported throughout. Rankings under `whisper_norm` live in `results/<dataset>/analysis/statistics_whisper_norm.csv` alongside the primary-mode tables.
 
-**Metrics** ([`utils/wer_compute.py`](utils/wer_compute.py)): WER and CER are standard substitutions + deletions + insertions over the reference word or character count. An empty hypothesis counts as all-deletions in both metrics. Confidence intervals use a speaker-clustered (TIE, AESRC) or recording-clustered (Svarah) paired bootstrap with 2,000 resamples and Holm correction across every pairwise family.
+**Metrics** ([`utils/wer_compute.py`](utils/wer_compute.py)): WER and CER are standard substitutions + deletions + insertions over the reference word or character count. An empty hypothesis counts as all-deletions in both metrics. Confidence intervals use a speaker-clustered (TIE, AESRC) or recording-clustered (Svarah) paired bootstrap with 10,000 resamples and Holm correction across every pairwise family. The two-sided p floor is 2/(B+1), so 10,000 resamples put it at 0.0002; at the earlier 2,000 every significant pair reported the same floored p and Holm correction across 36 pairs pushed it to 0.036, close enough to 0.05 that family size rather than evidence was setting the verdict.
 
 ---
 
@@ -583,7 +598,7 @@ Clip/reference misalignment is detected by a full-corpus, multi-model consensus 
 |---|:---:|:---:|:---:|
 | Artifact share (classifiable clips, refs >=4 words) | 1.2% (95% CI 0.7-2.1%) | 0.8% (95% CI 0.6-1.1%) | 0.1% (95% CI 0.0-0.4%) |
 | Short-reference (<4 words) share of corpus | 0.1% (1 clip) | 23.0% (1,530 clips) | 0.7% (12 clips) |
-| Worst-20-per-model tail: artifacts | 66.7% (54 tail clips) | 3.5% (117 tail clips) | 20.8% (77 tail clips) |
+| Worst-20-per-model tail: artifacts | 66.7% (54 tail clips) | 3.4% (117 tail clips) | 20.8% (77 tail clips) |
 | Per-model WER inflation from artifacts | 0.55-0.75 pp | 0.31-0.39 pp | 0.03-0.08 pp |
 
 How to read this table:
