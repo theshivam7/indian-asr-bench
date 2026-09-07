@@ -38,7 +38,11 @@ python analysis/error_analysis.py --dataset "${DATASET}"
 case "${DATASET}" in
     tie|aesrc) python analysis/compare_finetune.py --dataset "${DATASET}" ;;
 esac
-[ "${DATASET}" = "svarah" ] && python analysis/entity_analysis.py --dataset svarah
+# An && list is a whole statement under `set -e`: for tie and aesrc the test
+# returns 1, so this aborted the job before the figures step ever ran.
+if [ "${DATASET}" = "svarah" ]; then
+    python analysis/entity_analysis.py --dataset svarah
+fi
 if [ -f paper/figures/make_paper_figures.py ]; then
     python paper/figures/make_paper_figures.py --dataset "${DATASET}"
 else
