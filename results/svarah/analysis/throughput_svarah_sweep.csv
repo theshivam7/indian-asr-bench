@@ -39,6 +39,14 @@ svarah,large,Whisper Large-v3,16,ok,47.019,8.875,2.5456,29.16,10319.0,6.9173,0.0
 svarah,large,Whisper Large-v3,32,ok,52.225,9.858,4.2979,29.18,17309.0,6.8996,0.0177,0,True,,True,False
 svarah,large,Whisper Large-v3,64,ok,55.668,10.508,7.1769,29.52,31273.0,6.9173,0.0354,0,True,,True,True
 svarah,large,Whisper Large-v3,128,ok,55.455,10.468,13.831,30.43,36385.0,6.9173,0.0354,0,True,,True,False
+svarah,large_v3_turbo,Whisper large-v3-turbo,1,ok,36.977,6.98,0.2146,32.52,2295.0,8.088,0.0,0,True,,True,False
+svarah,large_v3_turbo,Whisper large-v3-turbo,2,ok,45.189,8.53,0.3077,29.36,2357.0,8.1057,0.0177,0,True,,True,False
+svarah,large_v3_turbo,Whisper large-v3-turbo,4,ok,53.816,10.158,0.4883,24.19,2571.0,8.0525,-0.0355,0,True,,True,False
+svarah,large_v3_turbo,Whisper large-v3-turbo,8,ok,57.608,10.874,0.8715,22.55,2971.0,8.088,0.0,0,True,,True,False
+svarah,large_v3_turbo,Whisper large-v3-turbo,16,ok,60.524,11.425,1.5678,21.91,3759.0,8.1234,0.0354,0,True,,True,False
+svarah,large_v3_turbo,Whisper large-v3-turbo,32,ok,61.107,11.534,3.0357,22.47,5321.0,8.1057,0.0177,0,True,,True,False
+svarah,large_v3_turbo,Whisper large-v3-turbo,64,ok,62.205,11.742,5.7618,21.55,8429.0,8.1057,0.0177,0,True,,True,True
+svarah,large_v3_turbo,Whisper large-v3-turbo,128,ok,62.69,11.833,11.2535,21.85,14631.0,8.1057,0.0177,0,True,,True,False
 svarah,parakeet,Parakeet-TDT-0.6B-v2,1,ok,84.59,15.967,0.0752,36.77,3133.0,12.9124,0.0,0,True,,True,False
 svarah,parakeet,Parakeet-TDT-0.6B-v2,2,ok,157.913,29.808,0.0818,37.36,3245.0,13.0011,0.0887,0,True,,True,False
 svarah,parakeet,Parakeet-TDT-0.6B-v2,4,ok,294.892,55.664,0.092,38.71,3433.0,12.7173,-0.1951,0,False,wer -0.1951 pp,True,False
@@ -55,3 +63,11 @@ svarah,parakeet_ctc,Parakeet-CTC-1.1B,16,ok,677.219,127.831,0.1754,43.81,5537.0,
 svarah,parakeet_ctc,Parakeet-CTC-1.1B,32,ok,1029.938,194.41,0.4662,57.09,6537.0,15.3246,0.1596,0,False,wer +0.1596 pp,True,False
 svarah,parakeet_ctc,Parakeet-CTC-1.1B,64,ok,1175.276,221.844,0.8911,61.5,8201.0,15.2714,0.1064,0,False,wer +0.1064 pp,True,False
 svarah,parakeet_ctc,Parakeet-CTC-1.1B,128,ok,1032.379,194.871,1.6989,71.73,12199.0,15.3423,0.1773,0,False,wer +0.1773 pp,True,False
+svarah,qwen3,Qwen3-ASR-1.7B,1,ok,14.884,2.809,0.8358,42.51,5067.0,11.6176,0.0,0,True,,True,False
+svarah,qwen3,Qwen3-ASR-1.7B,2,ok,24.573,4.638,1.0396,45.7,5081.0,11.6176,0.0,0,True,,True,False
+svarah,qwen3,Qwen3-ASR-1.7B,4,ok,41.718,7.875,1.2211,47.02,5503.0,11.5999,-0.0177,0,True,,True,False
+svarah,qwen3,Qwen3-ASR-1.7B,8,ok,69.551,13.128,1.4898,48.99,6347.0,11.2983,-0.3193,0,False,wer -0.3193 pp,True,False
+svarah,qwen3,Qwen3-ASR-1.7B,16,ok,113.944,21.508,1.7597,53.68,8035.0,11.2629,-0.3547,0,False,wer -0.3547 pp,True,False
+svarah,qwen3,Qwen3-ASR-1.7B,32,ok,167.358,31.59,2.6875,57.89,11411.0,11.5999,-0.0177,0,True,,True,False
+svarah,qwen3,Qwen3-ASR-1.7B,64,ok,202.375,38.2,4.3377,62.52,18163.0,11.5466,-0.071,0,True,,True,True
+svarah,qwen3,Qwen3-ASR-1.7B,128,ok,195.845,36.968,7.6765,68.27,31681.0,11.1387,-0.4789,0,False,wer -0.4789 pp,True,False

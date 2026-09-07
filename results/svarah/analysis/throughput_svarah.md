@@ -1,7 +1,5 @@
 # Offline throughput: svarah
 
-> **Incomplete panel.** 7 of 9 systems. Missing: Whisper large-v3-turbo, Qwen3-ASR-1.7B. Do not read this as a full comparison until the remaining runs land.
-
 Best quality-valid batch size on the common duration-sorted workload, under the pre-registered gate. RTFx is audio seconds processed per wall-clock second; higher is better.
 
 > **Read RTFx together with utterances/s.** The Whisper systems run the short-form Transformers path, which zero-pads every clip to 30 s, so their cost is per utterance and does not fall when clips get shorter. The NeMo systems pad to the longest clip in the batch, so their cost tracks real audio. RTFx divides by real audio seconds, which flatters the padded systems on short-clip corpora. Whisper's mean GPU utilization on the curated corpora is under 2%, so those numbers are largely bounded by CPU-side audio decode rather than by the A100.
@@ -13,8 +11,10 @@ Best quality-valid batch size on the common duration-sorted workload, under the 
 | Whisper Small | 128 | 72.602 | 72.391 | 72.683 | 2.664 | 13.704 | 7.54 | 11763.0 | 1.2452 | 9.9319 | 10.2519 | 0.0178 |
 | Whisper Medium | 64 | 64.057 | 63.979 | 64.126 | 3.516 | 12.091 | 18.22 | 18195.0 | 1.8921 | 6.0866 | 7.8751 | -0.0178 |
 | Whisper Large-v3 | 64 | 55.668 | 55.495 | 55.819 | 3.844 | 10.508 | 29.52 | 31273.0 | 2.9266 | 7.1769 | 6.9173 | 0.0354 |
+| Whisper large-v3-turbo | 64 | 62.205 | 62.057 | 62.297 | 1.682 | 11.742 | 21.55 | 8429.0 | 2.0784 | 5.7618 | 8.1057 | 0.0177 |
 | Parakeet-TDT-0.6B-v2 | 8 | 537.089 | 495.734 | 544.963 | 6.349 | 101.38 | 40.81 | 3777.0 | 0.205 | 0.1081 | 12.9301 | 0.0177 |
 | Parakeet-CTC-1.1B | 4 | 201.897 | 189.837 | 202.808 | 3.765 | 38.11 | 36.76 | 4871.0 | 0.4644 | 0.1108 | 15.2182 | 0.0532 |
+| Qwen3-ASR-1.7B | 64 | 202.375 | 202.322 | 204.624 | 13.597 | 38.2 | 62.52 | 18163.0 | 0.9313 | 4.3377 | 11.5466 | -0.071 |
 ## Gate sensitivity
 
 The pre-registered gate rejects any batch whose corpus WER moves more than 0.1 pp from batch 1 in either direction, and any batch that adds an empty hypothesis. Whisper pads to a fixed window so batching cannot move its output and the gate never binds; the NeMo systems pad dynamically, so it binds only on them. The columns below re-derive the selection with a one-sided tolerance of 0.5 pp (a batch that scores better than batch 1 is not treated as a failure). This is a post-hoc sensitivity check, not the pre-registered result; cite the table above.
