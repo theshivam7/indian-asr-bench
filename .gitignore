@@ -47,12 +47,18 @@ nscc_final.tar.gz
 paper/
 docs/
 
-# Per-seed top-20 dumps. normalize_and_score.py writes one per model x mode, which for the
-# 18-run seed sweep is 54 debug files nothing reads. The 9-model ones are kept: compare_all.py
-# consumes those.
-results/*/stage2_processed/top_20_high_wer_*_seed*.csv
+# Per-clip Stage-2 output (one CSV per model x mode, about 200 MB across the three corpora)
+# and the flat per-model top-20 dumps. normalize_and_score.py rebuilds all of it in minutes
+# from the committed Stage-1 transcripts, and CI proves the rebuild is byte-identical, so
+# only the aggregate wer_summary_all_models.{csv,md} is tracked. Run Stage 2 first on a
+# fresh clone before any analysis/ script.
+results/*/stage2_processed/*/
+results/*/stage2_processed/top_20_high_wer_*.csv
 
 # Regenerated figure in vector form. Nothing references it and matplotlib gives its
 # clip-path ids fresh names each run, so tracking it produces a 300-line diff on every
 # regeneration. The PNG that README embeds is byte-reproducible and stays tracked.
 results/benchmark_overview.svg
+
+# Staging area for removed code and results, kept locally until confirmed. See _deprecated/README.md.
+_deprecated/

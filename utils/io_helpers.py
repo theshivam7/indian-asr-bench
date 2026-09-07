@@ -185,24 +185,11 @@ def analysis_dir(dataset: str = "tie") -> str:
     return d
 
 
-def efficiency_dir(dataset: str = "tie") -> str:
-    """Per-model efficiency measurements: results/<dataset>/efficiency.
+def throughput_dir(dataset: str = "tie") -> str:
+    """Offline throughput measurements: results/<dataset>/throughput.
 
     Kept out of stage1_raw_transcripts because these files are hardware-dependent
     (a GPU change invalidates them) while the raw transcripts are not.
-    """
-    d = os.path.join(results_dir(dataset), "efficiency")
-    os.makedirs(d, exist_ok=True)
-    return d
-
-
-def throughput_dir(dataset: str = "tie") -> str:
-    """Saturated/offline throughput measurements: results/<dataset>/throughput.
-
-    This is separate from ``efficiency_dir`` because the two protocols answer
-    different questions: efficiency is batch-1 single-stream latency, whereas
-    throughput sweeps batch sizes on pre-staged audio to find the fastest valid
-    operating point.
     """
     d = os.path.join(results_dir(dataset), "throughput")
     os.makedirs(d, exist_ok=True)
@@ -249,30 +236,22 @@ def build_sample_row(
     sample_id: str,
     transcript: str,
     hyp_raw: str,
-    spec=None,
+    spec,
     split: str | None = None,
-    alt_ref: str | None = None,
     duration: float | None = None,
 ) -> dict:
     """Build the canonical raw-CSV row for any dataset, driven by its DatasetSpec.
 
     Metadata columns come from ``spec.metadata_cols`` (canonical_name -> HF source
     column); speaker and duration from ``spec.speaker_col`` / ``spec.duration_col``.
-    Called with the old 4-arg signature it defaults to the TIE spec and reproduces
-    the original TIE schema byte-for-byte (so the untouched task4/5/6 scripts keep
-    working). ``alt_ref`` is the alternate reference (TIE Normalised_Transcript);
-    if None it is pulled from ``spec.alt_ref_col`` when present. ``duration``
-    overrides the spec's duration column (used when the caller derived it from the
-    audio itself, e.g. AESRC's bytes-stored clips with no duration column).
+    The alternate reference (TIE Normalised_Transcript) comes from
+    ``spec.alt_ref_col`` when present. ``duration`` overrides the spec's duration
+    column (used when the caller derived it from the audio itself, e.g. AESRC's
+    bytes-stored clips with no duration column).
     """
-    from utils.registry import TIE
-
-    if spec is None:
-        spec = TIE
     if split is None:
         split = spec.splits.get("eval", "test")
-    if alt_ref is None:
-        alt_ref = sample.get(spec.alt_ref_col) if spec.alt_ref_col else ""
+    alt_ref = sample.get(spec.alt_ref_col) if spec.alt_ref_col else ""
     duration_value = (sample.get(spec.duration_col) if spec.duration_col else None
                       ) if duration is None else duration
     clean_duration = positive_float(duration_value)

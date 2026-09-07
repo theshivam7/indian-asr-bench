@@ -112,10 +112,11 @@ DATASET_BLURBS = {
     ),
 }
 
-# Set by main() before run_pair() is called.
-DATASET = "tie"
-STAGE2_DIR = stage2_dir(DATASET)
-ANALYSIS_DIR = analysis_dir(DATASET)
+# Set by main() before run_pair() is called. Not resolved at import time because
+# stage2_dir()/analysis_dir() create directories as a side effect.
+DATASET = None
+STAGE2_DIR = None
+ANALYSIS_DIR = None
 
 
 def load(model: str, mode: str) -> pd.DataFrame | None:
@@ -134,7 +135,7 @@ def corpus_wer(df: pd.DataFrame) -> float:
 
 def paired_speaker_bootstrap(df_base: pd.DataFrame, df_ft: pd.DataFrame,
                              B: int = 2000, seed: int = 42):
-    """Paired bootstrap CI + p for corpus-WER(ft) − corpus-WER(base), resampling
+    """Paired bootstrap CI + p for corpus-WER(ft) - corpus-WER(base), resampling
     SPEAKERS (accounts for within-speaker correlation; see analysis/statistics.py).
 
     Returns (diff_pp, ci_lo_pp, ci_hi_pp, p_value, n_clips, n_speakers)."""
@@ -176,7 +177,7 @@ def paired_speaker_bootstrap(df_base: pd.DataFrame, df_ft: pd.DataFrame,
     rng = np.random.default_rng(seed)
     idx = rng.integers(0, G, size=(B, G))
     sw = W[idx].sum(axis=1)
-    d = (Eb[idx].sum(axis=1) - Ea[idx].sum(axis=1)) / sw   # ft − base, per resample
+    d = (Eb[idx].sum(axis=1) - Ea[idx].sum(axis=1)) / sw   # ft - base, per resample
     obs = (eb.sum() - ea.sum()) / wa.sum()
     lo, hi = np.percentile(d, [2.5, 97.5])
     p = 2.0 * min(((d <= 0).sum() + 1) / (B + 1), ((d >= 0).sum() + 1) / (B + 1))
@@ -186,13 +187,13 @@ def paired_speaker_bootstrap(df_base: pd.DataFrame, df_ft: pd.DataFrame,
 def fmt_delta(base: float, ft: float) -> tuple[str, str]:
     """Absolute (pp) and relative (%) change of ft vs base.
 
-    WER going down is an improvement, shown with a leading '−'; a regression
-    (WER up) is shown with a leading '+'. So '−2.50 pp' = 2.5pp better,
+    WER going down is an improvement, shown with a leading '-'; a regression
+    (WER up) is shown with a leading '+'. So '-2.50 pp' = 2.5pp better,
     '+1.20 pp' = 1.2pp worse.
     """
     abs_pp = base - ft
     rel = (abs_pp / base * 100) if base else 0.0
-    sign = "−" if abs_pp > 0 else "+"  # WER down (abs_pp>0) = improvement
+    sign = "-" if abs_pp > 0 else "+"  # WER down (abs_pp>0) = improvement
     return f"{sign}{abs(abs_pp):.2f} pp", f"{sign}{abs(rel):.1f}%"
 
 
@@ -371,7 +372,7 @@ def run_pair(pair: dict) -> dict:
                  .sort_values(["delta", "ID"], ascending=[False, True], kind="stable").head(10))
         for _, r in gains.iterrows():
             lines.append(f"| {r['ID']} | {r['wer_base']*100:.1f}% | {r['wer_ft']*100:.1f}% | "
-                         f"−{r['delta']*100:.1f} pp |")
+                         f"-{r['delta']*100:.1f} pp |")
         lines += ["", "### Biggest regressions (top 10)", "",
                   "| ID | Pretrained WER | Fine-tuned WER | Δ |",
                   "|----|:--------------:|:--------------:|:-:|"]

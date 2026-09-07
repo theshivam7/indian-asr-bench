@@ -421,7 +421,7 @@ def main(dataset: str, mode: str) -> None:
 
         f.write("## Full-corpus taxonomy (all clips)\n\n")
         f.write(f"**Artifact share over the classifiable corpus: {full_share}% "
-                f"(95% Wilson CI {lo_f}–{hi_f}%; {n_art_full}/{n_classifiable} clips with "
+                f"(95% Wilson CI {lo_f}-{hi_f}%; {n_art_full}/{n_classifiable} clips with "
                 f"references >={MIN_REF_WORDS} words).** ")
         if n_shortref:
             f.write(f"A further {n_shortref} clips "
@@ -469,7 +469,7 @@ def main(dataset: str, mode: str) -> None:
         f.write(f"Top-{TOP_K} highest-WER clips per model ({tail['n_rows']} rows -> "
                 f"{tail['n_distinct']} distinct). **Tail artifact share: "
                 f"{tail['artifact_share']}%** (95% Wilson CI "
-                f"{tail['artifact_ci'][0]}–{tail['artifact_ci'][1]}%).\n\n")
+                f"{tail['artifact_ci'][0]}-{tail['artifact_ci'][1]}%).\n\n")
         f.write(build_md_table(tail["taxonomy"][["category", "n_clips", "share_pct",
                                                  "mean_recall", "mean_ratio", "mean_wer"]]) + "\n\n")
         shared_recall_std = round(float(tail["shared"]["recall_std"].mean()), 3) if n_shared else float("nan")

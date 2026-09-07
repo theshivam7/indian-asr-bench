@@ -22,8 +22,15 @@ conda create -n whisper_medium_ft --file environments/resolved/whisper_medium_ft
 conda create -n parakeet python=3.10 -y
 conda run -n parakeet pip install -r environments/resolved/parakeet.pipfreeze.txt
 conda create -n qwen3 python=3.10 -y
-conda run -n qwen3 pip install -r environments/resolved/qwen3.pipfreeze.txt
+grep -v '@ file://' environments/resolved/qwen3.pipfreeze.txt > /tmp/qwen3.txt
+conda run -n qwen3 pip install -r /tmp/qwen3.txt
 ```
+
+Some `pip freeze` lines point at `file:///home/conda/...` build paths that exist only on
+the machine that built the env. The `grep -v` above drops them; pip resolves those
+packages (packaging, filelock, and similar) from PyPI instead. The whisper pipfreeze files
+have the same lines, but those two envs rebuild from the `.explicit.txt` files, which do
+not have the problem.
 
 ## Two things to know
 
@@ -38,8 +45,12 @@ pytorch-cuda-11.8-h7e8668a_6
 **These envs drifted after the runs.** `parakeet.pipfreeze.txt` shows `nemo-toolkit==2.3.0` and
 `transformers==5.14.1`, while the run manifests in
 `results/*/stage1_raw_transcripts/*_manifest.json` record `nemo_toolkit 2.7.3` and
-`transformers 4.46.3` for the runs that produced the committed transcripts. Use the manifests to
-know what produced a given result, and these files to get a working environment. They answer
+`transformers 4.57.6` for the Parakeet runs that produced the committed transcripts. The same
+holds for numpy (manifests say 2.2.6 for every Whisper, Parakeet and Qwen3 run, the pins say
+1.26.4) and jiwer (Whisper runs recorded 4.0.0, Parakeet runs 3.1.0). None of this changes a
+published number: scoring happens in the top-level `requirements.txt` environment and CI rebuilds
+every Stage 2 table byte-identically from the committed transcripts. Use the manifests to know
+what produced a given result, and these files to get a working environment. They answer
 different questions.
 
 Only Stage 1 needs any of this. Stage 2 and 3 reproduce every table and figure from the committed

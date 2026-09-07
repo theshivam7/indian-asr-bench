@@ -87,15 +87,17 @@ jobs:
 
       - name: Assert the committed scores are exactly what the code produces
         # Scoring is deterministic, so any diff means the committed results and the code
-        # have drifted apart. Restricted to CSVs: the .md reports carry prose that is edited
-        # by hand, and PNGs differ on matplotlib metadata alone.
+        # have drifted apart. The per-clip Stage-2 CSVs are not tracked (they are rebuilt
+        # by the step above), so the gate is the aggregate summary per dataset plus the
+        # multi-seed tables. Restricted to CSVs: the .md reports carry prose that is
+        # edited by hand, and PNGs differ on matplotlib metadata alone.
         run: |
           if ! git diff --exit-code --stat -- \
-              'results/*/stage2_processed/**/*.csv' \
+              'results/*/stage2_processed/wer_summary_all_models.csv' \
               'results/*/analysis/finetune_seeds_*.csv'; then
             echo "::error::Committed scores do not match a fresh run from the committed Stage-1 transcripts."
             echo "Regenerate with: python normalize_and_score.py --dataset <ds>"
-            git diff --stat -- 'results/*/stage2_processed/**/*.csv' 'results/*/analysis/finetune_seeds_*.csv'
+            git diff --stat -- 'results/*/stage2_processed/wer_summary_all_models.csv' 'results/*/analysis/finetune_seeds_*.csv'
             exit 1
           fi
           echo "Stage 2 rebuilt byte-identical for all three datasets."

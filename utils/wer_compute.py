@@ -1,5 +1,6 @@
 """WER / CER computation utilities and per-sample error-diagnostic helpers."""
 
+import math
 import statistics
 
 import jiwer
@@ -106,8 +107,10 @@ def compute_corpus_wer(
         result["mean_wer"] = statistics.mean(sorted_wers)
         result["median_wer"] = statistics.median(sorted_wers)
         result["std_wer"] = statistics.stdev(sorted_wers) if n > 1 else 0.0
-        result["p90_wer"] = sorted_wers[int(n * 0.9)]
-        result["p95_wer"] = sorted_wers[int(n * 0.95)]
+        # Nearest-rank percentile: the smallest value with at least q of the sample at
+        # or below it. int(n * q) is one rank too high (at n=10 it returns the maximum).
+        result["p90_wer"] = sorted_wers[math.ceil(0.90 * n) - 1]
+        result["p95_wer"] = sorted_wers[math.ceil(0.95 * n) - 1]
 
     return result
 

@@ -4,7 +4,7 @@
 
 ## Full-corpus taxonomy (all clips)
 
-**Artifact share over the classifiable corpus: 0.1% (95% Wilson CI 0.0–0.4%; 2/1719 clips with references >=4 words).** A further 12 clips (0.7% of the corpus) have <4-word references and are reported as `short_ref`: on those, single-word mistakes on decontextualized sub-second audio saturate WER, and the artifact signals carry no information.
+**Artifact share over the classifiable corpus: 0.1% (95% Wilson CI 0.0-0.4%; 2/1719 clips with references >=4 words).** A further 12 clips (0.7% of the corpus) have <4-word references and are reported as `short_ref`: on those, single-word mistakes on decontextualized sub-second audio saturate WER, and the artifact signals carry no information.
 
 | category | n_clips | share_pct | share_ci_lo | share_ci_hi | mean_recall | mean_ratio | mean_wer |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -50,7 +50,7 @@ A naive (guard-free) run flags 4/1731 clips (0.2%) as artifacts. The agreement t
 
 ## Worst-20 tail (continuity with the original hand analysis)
 
-Top-20 highest-WER clips per model (180 rows -> 77 distinct). **Tail artifact share: 20.8%** (95% Wilson CI 13.2–31.1%).
+Top-20 highest-WER clips per model (180 rows -> 77 distinct). **Tail artifact share: 20.8%** (95% Wilson CI 13.2-31.1%).
 
 | category | n_clips | share_pct | mean_recall | mean_ratio | mean_wer |
 | --- | --- | --- | --- | --- | --- |

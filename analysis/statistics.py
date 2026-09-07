@@ -7,7 +7,7 @@ Computes, per dataset and evaluation mode:
     and recomputing Sum(errors)/Sum(ref_words), NOT the mean of per-clip WER,
     which is a different, tail-inflated quantity);
   * paired bootstrap significance for every model pair (identical resample
-    indices for both models), with Holm–Bonferroni-adjusted p-values.
+    indices for both models), with Holm-Bonferroni-adjusted p-values.
 
 Resampling unit: **speakers**, when the dataset exposes a speaker id. Clips from
 one speaker share accent/microphone/room, so their errors are correlated;
@@ -102,7 +102,7 @@ def _bootstrap_paired(E: dict, W: np.ndarray, B: int, rng) -> tuple[dict, np.nda
 
 
 def _holm(pvals: list[float]) -> list[float]:
-    """Holm–Bonferroni step-down adjusted p-values (monotone, capped at 1)."""
+    """Holm-Bonferroni step-down adjusted p-values (monotone, capped at 1)."""
     m = len(pvals)
     order = np.argsort(pvals)
     adj = np.empty(m)
@@ -310,8 +310,8 @@ def main(dataset: str, mode: str, B: int) -> None:
                     "CIs may understate within-speaker correlation (limitation).\n\n")
         f.write(build_md_table(md_pm) + "\n\n")
         f.write("## Pairwise paired significance\n\n")
-        f.write("Difference = WER(A) − WER(B) in pp; paired bootstrap on identical "
-                f"{unit}-level resamples; two-sided p-values with Holm–Bonferroni correction "
+        f.write("Difference = WER(A) - WER(B) in pp; paired bootstrap on identical "
+                f"{unit}-level resamples; two-sided p-values with Holm-Bonferroni correction "
                 f"across all {len(pairwise)} pairs.\n\n")
         f.write(build_md_table(df_pw) + "\n")
     print(f"[statistics] {spec.display} / {mode}: wrote statistics_{mode}.{{csv,md}} + pairwise "

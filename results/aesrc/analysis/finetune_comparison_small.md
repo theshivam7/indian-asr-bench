@@ -14,18 +14,18 @@ number is shown as a secondary reference.
 
 | Mode | Pretrained (HF) | Fine-tuned | Δ abs | Δ rel | _openai-whisper ref_ |
 |------|:---------------:|:----------:|:-----:|:-----:|:--------------------:|
-| `transcript_raw` | 7.49% | 5.55% | −1.94 pp | −25.9% | 7.52% |
-| `transcript_clean` **(gold)** | 7.22% | 5.64% | −1.58 pp | −21.9% | 7.23% |
-| `whisper_norm` | 6.91% | 5.36% | −1.55 pp | −22.4% | 6.96% |
+| `transcript_raw` | 7.49% | 5.55% | -1.94 pp | -25.9% | 7.52% |
+| `transcript_clean` **(gold)** | 7.22% | 5.64% | -1.58 pp | -21.9% | 7.23% |
+| `whisper_norm` | 6.91% | 5.36% | -1.55 pp | -22.4% | 6.96% |
 
-> **Headline (transcript_clean)**: fine-tuning improves WER 7.22% → 5.64%  (−1.58 pp, −21.9% relative).
+> **Headline (transcript_clean)**: fine-tuning improves WER 7.22% → 5.64%  (-1.58 pp, -21.9% relative).
 
 ## By Audio Duration (`transcript_clean`)
 
 | Duration | Pretrained (HF) | Fine-tuned | Δ abs |
 |----------|:---------------:|:----------:|:-----:|
-| 0-5s | 8.13% | 5.80% | −2.34 pp |
-| 5-15s | 5.79% | 5.39% | −0.40 pp |
+| 0-5s | 8.13% | 5.80% | -2.34 pp |
+| 5-15s | 5.79% | 5.39% | -0.40 pp |
 
 ## Per-sample paired analysis (`transcript_clean`)
 
@@ -38,16 +38,16 @@ number is shown as a secondary reference.
 
 | ID | Pretrained WER | Fine-tuned WER | Δ |
 |----|:--------------:|:--------------:|:-:|
-| AESRC2020-INDIAN-ACCENT-G22849-G22849S2354 | 90.0% | 0.0% | −90.0 pp |
-| AESRC2020-INDIAN-ACCENT-G13842-G13842S2373 | 100.0% | 16.7% | −83.3 pp |
-| AESRC2020-INDIAN-ACCENT-G02287-G02287S3376 | 100.0% | 33.3% | −66.7 pp |
-| AESRC2020-INDIAN-ACCENT-G43652-G43652S2366 | 66.7% | 0.0% | −66.7 pp |
-| AESRC2020-INDIAN-ACCENT-G33140-G33140S2365 | 57.1% | 0.0% | −57.1 pp |
-| AESRC2020-INDIAN-ACCENT-G02320-G02320S2355 | 50.0% | 0.0% | −50.0 pp |
-| AESRC2020-INDIAN-ACCENT-G02502-G02502S2355 | 50.0% | 0.0% | −50.0 pp |
-| AESRC2020-INDIAN-ACCENT-G03161-G03161S2365 | 50.0% | 0.0% | −50.0 pp |
-| AESRC2020-INDIAN-ACCENT-G03556-G03556S2365 | 50.0% | 0.0% | −50.0 pp |
-| AESRC2020-INDIAN-ACCENT-G03884-G03884S3378 | 50.0% | 0.0% | −50.0 pp |
+| AESRC2020-INDIAN-ACCENT-G22849-G22849S2354 | 90.0% | 0.0% | -90.0 pp |
+| AESRC2020-INDIAN-ACCENT-G13842-G13842S2373 | 100.0% | 16.7% | -83.3 pp |
+| AESRC2020-INDIAN-ACCENT-G02287-G02287S3376 | 100.0% | 33.3% | -66.7 pp |
+| AESRC2020-INDIAN-ACCENT-G43652-G43652S2366 | 66.7% | 0.0% | -66.7 pp |
+| AESRC2020-INDIAN-ACCENT-G33140-G33140S2365 | 57.1% | 0.0% | -57.1 pp |
+| AESRC2020-INDIAN-ACCENT-G02320-G02320S2355 | 50.0% | 0.0% | -50.0 pp |
+| AESRC2020-INDIAN-ACCENT-G02502-G02502S2355 | 50.0% | 0.0% | -50.0 pp |
+| AESRC2020-INDIAN-ACCENT-G03161-G03161S2365 | 50.0% | 0.0% | -50.0 pp |
+| AESRC2020-INDIAN-ACCENT-G03556-G03556S2365 | 50.0% | 0.0% | -50.0 pp |
+| AESRC2020-INDIAN-ACCENT-G03884-G03884S3378 | 50.0% | 0.0% | -50.0 pp |
 
 ### Biggest regressions (top 10)
 

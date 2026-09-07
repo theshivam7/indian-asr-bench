@@ -127,7 +127,7 @@ dependencies:
       - intervaltree==3.1.0
       - ipython==8.36.0
       - jedi==0.19.2
-      - jiwer==3.1.0
+      - jiwer==4.0.0
       - joblib==1.5.0
       - kaldi-python-io==1.2.2
       - kaldiio==2.18.1
@@ -160,7 +160,6 @@ dependencies:
       - numba==0.61.0
       - omegaconf==2.3.0
       - onnx==1.17.0
-      - openai-whisper==20250625
       - optuna==4.3.0
       - packaging==24.2
       - pandas==2.2.3
@@ -229,7 +228,7 @@ dependencies:
       - torchmetrics==1.7.1
       - tqdm==4.67.1
       - traitlets==5.14.3
-      - transformers==4.51.3
+      - transformers==4.57.6
       - typeguard==4.4.2
       - typer==0.15.3
       - typing-inspection==0.4.0

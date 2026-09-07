@@ -16,7 +16,7 @@ Corpus WER with 95% bootstrap CI: 10000 resamples, seed 42, N=6656 clips, resamp
 
 ## Pairwise paired significance
 
-Difference = WER(A) − WER(B) in pp; paired bootstrap on identical recording-level resamples; two-sided p-values with Holm–Bonferroni correction across all 36 pairs.
+Difference = WER(A) - WER(B) in pp; paired bootstrap on identical recording-level resamples; two-sided p-values with Holm-Bonferroni correction across all 36 pairs.
 
 | model_a | model_b | diff_pp | ci_lo_pp | ci_hi_pp | p_value | p_holm | significant_holm_0.05 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
