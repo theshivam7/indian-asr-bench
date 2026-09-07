@@ -22,8 +22,8 @@
 
 ## Best model per mode
 
-- **transcript_raw**: Whisper Medium (FT) (14.71%)
-- **transcript_clean**: Whisper Medium (HF) (14.42%)
+- **transcript_raw**: Whisper Medium (15.11%)
+- **transcript_clean**: Whisper Medium (14.76%)
 - **hf_raw**: Parakeet-CTC-1.1B (17.15%)
-- **hf_clean**: Whisper Medium (HF) (15.51%)
-- **whisper_norm**: Whisper Medium (HF) (14.23%)
+- **hf_clean**: Whisper Medium (15.76%)
+- **whisper_norm**: Whisper Medium (14.48%)

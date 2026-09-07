@@ -14,9 +14,9 @@ Thank you for your interest in contributing.
 
 `utils/registry.py` is the single source of truth for models, datasets, and
 evaluation modes; nothing about them is defined anywhere else. The pipeline is
-three dataset-namespaced stages: Stage 1 inference → `results/<dataset>/stage1_raw_transcripts/`
-(immutable, committed), Stage 2 `normalize_and_score.py` → `results/<dataset>/stage2_processed/`,
-Stage 3 `analysis/*` + `paper/figures/` → `results/<dataset>/analysis/`.
+three dataset-namespaced stages: Stage 1 inference -> `results/<dataset>/stage1_raw_transcripts/`
+(immutable, committed), Stage 2 `normalize_and_score.py` -> `results/<dataset>/stage2_processed/`,
+Stage 3 `analysis/*` + `paper/figures/` -> `results/<dataset>/analysis/`.
 
 ## Adding a new model
 
@@ -55,7 +55,8 @@ dataset-agnostic.
 ## Pull request process
 
 1. Fork the repo and create a branch: `git checkout -b feature/your-feature`
-2. Make changes, verify with `python normalize_and_score.py --dataset tie` (should reproduce committed numbers)
+2. Make changes, verify with `python normalize_and_score.py --dataset tie` (should reproduce committed numbers).
+   Per-clip Stage-2 CSVs are not tracked, so run `python normalize_and_score.py --dataset <ds>` before any `analysis/` script.
 3. Run the tests: `python tests/test_pipeline.py` (or `python -m pytest tests/ -q`); this pins the
    normalization/WER contracts, registry integrity, and the committed headline numbers
 4. Run a quick syntax check: `python -m py_compile utils/*.py analysis/*.py whisper_asr/*.py parakeet/*.py qwen3/*.py`

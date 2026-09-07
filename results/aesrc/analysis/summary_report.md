@@ -22,6 +22,6 @@
 
 ## Best model per mode
 
-- **transcript_raw**: Whisper Medium (AESRC FT) (4.37%)
-- **transcript_clean**: Whisper Medium (AESRC FT) (4.48%)
-- **whisper_norm**: Whisper Medium (AESRC FT) (4.18%)
+- **transcript_raw**: Qwen3-ASR-1.7B (5.14%)
+- **transcript_clean**: Whisper Large-v3 (5.20%)
+- **whisper_norm**: Whisper Large-v3 (4.78%)

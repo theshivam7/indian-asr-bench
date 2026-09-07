@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from utils.wer_compute import compute_corpus_wer, compute_corpus_cer
 from utils.registry import (
     PRIMARY_MODE, MODEL_BY_KEY, MODEL_DISPLAY, MODEL_COLOR, MODEL_ORDER,
-    models_for_dataset, modes_for_dataset, get_dataset,
+    CHART_MODELS, models_for_dataset, modes_for_dataset, get_dataset,
 )
 from utils.io_helpers import stage2_dir, analysis_dir, build_md_table, text_value
 
@@ -328,8 +328,11 @@ def main(dataset: str) -> None:
     lines = [f"# WER Evaluation Summary: {spec.display}", "",
              "## Corpus WER (%) by model and mode (+ primary-mode CER)", "",
              build_md_table(df_summary), "", "## Best model per mode", ""]
+    # Only pretrained chart models: fine-tuned and HF-engine rows would otherwise win
+    # and contradict the README headline table.
+    df_best = df_summary[df_summary["model"].isin(CHART_MODELS)]
     for mode in modes:
-        valid = df_summary[df_summary[mode].notna()]
+        valid = df_best[df_best[mode].notna()]
         if not valid.empty:
             best = valid.loc[valid[mode].idxmin()]
             lines.append(f"- **{mode}**: {best['display']} ({best[mode]:.2f}%)")

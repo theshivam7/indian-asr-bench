@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
-# Run from the repository root on an NSCC login node. Installation is allowed on
+# Run from the repository root on a cluster login node. Installation is allowed on
 # login nodes; model inference is not.
 
-SCRATCH_DIR=${SCRATCH:-/scratch/users/ntu/${USER}}
+SCRATCH_DIR=${SCRATCH:-${HOME}/scratch}
 ENV_NAME=${1:-${WHISPER_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/whisper_throughput}}
 export CONDA_PKGS_DIRS=${CONDA_PKGS_DIRS:-${SCRATCH_DIR}/conda_pkgs}
 export PIP_CACHE_DIR=${PIP_CACHE_DIR:-${SCRATCH_DIR}/pip_cache}

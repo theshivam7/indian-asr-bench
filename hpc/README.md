@@ -1,13 +1,15 @@
 # HPC Job Scripts
 
-PBS Pro job scripts for running Indian-ASR-Bench on HPC clusters (developed on
-**NSCC ASPIRE2A**, NVIDIA A100-40GB, CUDA 11.8).
+PBS Pro job scripts for running Indian-ASR-Bench on HPC clusters. They were
+developed on an NSCC ASPIRE2A node (NVIDIA A100-40GB, CUDA 11.8) but should run
+on any PBS Pro cluster with a comparable GPU; see the SLURM table at the end
+for other schedulers.
 
 ## Configuration
 
-Every script reads environment variables with sensible defaults. The NSCC project
-id must be passed to `qsub` on the command line (`-P`), because `#PBS` directive
-lines are not shell-expanded.
+Every script reads environment variables with sensible defaults. The cluster
+project id must be passed to `qsub` on the command line (`-P`), because `#PBS`
+directive lines are not shell-expanded.
 
 ```bash
 export WORKDIR=/path/to/indian-asr-bench
@@ -26,21 +28,21 @@ experiment with the right parallelism + dependency chaining, printing the job id
 ```bash
 # from the repo root, on a login node:
 hf auth login                             # once; Svarah is a gated HF dataset
-PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase all   # submit everything, correctly chained
-PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup       # also create missing conda envs first
+PROJECT=<project_id> bash hpc/submit_all.sh --phase all   # submit everything, correctly chained
+PROJECT=<project_id> bash hpc/submit_all.sh --setup       # also create missing conda envs first
 ```
 
-Without `--phase`, the submitter only submits **phase 1** (see `hpc/NSCC_RUNBOOK.md` for the
-phased submission flow, and the `--after <job_id>` flag for chaining phases you submit
-separately). Phases: `1` (TIE new models), `2` (Svarah), `3` (AESRC Indian pretrained
-benchmark), `ft-aesrc` (tiny/small/medium fine-tune on AESRC, three serially-chained jobs).
+Without `--phase`, the submitter only submits **phase 1**. Use `--after <job_id>` to
+chain phases you submit separately. Phases: `1` (TIE new models), `2` (Svarah),
+`3` (AESRC Indian pretrained benchmark), `ft-aesrc` (tiny/small/medium fine-tune on
+AESRC, three serially-chained jobs).
 
 Dependency graph (`-->` = PBS `afterok`):
 
 ```
-job_new_models_tie ──┐              (GPU ~5h)   writes results/tie
-                     ├─> job_figures (CPU)      writes paper/figures
-job_svarah ──────────┘              (GPU ~10h)  writes results/svarah
+job_new_models_tie --+              (GPU ~5h)   writes results/tie
+                     +-> job_figures (CPU)      writes cross-dataset figures (local paper/ directory, not tracked)
+job_svarah ----------+              (GPU ~10h)  writes results/svarah
 ```
 
 TIE-new-models and Svarah run **in parallel** (separate result dirs); a final CPU
@@ -83,14 +85,13 @@ qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full f
 to the Indian accent subset on load.
 
 Bundled multi-step jobs: `job_new_models_tie.pbs` (turbo + parakeet_ctc on TIE,
-then rescore + analyse), `job_svarah.pbs` (all 7 models on Svarah → Stage 2/3 +
-NEER), `job_aesrc.pbs` (9 pretrained models on the AESRC Indian test split → Stage 2/3),
+then rescore + analyse), `job_svarah.pbs` (all 7 models on Svarah -> Stage 2/3 +
+NEER), `job_aesrc.pbs` (9 pretrained models on the AESRC Indian test split -> Stage 2/3),
 `job_finetune_size.pbs` (capacity-study fine-tune: `-v SIZE=tiny|small` for TIE,
 `-v SIZE=tiny|small|medium,DATASET=aesrc` for AESRC).
 
 ```bash
 qsub -P <id> -v DATASET=tie                          hpc/job_speaker_overlap.pbs # CPU-only train/test speaker-leakage audit
-qsub -P <id> -v ENGINE=parakeet,MODEL=parakeet        hpc/job_efficiency.pbs      # RTF/latency/peak-GPU, one model per submission
 qsub -P <id> -v SIZE=tiny,DATASET=aesrc               hpc/job_finetune_seeds.pbs  # multi-seed capacity study (default: seeds 42-47)
 ```
 
@@ -98,21 +99,21 @@ For the separate quality-gated offline batch sweep across all nine pretrained
 systems and all three datasets:
 
 ```bash
-# first update the NSCC checkout from the repository root
+# first update the cluster checkout from the repository root
 git fetch origin
 git pull --ff-only origin main
 git status --short
 
 # one-time environment setup / refresh (also repairs a partial environment)
-export SCRATCH=/scratch/users/ntu/$USER
+export SCRATCH=/path/to/fast/scratch   # a filesystem with room for conda envs and the HF cache
 export WHISPER_THROUGHPUT_ENV=$SCRATCH/envs/whisper_throughput
 bash throughput/setup_whisper.sh
 bash throughput/setup_native.sh parakeet
 bash throughput/setup_native.sh qwen3
 
-# submit nine exclusive-A100 jobs through NSCC's normal routing queue
-# (g1: 1 GPU, 16 CPUs, 110 GB host RAM, 8-hour limit per job)
-export PROJECT=<nscc_project_id>
+# submit nine jobs, one exclusive GPU per job
+# (16 CPUs, 110 GB host RAM, 8-hour walltime is what the scripts request)
+export PROJECT=<project_id>
 bash hpc/submit_throughput.sh
 ```
 
@@ -125,7 +126,7 @@ own header comment; see also `analysis/compare_seeds.py` to aggregate the result
 ## Fine-tuning (standalone)
 
 ```bash
-JOBID=$(qsub -P <id> hpc/job_finetune.pbs)                  # Stage 0: train → models/whisper_medium_ft/
+JOBID=$(qsub -P <id> hpc/job_finetune.pbs)                  # Stage 0: train -> models/whisper_medium_ft/
 qsub -P <id> -W depend=afterok:$JOBID hpc/job_medium_ft.pbs # Stage 1+2+3: transcribe test, WER, analysis
 ```
 

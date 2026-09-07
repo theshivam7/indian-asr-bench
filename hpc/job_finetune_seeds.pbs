@@ -53,7 +53,7 @@ CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
 WHISPER_FT_ENV=${WHISPER_FT_ENV:-whisper_medium_ft}
 # Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
 # will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
-HF_CACHE=${HF_CACHE:-${SCRATCH:-/scratch/users/ntu/$USER}/hf_cache}
+HF_CACHE=${HF_CACHE:-${SCRATCH:-$HOME/scratch}/hf_cache}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
 MODELS_ROOT=${MODELS_ROOT:-models}
 

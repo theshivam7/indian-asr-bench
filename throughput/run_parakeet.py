@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import torch
 
 from throughput.common_cli import parser, run_kwargs
+from utils.efficiency import cudnn_disabled
 from utils.registry import MODEL_BY_KEY
 from utils.throughput import run_throughput_benchmark
 
@@ -29,16 +30,12 @@ def main() -> None:
 
     model_id = MODEL_BY_KEY[args.model].model_id
     print(f"Loading {model_id} on cuda:0 ...", flush=True)
-    # This avoids the known NSCC CUDNN_STATUS_NOT_INITIALIZED during the LSTM
-    # weight-transfer step. cuDNN is restored before any measured inference.
-    original_cudnn = torch.backends.cudnn.enabled
-    torch.backends.cudnn.enabled = False
+    # cuDNN is off for the load only (see utils.efficiency.cudnn_disabled) and
+    # restored before any measured inference.
     torch.cuda.synchronize()
     t0 = time.perf_counter()
-    try:
+    with cudnn_disabled():
         model = nemo_asr.models.ASRModel.from_pretrained(model_id).cuda().eval()
-    finally:
-        torch.backends.cudnn.enabled = original_cudnn
     torch.cuda.synchronize()
     load_seconds = time.perf_counter() - t0
 

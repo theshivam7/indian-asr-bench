@@ -8,13 +8,11 @@ Drives both Parakeet models via the registry:
 Usage:
     python parakeet/wer_parakeet.py --model parakeet_ctc --dataset tie
     python parakeet/wer_parakeet.py --model parakeet     --dataset svarah
-    python parakeet/wer_parakeet.py --model parakeet --efficiency   # timing, not transcripts
 
-Writes results/<dataset>/stage1_raw_transcripts/wer_<model>_raw.csv, or with
---efficiency, results/<dataset>/efficiency/efficiency_<model>.json (see
-utils/efficiency.py for the measurement protocol).
-Uses batch NeMo transcription (its own loop, so not utils.inference_loop), but is
-dataset-aware through the DatasetSpec.
+Writes results/<dataset>/stage1_raw_transcripts/wer_<model>_raw.csv.
+NeMo transcribes in batches, so this keeps its own loop instead of
+utils.inference_loop, but mirrors that loop's checkpointing, duration
+derivation and manifest timing so the raw CSVs have the same schema.
 """
 
 import argparse
@@ -22,7 +20,7 @@ import logging
 import os
 import signal
 import sys
-import tempfile
+import time
 import warnings
 
 import pandas as pd
@@ -31,49 +29,29 @@ from tqdm import tqdm
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from utils.efficiency import (DEFAULT_CLIPS, DEFAULT_SEED, DEFAULT_WARMUP, count_parameters,
-                              run_efficiency_benchmark, timed)
-from utils.io_helpers import text_value
+from utils.efficiency import cudnn_disabled, timed
+from utils.io_helpers import positive_float, probe_audio_duration, text_value
+from utils.transcribe import temp_wavs
 
 BATCH_SIZE = 16
 CHECKPOINT_EVERY = 50
 
 
 def transcribe_batch(model, samples, audio_col):
-    from utils.io_helpers import audio_to_wav_16k
-
-    tmp_paths = []
     try:
-        for s in samples:
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-                audio_to_wav_16k(s[audio_col], tmp.name)
-                tmp_paths.append(tmp.name)
-        outputs = model.transcribe(tmp_paths, batch_size=len(tmp_paths))
-        return [(o.text if hasattr(o, "text") else str(o)).strip() for o in outputs]
+        with temp_wavs(samples, audio_col) as paths:
+            outputs = model.transcribe(paths, batch_size=len(paths))
+            return [(o.text if hasattr(o, "text") else str(o)).strip() for o in outputs]
     except Exception as e:
         raise RuntimeError(
             f"Parakeet batch transcription failed for {len(samples)} clip(s)"
         ) from e
-    finally:
-        for p in tmp_paths:
-            try:
-                os.unlink(p)
-            except OSError:
-                pass
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="parakeet", choices=["parakeet", "parakeet_ctc"])
     ap.add_argument("--dataset", default="tie")
-    ap.add_argument("--efficiency", action="store_true",
-                    help="measure speed/memory on a seeded clip subset instead of transcribing the split")
-    ap.add_argument("--clips", type=int, default=DEFAULT_CLIPS,
-                    help="--efficiency: number of measured clips (default %(default)s)")
-    ap.add_argument("--warmup", type=int, default=DEFAULT_WARMUP,
-                    help="--efficiency: untimed warmup clips (default %(default)s)")
-    ap.add_argument("--seed", type=int, default=DEFAULT_SEED,
-                    help="--efficiency: subset seed, keep identical across models (default %(default)s)")
     args = ap.parse_args()
 
     logging.getLogger("nemo_logger").setLevel(logging.WARNING)
@@ -94,50 +72,19 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Loading {model_id} ({MODEL_BY_KEY[model_key].display}) on {device} ...")
     load_timing: list[float] = []
-    # cuDNN is disabled for the load only, to dodge CUDNN_STATUS_NOT_INITIALIZED on
-    # the LSTM, then restored. Leaving it off would time every clip on a different
-    # backend from the Whisper drivers, which never touch it, and the efficiency
-    # numbers are compared directly across engines.
-    original_cudnn = torch.backends.cudnn.enabled
-    try:
-        torch.backends.cudnn.enabled = False
-        with timed(load_timing):
-            model = nemo_asr.models.ASRModel.from_pretrained(model_id)
-            if device == "cuda":
-                model = model.cuda()
-            model.eval()
-    finally:
-        torch.backends.cudnn.enabled = original_cudnn
+    with cudnn_disabled(), timed(load_timing):
+        model = nemo_asr.models.ASRModel.from_pretrained(model_id)
+        if device == "cuda":
+            model = model.cuda()
+        model.eval()
     print(f"Model loaded in {load_timing[0]:.1f}s.\n")
-
-    if args.efficiency:
-        from utils.registry import get_dataset
-
-        eff_audio_col = get_dataset(dataset).audio_col
-
-        # Measured one clip at a time, not at BATCH_SIZE. Per-clip latency is only
-        # comparable across engines if every engine sees the same single-stream
-        # conditions, and Whisper/Qwen3 have no batched path here. Parakeet's
-        # throughput under batching is therefore strictly better than reported;
-        # `batched_throughput_available` records that so the paper does not read
-        # this as Parakeet's ceiling.
-        def transcribe_one(sample: dict) -> str:
-            return transcribe_batch(model, [sample], eff_audio_col)[0]
-
-        run_efficiency_benchmark(
-            model_key, dataset, transcribe_one,
-            n_clips=args.clips, warmup=args.warmup, seed=args.seed,
-            model_load_seconds=load_timing[0], param_count=count_parameters(model),
-            extra={"decode_kwargs": {"batch_size": 1, "engine_defaults": "nemo"},
-                   "batched_throughput_available": True,
-                   "production_batch_size": BATCH_SIZE},
-        )
-        print("\nDone.")
-        return
 
     ds, spec = load_eval(dataset)
     split = spec.splits["eval"]
     audio_col = spec.audio_col
+    # Datasets without a duration column (AESRC) get it from the audio header, the
+    # same rule utils.inference_loop applies, so the column is never left empty.
+    derive_duration = spec.duration_col is None and spec.audio_undecoded
 
     completed, ckpt_map = set(), {}
     checkpoint_path = os.path.join(results_dir(dataset), f"wer_{model_key}_partial.csv")
@@ -151,6 +98,7 @@ def main():
         print(f"  Resuming: {len(completed)} samples already done\n")
 
     all_rows, pending, pending_meta = [], [], []
+    timing = {"n_fresh": 0, "audio_seconds": 0.0}
 
     def _sigterm(signum, frame):
         if all_rows:
@@ -169,34 +117,54 @@ def main():
                 path = save_checkpoint(all_rows, model_key, dataset)
                 print(f"\n[ERROR] saved {len(all_rows)} resumable rows to {path}", flush=True)
             raise
-        for s, (sid, tr), hyp in zip(pending, pending_meta, hyps):
-            all_rows.append(build_sample_row(s, sid, tr, hyp, spec=spec, split=split))
+        for s, (sid, tr, duration), hyp in zip(pending, pending_meta, hyps):
+            all_rows.append(build_sample_row(s, sid, tr, hyp, spec=spec, split=split,
+                                             duration=duration))
+            timing["n_fresh"] += 1
+            if spec.duration_col:
+                timing["audio_seconds"] += positive_float(s.get(spec.duration_col)) or 0.0
+            elif duration:
+                timing["audio_seconds"] += duration
             if len(all_rows) % CHECKPOINT_EVERY == 0:
                 save_checkpoint(all_rows, model_key, dataset)
         pending.clear()
         pending_meta.clear()
 
     print(f"--- {spec.display} [{split}] : {len(ds)} samples, model={model_key} ---")
+    t_start = time.monotonic()
     for sample in tqdm(ds, desc=f"{dataset}:{model_key}"):
         transcript = text_value(sample.get(spec.gold_ref_col))
         if not transcript:
             continue
         sid = sample_id(sample, spec)
+        duration = probe_audio_duration(sample.get(audio_col)) if derive_duration else None
         if sid in completed:
             flush()
             hyp = text_value((ckpt_map.get(sid) or {}).get("hypothesis_raw"))
-            all_rows.append(build_sample_row(sample, sid, transcript, hyp, spec=spec, split=split))
+            all_rows.append(build_sample_row(sample, sid, transcript, hyp, spec=spec, split=split,
+                                             duration=duration))
         else:
             pending.append(sample)
-            pending_meta.append((sid, transcript))
+            pending_meta.append((sid, transcript, duration))
             if len(pending) >= BATCH_SIZE:
                 flush()
     flush()
 
+    # Wall-time over freshly transcribed clips only, as in utils.inference_loop.
+    elapsed = time.monotonic() - t_start
+    run_timing = {
+        "elapsed_seconds": round(elapsed, 1),
+        "clips_transcribed_this_run": timing["n_fresh"],
+        "audio_seconds_this_run": round(timing["audio_seconds"], 1),
+    }
+    if timing["n_fresh"] and timing["audio_seconds"]:
+        run_timing["seconds_per_audio_second"] = round(elapsed / timing["audio_seconds"], 4)
+
     out_path = os.path.join(stage1_raw_dir(dataset), f"wer_{model_key}_raw.csv")
     pd.DataFrame(all_rows).to_csv(out_path, index=False)
     write_run_manifest(model_key, dataset, spec,
-                       extra={"decode_kwargs": {"batch_size": BATCH_SIZE, "engine_defaults": "nemo"}})
+                       extra={**run_timing,
+                              "decode_kwargs": {"batch_size": BATCH_SIZE, "engine_defaults": "nemo"}})
     print(f"\nSaved: {out_path}  ({len(all_rows)} samples)")
     remove_checkpoint(model_key, dataset)
     print("Done.")

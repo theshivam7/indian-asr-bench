@@ -1,8 +1,5 @@
-"""Contract + regression tests for the multi-seed and efficiency analysis added
-this session (analysis/compare_seeds.py, utils/efficiency.py,
-analysis/compare_efficiency.py). Previously untested: 847 lines with real
-branching logic (seed-aggregation math, comparability warnings, provenance
-aggregation) and no pin on any of it.
+"""Contract + regression tests for the multi-seed analysis (analysis/compare_seeds.py)
+and the shared GPU measurement helpers (utils/efficiency.py).
 
 Same conventions as test_pipeline.py: dependency-light, plain assertions, runs
 either under pytest or directly with `python tests/test_analysis_regressions.py`.
@@ -22,7 +19,6 @@ import pytest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import analysis.compare_seeds as compare_seeds
-import analysis.compare_efficiency as compare_efficiency
 from utils import efficiency
 from utils.io_helpers import stage2_dir
 
@@ -178,33 +174,8 @@ def test_committed_aesrc_tiny_seeds_regression():
 
 
 # --------------------------------------------------------------------------- #
-# utils/efficiency.py: pure math, no GPU needed.
+# utils/efficiency.py: pure helpers, no GPU needed.
 # --------------------------------------------------------------------------- #
-def test_summarize_timings_basic():
-    m = efficiency.summarize_timings(latencies=[1.0, 2.0, 3.0], durations=[10.0, 10.0, 10.0])
-    assert m["n_clips_timed"] == 3 and m["n_clips_with_duration"] == 3
-    assert abs(m["audio_seconds_total"] - 30.0) < 1e-9
-    assert abs(m["processing_seconds_total"] - 6.0) < 1e-9
-    assert abs(m["rtf"] - 6.0 / 30.0) < 1e-9
-
-
-def test_summarize_timings_excludes_unusable_duration_from_rtf_denominator():
-    # One clip's duration could not be determined (NaN): its latency still counts
-    # towards processing time, but audio_seconds_total must exclude it, or RTF's
-    # denominator silently drops seconds that were actually processed.
-    m = efficiency.summarize_timings(latencies=[1.0, 5.0], durations=[10.0, float("nan")])
-    assert m["n_clips_timed"] == 2 and m["n_clips_with_duration"] == 1
-    assert abs(m["audio_seconds_total"] - 10.0) < 1e-9
-    assert abs(m["processing_seconds_total"] - 6.0) < 1e-9   # both latencies
-    # rtf uses only the usable clip's processing time over its own duration
-    assert abs(m["rtf"] - 1.0 / 10.0) < 1e-9
-
-
-def test_summarize_timings_zero_audio_total_guards_rtf_none():
-    m = efficiency.summarize_timings(latencies=[1.0], durations=[0.0])
-    assert m["rtf"] is None and m["rtf_p50"] is None and m["throughput_audio_s_per_s"] is None
-
-
 def test_subset_fingerprint_deterministic_and_sensitive():
     ids = ["clip_a", "clip_b", "clip_c"]
     fp1 = efficiency.subset_fingerprint(ids)
@@ -248,102 +219,14 @@ def test_hardware_provenance_always_has_base_keys():
     info = efficiency.hardware_provenance()
     for k in ("hostname", "platform", "python", "cpu_count", "device"):
         assert k in info
-    if not efficiency.cuda_available():
-        assert efficiency.peak_gpu_memory() == {}
 
 
-# --------------------------------------------------------------------------- #
-# analysis/compare_efficiency.py: comparability checks + provenance aggregation.
-# --------------------------------------------------------------------------- #
-def _report(model_key, fingerprint="abc123", gpu="A100", batch=1, cuda="12.4",
-            driver="570.1", audio_total=100.0, torch_ver="2.5.1",
-            precision="float16", cudnn=True):
-    # precision and cudnn_enabled_during_inference are part of a clean protocol block:
-    # check_comparability warns when they are absent, because results that do not record
-    # them cannot be shown to have been measured under the same numerics.
-    protocol = {"subset_fingerprint": fingerprint, "batch_size": batch}
-    if precision is not None:
-        protocol["precision"] = precision
-    if cudnn is not None:
-        protocol["cudnn_enabled_during_inference"] = cudnn
-    return {
-        "model_key": model_key,
-        "protocol": protocol,
-        "hardware": {"gpu_name": gpu, "torch_cuda": cuda, "nvidia_driver": driver, "torch": torch_ver},
-        "metrics": {"audio_seconds_total": audio_total},
-    }
-
-
-def test_check_comparability_flags_unrecorded_precision():
-    """The committed batch-1 results predate the precision/cuDNN fields. Their absence
-    must surface as a warning rather than read as 'nothing to report'."""
-    reports = [_report("a", precision=None, cudnn=None),
-               _report("b", precision=None, cudnn=None)]
-    warnings = compare_efficiency.check_comparability(reports)
-    assert any("Precision is not recorded" in w for w in warnings)
-    assert any("cuDNN state during inference is not recorded" in w for w in warnings)
-
-
-def test_check_comparability_clean_run_has_no_warnings():
-    reports = [_report("a"), _report("b")]
-    assert compare_efficiency.check_comparability(reports) == []
-
-
-def test_check_comparability_flags_fingerprint_mismatch():
-    reports = [_report("a", fingerprint="fp1"), _report("b", fingerprint="fp2")]
-    warnings = compare_efficiency.check_comparability(reports)
-    assert any("different clip subsets" in w for w in warnings)
-
-
-def test_check_comparability_flags_missing_fingerprint():
-    reports = [_report("a"), _report("b", fingerprint="")]
-    warnings = compare_efficiency.check_comparability(reports)
-    assert any("missing subset fingerprints" in w for w in warnings)
-
-
-def test_check_comparability_flags_gpu_and_batch_and_driver_mismatch():
-    reports = [_report("a", gpu="A100", batch=1, driver="570.1"),
-               _report("b", gpu="V100", batch=2, driver="550.0")]
-    warnings = compare_efficiency.check_comparability(reports)
-    assert any("different GPUs" in w for w in warnings)
-    assert any("different batch sizes" in w for w in warnings)
-    assert any("different NVIDIA drivers" in w for w in warnings)
-
-
-def test_check_comparability_flags_cuda_build_split_but_not_a_blocker():
-    # This IS expected in this repo (Whisper cu118 vs Parakeet/Qwen3 cu124) and must
-    # be reported as a disclosed caveat, not silently ignored.
-    reports = [_report("whisper", cuda="11.8"), _report("parakeet", cuda="12.4")]
-    warnings = compare_efficiency.check_comparability(reports)
-    assert any("CUDA runtime versions" in w for w in warnings)
-
-
-def test_check_comparability_flags_audio_total_mismatch_despite_matching_fingerprint():
-    # A matching fingerprint proves the same clip IDs were selected, not that the
-    # same audio duration was measured (each engine resolves duration itself).
-    reports = [_report("a", audio_total=100.0), _report("b", audio_total=101.0)]
-    warnings = compare_efficiency.check_comparability(reports)
-    assert any("different total audio" in w for w in warnings)
-
-
-def test_check_comparability_tolerates_half_second_float_noise():
-    reports = [_report("a", audio_total=100.0), _report("b", audio_total=100.3)]
-    warnings = compare_efficiency.check_comparability(reports)
-    assert not any("different total audio" in w for w in warnings)
-
-
-def test_to_markdown_provenance_aggregates_across_all_reports_not_just_first():
-    # Regression for the bug fixed this session: to_markdown() used to read
-    # hw.get('torch_version')/hw.get('cuda_version') (keys that don't exist) from
-    # only reports[0], always rendering "torch ?, CUDA n/a". It must now collect
-    # the real key names ("torch", "torch_cuda") across every report.
-    reports = [_report("whisper", cuda="11.8", torch_ver="2.5.1"),
-               _report("parakeet", cuda="12.4", torch_ver="2.5.1")]
-    df = compare_efficiency.build_table(reports)
-    md = compare_efficiency.to_markdown(df, "fixtureds", reports, warnings=[])
-    assert "CUDA 11.8, 12.4" in md or "CUDA 12.4, 11.8" in md
-    assert "torch 2.5.1" in md
-    assert "n/a" not in md.split("\n")[2]  # the "Measured on ..." line specifically
+def test_cudnn_disabled_restores_previous_setting():
+    torch = pytest.importorskip("torch")
+    before = torch.backends.cudnn.enabled
+    with efficiency.cudnn_disabled():
+        assert torch.backends.cudnn.enabled is False
+    assert torch.backends.cudnn.enabled == before
 
 
 if __name__ == "__main__":

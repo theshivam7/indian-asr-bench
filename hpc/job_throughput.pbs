@@ -13,7 +13,7 @@
 set -euo pipefail
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
-SCRATCH_DIR=${SCRATCH:-/scratch/users/ntu/${USER}}
+SCRATCH_DIR=${SCRATCH:-${HOME}/scratch}
 HF_CACHE=${HF_CACHE:-${SCRATCH_DIR}/hf_cache}
 ENGINE=${ENGINE:?submit with -v ENGINE=whisper|parakeet|qwen3}
 MODEL=${MODEL:?submit with -v MODEL=<registry_key>}

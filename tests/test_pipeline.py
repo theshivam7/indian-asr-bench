@@ -101,6 +101,18 @@ def test_corpus_wer_insertions_can_exceed_100pct():
     assert r["corpus_wer"] == 2.0
     assert r["insertions"] == 2 and r["insertion_rate"] == 2.0
 
+def test_corpus_wer_percentiles_are_nearest_rank():
+    # 10 clips with WER 0.1 .. 1.0: nearest-rank p90 is the 9th value, p95 the 10th.
+    # The old int(n * q) index returned the maximum for both.
+    refs = ["a b c d e f g h i j"] * 10
+    hyps = [" ".join("abcdefghij"[:10 - k]) for k in range(1, 11)]
+    r = compute_corpus_wer(refs, hyps, per_sample_wers=[k / 10 for k in range(1, 11)])
+    assert abs(r["p90_wer"] - 0.9) < 1e-9
+    assert abs(r["p95_wer"] - 1.0) < 1e-9
+    r1 = compute_corpus_wer(refs[:1], hyps[:1], per_sample_wers=[0.1])
+    assert r1["p90_wer"] == 0.1 and r1["p95_wer"] == 0.1
+
+
 def test_corpus_wer_empty_hyp_counts_as_deletions():
     r = compute_corpus_wer(["a b c", "x y"], ["", "x y"])
     assert r["num_empty_hyps"] == 1

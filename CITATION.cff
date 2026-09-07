@@ -21,11 +21,13 @@ abstract: >-
   (TIE_shorts, Svarah, and the Indian subset of AESRC2020) under
   one registry-driven pipeline. Reports corpus WER with
   speaker- and recording-clustered bootstrap confidence
-  intervals and Holm-corrected paired tests, a cross-model
-  consensus classifier for reference artifacts, and a
-  fine-tuning capacity study on a natively speaker-disjoint
-  split replicated across six seeds at each of three model
-  sizes.
+  intervals and Holm-corrected paired tests, shows how the
+  reference field and normalizer change both numbers and
+  verdicts, validates a cross-model consensus classifier for
+  reference artifacts against human review, and measures
+  quality-gated offline throughput for every system on one GPU
+  under one protocol. An exploratory fine-tuning study is
+  included but is not part of the core claims.
 keywords:
   - automatic speech recognition
   - word error rate

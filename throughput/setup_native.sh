@@ -5,7 +5,7 @@ set -euo pipefail
 # measured software stack reproducible without changing previously published runs.
 
 ENGINE=${1:?usage: bash throughput/setup_native.sh parakeet|qwen3 [conda_env_or_prefix]}
-SCRATCH_DIR=${SCRATCH:-/scratch/users/ntu/${USER}}
+SCRATCH_DIR=${SCRATCH:-${HOME}/scratch}
 
 case "${ENGINE}" in
   parakeet)

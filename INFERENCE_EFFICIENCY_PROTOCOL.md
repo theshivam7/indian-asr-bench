@@ -42,7 +42,7 @@ Primary sources:
 ## Pre-registered workload and timing rules
 
 - Hardware: one exclusive A100 40 GB node (`place=excl`), one GPU per process.
-  NSCC's `g1` route allocates 16 CPUs and 110 GB host RAM for this one-GPU job;
+  The one-GPU job is allocated 16 CPUs and 110 GB host RAM;
   CPU math-library threads are fixed to those 16 allocated CPUs for every model.
   The submitter requires the same PyTorch CUDA and cuDNN build in all three
   environments, and the result validator checks them again. Dedicated throughput
@@ -123,7 +123,7 @@ Supported: single-request latency at batch 1; maximum quality-preserving offline
 throughput under the tested batch sweep; batching benefit; GPU occupancy, memory,
 and approximate device energy on A100 40 GB.
 
-Not supported: price in dollars without an explicit NSCC/GPU hourly rate;
+Not supported: price in dollars without an explicit GPU hourly rate;
 multi-client production-server QPS or tail latency; TensorRT/Riva/vLLM-optimized
 runtime comparisons; total server energy; performance on a different GPU. These
 can be separate experiments, but must not be mixed into this controlled table.

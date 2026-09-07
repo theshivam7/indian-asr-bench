@@ -17,7 +17,7 @@ set -euo pipefail
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-/scratch/users/ntu/$USER}/envs/whisper}
+WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-$HOME/scratch}/envs/whisper}
 DATASETS=${DATASETS:-tie,svarah,aesrc}
 
 source "${CONDA_BASE}/etc/profile.d/conda.sh"

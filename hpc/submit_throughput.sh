@@ -8,7 +8,7 @@ DATASETS=${DATASETS:-tie:svarah:aesrc}
 GIT_COMMIT=$(git rev-parse HEAD)
 SUBMIT_DIR=$(pwd -P)
 mkdir -p "${SUBMIT_DIR}/logs"
-SCRATCH_DIR=${SCRATCH:-/scratch/users/ntu/${USER}}
+SCRATCH_DIR=${SCRATCH:-${HOME}/scratch}
 WHISPER_THROUGHPUT_ENV=${WHISPER_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/whisper_throughput}
 PARAKEET_ENV=${PARAKEET_ENV:-${SCRATCH_DIR}/envs/parakeet_throughput}
 QWEN3_ENV=${QWEN3_ENV:-${SCRATCH_DIR}/envs/qwen3_throughput}

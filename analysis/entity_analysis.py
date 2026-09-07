@@ -61,12 +61,24 @@ def entity_tokens(text: str) -> list[str]:
 
 
 def _spacy_entities(texts: list[str]):
-    """Optional: add spaCy PERSON/ORG/GPE/PRODUCT entity tokens if spaCy is present."""
+    """Optional: add spaCy PERSON/ORG/GPE/PRODUCT entity tokens if spaCy is present.
+
+    Returns None only when spaCy is not installed. A spaCy that is installed but
+    cannot load its model is an error, not a reason to quietly fall back to the
+    regex-only metric.
+    """
     try:
         import spacy
-        nlp = spacy.load("en_core_web_sm", disable=["parser", "lemmatizer"])
-    except Exception:
+    except ImportError:
         return None
+    try:
+        nlp = spacy.load("en_core_web_sm", disable=["parser", "lemmatizer"])
+    except Exception as e:
+        raise RuntimeError(
+            "spaCy is installed but en_core_web_sm failed to load. Run "
+            "'python -m spacy download en_core_web_sm', or uninstall spaCy to use "
+            "the regex-only NEER."
+        ) from e
     keep = {"PERSON", "ORG", "GPE", "PRODUCT", "MONEY", "CARDINAL"}
     out = []
     for doc in nlp.pipe(texts, batch_size=64):
@@ -130,7 +142,7 @@ def main(dataset: str, mode: str, use_spacy: bool) -> None:
     md.columns = ["Model", "Use-case clips", "Entities", "Entity recall %", "NEER %"]
     with open(os.path.join(out, f"entity_neer_{mode}.md"), "w") as f:
         f.write(f"# Named/numeric entity error rate: {spec.display} (use-case register), `{mode}`\n\n")
-        f.write("NEER = 1 − (reference entity tokens recovered in the hypothesis / total entity tokens). "
+        f.write("NEER = 1 - (reference entity tokens recovered in the hypothesis / total entity tokens). "
                 "Entities = digit-bearing tokens, currency, codes, UPI/emails "
                 f"(+ spaCy NER: {'on' if use_spacy else 'off'}).\n\n")
         f.write(build_md_table(md) + "\n")

@@ -26,13 +26,13 @@
 #     PROJECT=<id> bash hpc/submit_all.sh --phase 3
 #
 # Svarah is a GATED HF dataset, authenticate ONCE (writes token under HF cache):
-#     export HF_CACHE=/scratch/users/ntu/$USER/hf_cache
+#     export HF_CACHE=$HOME/scratch/hf_cache
 #     HF_HOME=$HF_CACHE huggingface-cli login          # or: export HF_TOKEN=hf_xxx
 # ============================================================================
 set -euo pipefail
 
 # ---- storage: default everything to /scratch (HOME is over quota) -----------
-SCRATCH="${SCRATCH:-/scratch/users/ntu/$USER}"
+SCRATCH="${SCRATCH:-$HOME/scratch}"
 WORKDIR="${WORKDIR:-$(pwd)}"
 HF_CACHE="${HF_CACHE:-$SCRATCH/hf_cache}"
 # conda's own package/repodata cache defaults to $HOME/.conda/pkgs, redirect it too,
