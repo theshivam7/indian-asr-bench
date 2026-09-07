@@ -289,6 +289,22 @@ def _gpu_target() -> str | None:
     return visible or "0"
 
 
+_ORPHANED: list = []
+
+
+def _reap_orphans() -> None:
+    for proc in list(_ORPHANED):
+        if proc.poll() is not None:
+            _ORPHANED.remove(proc)
+            continue
+        try:
+            proc.kill()
+            proc.wait(timeout=1)
+            _ORPHANED.remove(proc)
+        except (subprocess.TimeoutExpired, OSError):
+            pass
+
+
 class NvidiaSmiSampler:
     """Low-overhead process-level GPU telemetry sampled by nvidia-smi."""
 
@@ -299,6 +315,7 @@ class NvidiaSmiSampler:
         self.path = None
 
     def start(self) -> None:
+        _reap_orphans()
         try:
             fd, self.path = tempfile.mkstemp(prefix="asr_gpu_", suffix=".csv")
             self.handle = os.fdopen(fd, "w")
@@ -324,14 +341,30 @@ class NvidiaSmiSampler:
         except Exception:
             self.stop()
 
+    def _give_up(self) -> None:
+        """SIGKILL did not reap it. Keep the handle so a later sampler can retry
+        instead of leaving an unreferenced child polling into the next batch."""
+        _ORPHANED.append(self.process)
+
     def stop(self) -> dict:
         if self.process is not None:
-            self.process.terminate()
+            # A wedged `nvidia-smi -lms` must not take the benchmark down with it.
+            # The second wait was unguarded, so a sampler that survived SIGKILL
+            # raised TimeoutExpired out of stop(), which the batch loop then treated
+            # as a benchmark failure and re-raised, ending the whole job. Give up on
+            # reaping instead and fall through to whatever samples reached the file;
+            # a batch with no telemetry still fails loudly on its own below.
             try:
+                self.process.terminate()
                 self.process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait(timeout=5)
+                try:
+                    self.process.kill()
+                    self.process.wait(timeout=5)
+                except (subprocess.TimeoutExpired, OSError):
+                    self._give_up()
+            except OSError:
+                pass
         if self.handle is not None:
             self.handle.close()
         rows = []
@@ -371,6 +404,11 @@ def _torch_peak_memory() -> dict:
         "torch_peak_allocated_mib": round(torch.cuda.max_memory_allocated() / 2**20, 1),
         "torch_peak_reserved_mib": round(torch.cuda.max_memory_reserved() / 2**20, 1),
     }
+
+
+class TelemetryUnavailable(RuntimeError):
+    """A batch produced no nvidia-smi samples. Truncates the sweep like an OOM
+    rather than failing the model, so earlier batch sizes still publish."""
 
 
 def _is_oom(exc: BaseException) -> bool:
@@ -600,7 +638,7 @@ def run_throughput_benchmark(
                     telemetry = sampler.stop()
                     sampler = None
                     if telemetry.get("telemetry_samples", 0) < 1:
-                        raise RuntimeError(
+                        raise TelemetryUnavailable(
                             "nvidia-smi produced no GPU telemetry samples"
                         )
                     trial = summarize_trial(
@@ -704,7 +742,12 @@ def run_throughput_benchmark(
                         sampler.stop()
                     except Exception:
                         pass
-                entry["status"] = "oom" if _is_oom(exc) else "failed"
+                if _is_oom(exc):
+                    entry["status"] = "oom"
+                elif isinstance(exc, TelemetryUnavailable):
+                    entry["status"] = "telemetry_lost"
+                else:
+                    entry["status"] = "failed"
                 entry["error"] = f"{type(exc).__name__}: {exc}"
                 print(f"[{entry['status'].upper()}] {entry['error']}", flush=True)
                 torch.cuda.empty_cache()
@@ -717,7 +760,7 @@ def run_throughput_benchmark(
                     _write_result(result, output_path)
                     raise
             _write_result(result, output_path)
-            if entry["status"] in {"oom", "failed"}:
+            if entry["status"] in {"oom", "failed", "telemetry_lost"}:
                 break
 
         valid = [
