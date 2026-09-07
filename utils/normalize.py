@@ -62,9 +62,20 @@ def _strip_thousands_separators(text: str) -> str:
     return re.sub(r'(\d),(\d)', r'\1\2', text)
 
 
-def _ordinal_to_words(text: str) -> str:
+def _require_num2words() -> None:
+    """The custom normalizer is the primary metric; degrading it silently is worse
+    than failing. Without num2words every digit stays a digit on both sides of the
+    comparison, which changes every reported *_clean WER with no warning."""
     if not _NUM2WORDS_AVAILABLE:
-        return text
+        raise ImportError(
+            "num2words is required by the custom normalizer used for the *_clean "
+            "modes, including the primary metric. Install it (pip install "
+            "num2words==0.5.14) and re-score; do not report *_clean WER without it."
+        )
+
+
+def _ordinal_to_words(text: str) -> str:
+    _require_num2words()
     def replace_ordinal(m):
         try:
             return _num2words(int(m.group(1)), to="ordinal")
@@ -74,8 +85,7 @@ def _ordinal_to_words(text: str) -> str:
 
 
 def _cardinal_to_words(text: str) -> str:
-    if not _NUM2WORDS_AVAILABLE:
-        return text
+    _require_num2words()
     text = _strip_thousands_separators(text)
     def replace_cardinal(m):
         token = m.group(0)
@@ -190,9 +200,4 @@ _NORMALIZERS = {
 def normalize_for_mode(mode: str, text: str) -> str:
     """Apply the normalizer that `mode` selects (via the registry) to `text`."""
     return _NORMALIZERS[get_normalizer(mode)](text)
-
-
-def get_reference_source(mode: str) -> str:
-    """Backward-compatible alias: returns the canonical reference role (gold/alt)."""
-    return get_reference_role(mode)
 
