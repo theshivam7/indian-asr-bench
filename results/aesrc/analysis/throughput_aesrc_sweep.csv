@@ -39,6 +39,14 @@ aesrc,large,Whisper Large-v3,16,ok,41.779,9.217,1.8045,27.72,10317.0,4.8739,0.0,
 aesrc,large,Whisper Large-v3,32,ok,45.6,10.059,3.2553,28.82,17309.0,4.8739,0.0,0,True,,True,False
 aesrc,large,Whisper Large-v3,64,ok,48.287,10.652,6.0946,27.75,31273.0,4.8739,0.0,0,True,,True,True
 aesrc,large,Whisper Large-v3,128,ok,48.735,10.751,12.0147,27.65,35825.0,4.8739,0.0,0,True,,True,False
+aesrc,large_v3_turbo,Whisper large-v3-turbo,1,ok,32.624,7.197,0.1573,32.23,2293.0,5.3859,0.0,0,True,,True,False
+aesrc,large_v3_turbo,Whisper large-v3-turbo,2,ok,38.98,8.599,0.2523,29.77,2355.0,5.3859,0.0,0,True,,True,False
+aesrc,large_v3_turbo,Whisper large-v3-turbo,4,ok,46.516,10.261,0.4119,23.85,2565.0,5.3859,0.0,0,True,,True,False
+aesrc,large_v3_turbo,Whisper large-v3-turbo,8,ok,49.626,10.948,0.7473,22.38,2965.0,5.3859,0.0,0,True,,True,False
+aesrc,large_v3_turbo,Whisper large-v3-turbo,16,ok,51.695,11.404,1.4215,21.64,3757.0,5.3859,0.0,0,True,,True,False
+aesrc,large_v3_turbo,Whisper large-v3-turbo,32,ok,52.303,11.538,2.8195,22.33,5319.0,5.4049,0.019,0,True,,True,False
+aesrc,large_v3_turbo,Whisper large-v3-turbo,64,ok,53.124,11.719,5.5156,21.56,8427.0,5.4049,0.019,0,True,,True,True
+aesrc,large_v3_turbo,Whisper large-v3-turbo,128,ok,53.402,11.78,10.9445,21.03,14629.0,5.3859,0.0,0,True,,True,False
 aesrc,parakeet,Parakeet-TDT-0.6B-v2,1,ok,69.703,15.377,0.0673,35.24,3077.0,5.5376,0.0,0,True,,True,False
 aesrc,parakeet,Parakeet-TDT-0.6B-v2,2,ok,133.342,29.415,0.0707,36.2,3141.0,5.4997,-0.0379,0,True,,True,False
 aesrc,parakeet,Parakeet-TDT-0.6B-v2,4,ok,257.402,56.783,0.0738,36.23,3209.0,5.5187,-0.0189,0,True,,True,False
@@ -55,3 +63,11 @@ aesrc,parakeet_ctc,Parakeet-CTC-1.1B,16,ok,617.566,136.236,0.1241,38.18,5049.0,6
 aesrc,parakeet_ctc,Parakeet-CTC-1.1B,32,ok,1076.844,237.554,0.1703,46.44,5459.0,6.6566,0.038,0,True,,True,False
 aesrc,parakeet_ctc,Parakeet-CTC-1.1B,64,ok,1430.385,315.546,0.2916,53.33,6283.0,6.6566,0.038,0,True,,True,False
 aesrc,parakeet_ctc,Parakeet-CTC-1.1B,128,ok,1492.29,329.202,0.5538,61.29,7951.0,6.6566,0.038,0,True,,True,True
+aesrc,qwen3,Qwen3-ASR-1.7B,1,ok,14.244,3.142,0.4391,42.47,5027.0,4.9118,0.0,0,True,,True,False
+aesrc,qwen3,Qwen3-ASR-1.7B,2,ok,24.56,5.418,0.4879,44.83,5045.0,4.9497,0.0379,0,True,,True,False
+aesrc,qwen3,Qwen3-ASR-1.7B,4,ok,42.609,9.4,0.5469,45.69,5067.0,4.9118,0.0,0,True,,True,False
+aesrc,qwen3,Qwen3-ASR-1.7B,8,ok,70.689,15.594,0.6402,46.85,5079.0,4.8739,-0.0379,0,True,,True,False
+aesrc,qwen3,Qwen3-ASR-1.7B,16,ok,113.443,25.026,0.7603,49.8,5679.0,4.817,-0.0948,0,True,,True,False
+aesrc,qwen3,Qwen3-ASR-1.7B,32,ok,165.533,36.517,1.004,50.09,7593.0,4.836,-0.0758,0,True,,True,False
+aesrc,qwen3,Qwen3-ASR-1.7B,64,ok,220.575,48.659,1.4885,53.31,11435.0,4.8929,-0.0189,0,True,,True,False
+aesrc,qwen3,Qwen3-ASR-1.7B,128,ok,263.178,58.058,2.536,52.17,19189.0,4.8929,-0.0189,0,True,,True,True
