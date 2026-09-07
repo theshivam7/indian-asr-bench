@@ -1,14 +1,14 @@
 """
 Extract audio clips for top 20 highest WER samples per model (transcript_clean).
 
-Saves WAV files to: audio_analysis/clips/{model}/
+Saves WAV files to: archived_tasks/audio_analysis/clips/{model}/
 Filename: {rank:02d}_WER{wer_pct:.0f}_{region}_{class}_{id}.wav
 
 Uses HuggingFace streaming, downloads only the 34 needed clips, not full dataset.
 Deduplicates: same ID across models saved once per model folder.
 
 Usage:
-    python audio_analysis/extract_top20_audio.py
+    python archived_tasks/audio_analysis/extract_top20_audio.py
 """
 
 import os
