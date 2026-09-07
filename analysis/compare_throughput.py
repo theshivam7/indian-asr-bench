@@ -105,6 +105,27 @@ EXPECTED_PROTOCOL = {
 SENSITIVITY_MAX_WER_INCREASE_PP = 0.5
 SENSITIVITY_MAX_EMPTY_INCREASE_FRAC = 0.01
 
+# Runtimes whose short-form path pads every clip to a fixed 30 s window
+# (throughput/run_whisper_hf.py). RTFx divides by real audio seconds, so on a corpus
+# of 4 s clips these engines are charged for 4 s and actually process 30 s. The
+# padded columns below report what the GPU was handed rather than what the corpus
+# contains; the ratio is why Whisper Tiny reads 1.8 % mean SM utilization on Svarah.
+# NeMo pads to batch maximum, which is dynamic, and the Qwen3 backend's windowing is
+# not recorded per batch, so neither gets a padded column rather than a guessed one.
+FIXED_WINDOW_RUNTIMES = {"huggingface_transformers_whisper_pipeline": 30.0}
+
+
+def throughput_best(entries: list[dict]) -> dict | None:
+    """Fastest measured batch, ignoring the quality gate entirely.
+
+    The pre-registered gate selects the published operating point, but it only ever
+    rejects NeMo and Qwen3 entries: Whisper's fixed 30 s window makes its output
+    batch-invariant, so the gate cannot bind on it. Selecting on throughput alone and
+    reporting the gate as a diagnostic keeps the comparison symmetric across engines.
+    """
+    ok = [e for e in entries if e.get("status") == "ok"]
+    return select_best_entry(ok) if ok else None
+
 
 def gate_reasons(entry: dict, baseline: dict, n_clips: int) -> list[str]:
     """Why the pre-registered gate rejected this batch. Empty list means it passed."""
@@ -385,6 +406,10 @@ def aggregate(results: list[dict], dataset: str) -> pd.DataFrame:
             e for e in r["batch_results"] if sensitivity_valid(e, b1, n_clips)
         ]
         sens = select_best_entry(sens_entries) if sens_entries else best
+        tput = throughput_best(r["batch_results"]) or best
+        window_s = FIXED_WINDOW_RUNTIMES.get(r["runtime"])
+        audio_s = r["workload"].get("audio_seconds_total")
+        pad_mult = round(n_clips * window_s / audio_s, 3) if window_s and audio_s else None
         rows.append(
             {
                 "dataset": dataset,
@@ -434,6 +459,24 @@ def aggregate(results: list[dict], dataset: str) -> pd.DataFrame:
                     sens["median"]["rtfx_audio_s_per_s"]
                     / best["median"]["rtfx_audio_s_per_s"],
                     3,
+                ),
+                # Gate-free operating point: fastest measured batch regardless of the
+                # quality gate, reported for every model so the gate's cost is visible
+                # symmetrically rather than only where it happened to bind.
+                "tput_batch_size": tput["batch_size"],
+                "tput_rtfx_audio_s_per_s": tput["median"]["rtfx_audio_s_per_s"],
+                "tput_wer_delta_pp_vs_batch1": tput["quality"]["wer_delta_pp_vs_batch1"],
+                "gate_cost_x": round(
+                    tput["median"]["rtfx_audio_s_per_s"]
+                    / best["median"]["rtfx_audio_s_per_s"],
+                    3,
+                ),
+                # Fixed-window engines only; see FIXED_WINDOW_RUNTIMES.
+                "padded_audio_multiplier": pad_mult,
+                "padded_rtfx_audio_s_per_s": (
+                    round(best["median"]["rtfx_audio_s_per_s"] * pad_mult, 3)
+                    if pad_mult
+                    else None
                 ),
                 "model_load_seconds": r.get("model_load_seconds"),
                 "gpu_name": r["hardware"].get("gpu_name"),
@@ -533,9 +576,21 @@ def main() -> None:
             "completion_latency_p95_s",
             "best_wer_pct",
             "wer_delta_pp_vs_batch1",
+            "padded_rtfx_audio_s_per_s",
         ]
     ]
     clamped = df[df["sens_vs_published_x"] > 1.01]
+    gate_cost = df[
+        [
+            "model_display",
+            "best_batch_size",
+            "best_rtfx_audio_s_per_s",
+            "tput_batch_size",
+            "tput_rtfx_audio_s_per_s",
+            "tput_wer_delta_pp_vs_batch1",
+            "gate_cost_x",
+        ]
+    ]
     missing = [m for m in CHART_MODELS if m not in set(df["model"])]
     with open(out_md, "w") as f:
         f.write(f"# Offline throughput: {args.dataset}\n\n")
@@ -595,6 +650,38 @@ def main() -> None:
         else:
             f.write("No model's selection changes under the wider gate.\n")
         f.write("\n")
+        f.write("## Gate cost, every model\n\n")
+        f.write(
+            "The same comparison with no quality filter at all: `tput_*` is the "
+            "fastest batch measured for each model, and `gate_cost_x` is how much "
+            "throughput the pre-registered gate gives up. Every Whisper row reads "
+            "1.00 on all three corpora: a fixed 30 s window makes Whisper's output "
+            "batch-invariant, so the WER arm of the gate cannot bind on it. Values "
+            "above 1.00 are therefore a cost borne only by the dynamically padded "
+            "engines, which is why the gate is better read as a diagnostic than as "
+            "a neutral selection rule. Values slightly below 1.00 are possible "
+            "where the wider candidate set lets the within-1% tie rule pick a "
+            "smaller batch; treat those as ties.\n\n"
+        )
+        f.write(build_md_table(gate_cost))
+        f.write("\n\n")
+        f.write("## Padded audio\n\n")
+        f.write(
+            "RTFx divides by real audio seconds. The Whisper short-form path pads "
+            "every clip to a fixed 30 s window, so it is charged for the corpus and "
+            "actually processes the padded window. `padded_rtfx_audio_s_per_s` in the "
+            "table above is RTFx times that padding multiplier, which is the rate the "
+            "GPU actually sustained. It is blank for the NeMo and Qwen3 rows: NeMo "
+            "pads to batch maximum, which is dynamic, and the Qwen3 backend does not "
+            "record its windowing per batch, so neither is guessed.\n\n"
+        )
+        mult = df.loc[df["padded_audio_multiplier"].notna(), "padded_audio_multiplier"]
+        if len(mult):
+            f.write(
+                f"Padding multiplier on this corpus: {mult.iloc[0]:.2f}x "
+                f"({df['best_batch_size'].size} systems, "
+                f"{int(mult.notna().sum())} of them fixed-window).\n\n"
+            )
         f.write(
             f"Per-batch measurements for every model, including the ones the gate "
             f"rejected and why, are in `throughput_{args.dataset}_sweep.csv`.\n"
