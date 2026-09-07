@@ -19,6 +19,7 @@ Usage:
 
 import argparse
 import os
+import re
 import sys
 
 import pandas as pd
@@ -86,7 +87,10 @@ def process(df: pd.DataFrame, model: str, mode: str) -> tuple[list[dict], dict]:
     for _, row in df.iterrows():
         ref_raw = text_value(row.get(ref_col))
         hyp_raw = text_value(row.get("hypothesis_raw"))
-        if not ref_raw:
+        # Eligibility must not depend on the mode, or the modes score different clip
+        # sets. A reference with no word characters (TIE has one: "..") is dropped
+        # everywhere; the Whisper normalizer alone would have kept it as ".".
+        if not ref_raw or not re.search(r"\w", ref_raw):
             continue
 
         ref = normalize_for_mode(mode, ref_raw)
