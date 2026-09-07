@@ -17,6 +17,8 @@ import shutil
 import sys
 import tempfile
 
+import pytest
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import analysis.compare_seeds as compare_seeds
@@ -152,13 +154,11 @@ def test_build_rows_seed_aggregation_and_guards():
 def test_committed_aesrc_tiny_seeds_regression():
     p = os.path.join(stage2_dir("aesrc"), "transcript_clean")
     if not os.path.isdir(p):
-        print("[skip] no committed AESRC stage2 output")
-        return
+        pytest.skip("no committed AESRC stage2 output")
     rows, per_seed = compare_seeds.build_rows("aesrc", "transcript_clean")
     tiny = next((r for r in rows if r["size"] == "tiny"), None)
     if tiny is None:
-        print("[skip] no committed AESRC tiny multi-seed data")
-        return
+        pytest.skip("no committed AESRC tiny multi-seed data")
     assert tiny["n_seeds"] == 6
     assert abs(tiny["delta_pp_mean"] - (-6.85)) < 0.01
     assert abs(tiny["delta_pp_sd"] - 1.03) < 0.01

@@ -14,6 +14,8 @@ registry integrity, and the committed headline corpus-WER values (regression gat
 import os
 import sys
 
+import pytest
+
 import pandas as pd
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -28,8 +30,6 @@ from utils.wer_compute import (
 )
 from utils.io_helpers import positive_float, stage2_dir, text_value
 from normalize_and_score import process
-
-REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 # --------------------------------------------------------------------------- #
@@ -208,8 +208,7 @@ def _check_committed_numbers(dataset, expected):
     import pandas as pd
     summary = os.path.join(stage2_dir(dataset), "wer_summary_all_models.csv")
     if not os.path.exists(summary):
-        print(f"[skip] no committed Stage 2 summary; run normalize_and_score.py --dataset {dataset}")
-        return
+        pytest.skip(f"no committed Stage 2 summary for {dataset}")
     df = pd.read_csv(summary)
     tc = df[df["mode"] == "transcript_clean"].set_index("model")["corpus_wer_pct"]
     for model, exp in expected.items():
