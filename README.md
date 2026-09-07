@@ -177,8 +177,10 @@ An exploratory fine-tuning study is included for completeness. It is not part of
 claims. Whisper Tiny, Small and Medium were fine-tuned on AESRC's Indian training split, whose
 test speakers are disjoint from training, and each size was retrained from six seeds. All 18 runs
 improve on their own pretrained baseline (6-seed mean deltas of -6.85, -1.65 and -1.22 pp), but no
-seed-level significance test exists yet, so this is informal evidence. Details, tables and
-caveats: [Fine-tuning and split design (exploratory)](SUMMARY.md#fine-tuning-and-split-design-exploratory).
+seed-level significance test exists yet, so this is informal evidence. The Tiny delta is measured
+against an HF-pipeline baseline that scores 17.45% where openai-whisper scores 13.66% with the
+same weights, so counted from the leaderboard number the Tiny gain is about 3 pp, not 7. Details,
+tables and caveats: [Fine-tuning and split design (exploratory)](SUMMARY.md#fine-tuning-and-split-design-exploratory).
 A matching study on TIE is archived, not reported, because TIE's official split places every test
 speaker in training ([why](archived_tasks/tie_finetuning/README.md)).
 
@@ -221,6 +223,14 @@ CUDA 12.4. Per-run package versions are recorded in
 `results/<dataset>/stage1_raw_transcripts/*_manifest.json`. The CPU analysis path is tested in CI
 on Ubuntu with Python 3.10 and 3.12. The full list, and where the pinned files differ from what
 actually ran, is in [SUMMARY.md, Tested environment](SUMMARY.md#tested-environment).
+
+### Known limits of reproduction
+
+- Stage 2 and 3 reproduce every number bit for bit from the committed transcripts. Stage 1 does not: openai-whisper's temperature fallback is stochastic, so a fresh transcription can differ on a few hard clips.
+- `environments/parakeet.yaml` and `environments/qwen3.yaml` no longer solve because of conda channel drift. Rebuild those two from [`environments/resolved/`](environments/resolved/).
+- The engine environments need CUDA 11.8 and the throughput environments need CUDA 12.4. One machine can host both only if its driver supports both runtimes.
+- The requirements files were captured after the runs. They pin numpy 1.26.4 and jiwer 3.1.0 for Whisper, while the run manifests record numpy 2.2.6 and jiwer 4.0.0. This does not change any published number, because scoring runs in the top-level environment and CI checks the rebuild.
+- The throughput sweep was measured on A100-40GB nodes. Results on any other GPU are a different experiment and the aggregator refuses to merge them.
 
 ---
 
