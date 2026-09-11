@@ -165,8 +165,6 @@ class DatasetSpec:
     license: str
     citation: str
     hf_revision: str | None = None   # pinned HF dataset commit sha (reproducibility; None = latest)
-    neer_register_col: str | None = None   # csv column whose value selects the entity-dense register (Svarah use-cases)
-    neer_register_value: str | None = None
     verified: bool = True        # False -> column_map is provisional, adapter must confirm against ds.features
     cluster_id_regex: str | None = None  # regex with ONE capture group applied to the clip ID to
     #                               recover a resampling-cluster tag when no speaker column exists.
@@ -214,18 +212,17 @@ TIE = DatasetSpec(
     license="CC BY-SA 2.0",
     citation="Rai et al., ICWSM 2024 (NPTEL-derived)",
     hf_revision="28c53e285feae86f4ba25d8aaeca4fd0c709784c",  # 2024-11-16; predates all runs
-    neer_register_col=None,     # academic prose: no entity-dense register -> NEER not applicable
 )
 
 # Confirmed against the real ai4bharat/Svarah [test] HF features on first load
 # (2026-07-03): ['age-group', 'audio_filepath', 'duration', 'gender',
 # 'highest_qualification', 'job_category', 'native_place_district',
 # 'native_place_state', 'occupation_domain', 'primary_language', 'text'].
-# No speaker-id column and no read/extempore/use-case register column are exposed
-# in this Hub config, despite the dataset card describing that split conceptually
-# -> speaker_col is None and NEER (register-gated) is disabled until a real
-# register field is found (e.g. derivable from audio_filepath naming, or from the
-# original AI4Bharat release rather than this HF mirror).
+# No speaker-id column is exposed in this Hub config, despite the dataset card
+# describing that split conceptually -> speaker_col is None. The use-case
+# register column is missing too, so any register-gated metric would need a
+# field derived from audio_filepath naming, or the original AI4Bharat release
+# rather than this HF mirror.
 SVARAH = DatasetSpec(
     key="svarah",
     hf_id="ai4bharat/Svarah",
@@ -251,8 +248,6 @@ SVARAH = DatasetSpec(
     license="CC BY 4.0",
     citation="Javed et al., INTERSPEECH 2023",
     hf_revision="ebbf7777fe771490696a3f7b007097606fa8c924",  # 2025-03-10
-    neer_register_col=None,                   # no register field in this HF config; see note above
-    neer_register_value=None,
     # audio_filepath embeds a recording/file tag: "<num>_f2235_chunk_24.wav" -> f2235.
     # Verified 2026-07-03: 3232 distinct tags over 6656 clips, each tag demographically
     # consistent (never >1 gender/age/native-language), chunks of one recording share it.

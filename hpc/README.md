@@ -85,8 +85,7 @@ qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full f
 to the Indian accent subset on load.
 
 Bundled multi-step jobs: `job_new_models_tie.pbs` (turbo + parakeet_ctc on TIE,
-then rescore + analyse), `job_svarah.pbs` (all 7 models on Svarah -> Stage 2/3 +
-NEER), `job_aesrc.pbs` (9 pretrained models on the AESRC Indian test split -> Stage 2/3),
+then rescore + analyse), `job_svarah.pbs` (all 7 models on Svarah -> Stage 2/3), `job_aesrc.pbs` (9 pretrained models on the AESRC Indian test split -> Stage 2/3),
 `job_finetune_size.pbs` (capacity-study fine-tune: `-v SIZE=tiny|small` for TIE,
 `-v SIZE=tiny|small|medium,DATASET=aesrc` for AESRC).
 

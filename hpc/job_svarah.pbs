@@ -10,7 +10,7 @@
 set -euo pipefail
 
 # Full Svarah benchmark: 7 models -> Stage 2 -> Stage 3 (compare + statistics +
-# error analysis + NEER). Svarah is gated on HF: run `huggingface-cli login` (or set
+# error analysis). Svarah is gated on HF: run `huggingface-cli login` (or set
 # HF_TOKEN) once so the download works. Its pinned schema is verified by the adapter.
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
@@ -75,7 +75,6 @@ python normalize_and_score.py --dataset svarah
 python analysis/compare_all.py --dataset svarah
 python analysis/statistics.py --dataset svarah
 python analysis/error_analysis.py --dataset svarah
-python analysis/entity_analysis.py --dataset svarah
 if [ -f paper/figures/make_paper_figures.py ]; then
     python paper/figures/make_paper_figures.py --dataset tie,svarah
 else

@@ -10,7 +10,7 @@ Works for all three review studies; --dataset selects which eval split to read.
 Usage (on NSCC, inside a qsub -I session, whisper_medium_ft env active):
     python analysis/extract_review_audio.py \\
         --dataset svarah \\
-        --csv analysis/svarah_validation/review_sample.csv \\
+        --csv analysis/svarah_validation/review_sheet.csv \\
         --out-dir analysis/svarah_validation/audio
 """
 
