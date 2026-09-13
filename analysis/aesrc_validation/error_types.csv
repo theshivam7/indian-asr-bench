@@ -1,0 +1,29 @@
+sr_no,sample_id,error_type,reviewer_decision,reviewer_notes,workbook_error_type
+1,AESRC2020-INDIAN-ACCENT-G03556-G03556S2365,"Hindi named entity, Short utterance",,"Chitrahaar is a Hindi show name. Every model writes chitrahar with one a, so the only error is the spelling.",
+2,AESRC2020-INDIAN-ACCENT-G13083-G13083S2364,"Indian-language named entity, Spelling variant, Short utterance",,Karuthamuthu is a Malayalam serial and no model gets it. Four models also write favorite instead of favourite.,
+3,AESRC2020-INDIAN-ACCENT-G13915-G13915S5400,"Number formatting, Short utterance","Not a real error - Parakeet-CTC, Qwen3 and Medium only differ by writing am as a m; Large and Parakeet-TDT do misread the time",A clock time. Three models are right apart from writing am as a m. Large hears 5.54 and Parakeet-TDT hears five hundred and fifty four.,
+4,AESRC2020-INDIAN-ACCENT-G32335-G32335S2354,Reference error,,"The reference says vanakamal, the reviewer hears one kamal. Three models match the corrected version exactly.",
+5,AESRC2020-INDIAN-ACCENT-G32681-G32681S2355,"Reference error, Foreign named entity","Unsure - the reference names the Spanish band Banda Ola Azul de Zirahuen, the speaker's reading does not match it, and Large matches what the reviewer heard","The reference names a Spanish band. The speaker says something else, and Large matches the reviewer word for word.",
+6,AESRC2020-INDIAN-ACCENT-G53025-G53025S2364,"English name or rare word, Accent / pronunciation, Spelling variant",,The song title I'm the Shit is written im in the reference. Every model hears the last word as seed or seat.,
+7,AESRC2020-INDIAN-ACCENT-G90236-G90236S2355,Hindi named entity,,Aane Wala Pal is a Hindi song. Medium spells it out letter by letter and Qwen3 writes it in Devanagari.,
+8,AESRC2020-INDIAN-ACCENT-G02032-G02032S2363,"Indian-language named entity, Acronym or code",,T. N. Seshagopalan is a Tamil name. Four models turn the initials tn into t and.,
+9,AESRC2020-INDIAN-ACCENT-G02725-G02725S2354,Hindi named entity,,Yahan Main Ghar Ghar Kheli is a Hindi serial. Qwen3 writes it in Devanagari and Medium translates it.,Hindi Named-Entity Transliteration Error
+10,AESRC2020-INDIAN-ACCENT-G03133-G03133S2364,"English name or rare word, Accent / pronunciation",,"Four models hear lay as play, the more common command. All five split ascetic into as ketik or similar.",
+11,AESRC2020-INDIAN-ACCENT-G03161-G03161S2365,Hindi named entity,,Sajan Ghar Jaana Hai is a Hindi song. Parakeet-CTC turns sajan into sergeant.,Hindi Named-Entity Transliteration Error
+12,AESRC2020-INDIAN-ACCENT-G03233-G03233S2365,Hindi named entity,,Bhagonwali Baante Apni Taqdeer is a Hindi serial. Qwen3 writes the whole title in Devanagari.,Hindi Named-Entity Transliteration Error
+13,AESRC2020-INDIAN-ACCENT-G03247-G03247S2366,Indian-language named entity,,"Rahmat Da Darya Illahi is Punjabi, not Hindi. Qwen3 comes closest.",Hindi Named-Entity Transliteration Error
+14,AESRC2020-INDIAN-ACCENT-G03268-G03268S2351,Foreign named entity,,Hermanas Aguila is a Spanish name. Every model splits it into armand s or airman s.,
+15,AESRC2020-INDIAN-ACCENT-G03453-G03453S2355,Hindi named entity,,Jeet Jayenge Hum is a Hindi serial. Large translates it into English as we will win.,Hindi Named-Entity Transliteration Error
+16,AESRC2020-INDIAN-ACCENT-G12416-G12416S2355,Hindi named entity,,Rukawat Ke Liye Khed Hai is a Hindi title. Parakeet-TDT stops early and drops it.,Hindi Named-Entity Transliteration Error
+17,AESRC2020-INDIAN-ACCENT-G13145-G13145S2366,"Foreign named entity, Accent / pronunciation",,De Souza is a Portuguese name. Three models also hear resorts as resource or results.,
+18,AESRC2020-INDIAN-ACCENT-G23372-G23372S2354,Hindi named entity,,Same Hindi serial as row 9. Qwen3 writes it in Devanagari again.,Hindi Named-Entity Transliteration Error
+19,AESRC2020-INDIAN-ACCENT-G23553-G23553S2365,"Foreign named entity, Accent / pronunciation",,Son Ensemble is a French name. Three models hear it as sun and symbol.,
+20,AESRC2020-INDIAN-ACCENT-G32681-G32681S2354,"Hindi named entity, Accent / pronunciation",,"Large gets the clip right. The other four lose the whole ending, not just the name Vishnu.",
+21,AESRC2020-INDIAN-ACCENT-G43652-G43652S2366,"Hindi named entity, Short utterance",,Apni Mitti is a Hindi song. Parakeet and Parakeet-CTC turn the whole clip into escape eponymity.,
+22,AESRC2020-INDIAN-ACCENT-G53371-G53371S2354,Hindi named entity,,"Same Hindi title as row 16. Large is exactly right, the other four garble it.",Hindi Named-Entity Transliteration Error
+23,AESRC2020-INDIAN-ACCENT-G53709-G53709S2373,"Reference error, Brand or product name",,Splashtop Wired XDisplay is an app. The reference splits it as xd is play. Parakeet matches the corrected version.,
+24,AESRC2020-INDIAN-ACCENT-G63002-G63002S2363,"Hindi named entity, Accent / pronunciation",,Wada pav is a Hindi dish name and every model writes bada or baraa. Three also split takeaway into two words.,Hindi Named-Entity Transliteration Error
+25,AESRC2020-INDIAN-ACCENT-G90144-G90144S3370,"Spelling variant, Short utterance","Not a real error - three models write any more as two words, which is the same phrase","Large and Medium match. The other three write any more as two words, which costs a three word clip 66.7 percent.",
+26,AESRC2020-INDIAN-ACCENT-G90222-G90222S2355,Foreign named entity,,Fledermausland is a German name. Every model splits it into flutter mouse land.,
+27,AESRC2020-INDIAN-ACCENT-G90277-G90277S2355,"Hindi named entity, Accent / pronunciation",,"Shanti is a Hindi serial. Four models merge show shanti into shoshanti. Row 15 ends to the queue, so quick may be wrong here.",
+28,AESRC2020-INDIAN-ACCENT-G91743-G91743S1199,Reference error,,"The reference spells the first word as e v e n. Parakeet-TDT copies that, so its WER rises against the corrected version.",

@@ -1,0 +1,1086 @@
+=== row 1  (281474976884135_f3212_chunk_13.wav) ===
+normalised_corrected_reference: so yeah
+reference_check   = Incorrect          (wer=2.00)
+  reference (norm): so yeah that is the reason
+hyp_large        _check = Incorrect          (wer_true=50.00, was 83.33)
+  hyp_large (norm): yeah
+hyp_parakeet     _check = Correct            (wer_true=0.00, was 66.67)
+  hyp_parakeet (norm): so yeah
+hyp_parakeet_ctc _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet_ctc (norm): ya
+hyp_qwen3        _check = Correct            (wer_true=0.00, was 66.67)
+  hyp_qwen3 (norm): so yeah
+hyp_medium       _check = Correct            (wer_true=0.00, was 66.67)
+  hyp_medium (norm): so yeah
+ref_recall = 1.00   error_type -> Truncated audio, Short utterance
+reviewer_decision -> Reference error
+reviewer_notes -> The clip stops after so yeah but the reference carries the whole sentence. Parakeet, Qwen3 and Medium hear it right.
+
+=== row 2  (281474976897307_f3234_chunk_25.wav) ===
+normalised_corrected_reference: photography remedy
+reference_check   = Incorrect          (wer=3.50)
+  reference (norm): photography remedial clicks that always lifts my mood
+hyp_large        _check = Incorrect          (wer_true=100.00, was 87.5)
+  hyp_large (norm): photography they made
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 87.5)
+  hyp_parakeet (norm): photography
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 87.5)
+  hyp_parakeet_ctc (norm): photography nameage
+hyp_qwen3        _check = Incorrect          (wer_true=100.00, was 87.5)
+  hyp_qwen3 (norm): photography they make
+hyp_medium       _check = Incorrect          (wer_true=50.00, was 87.5)
+  hyp_medium (norm): photography
+ref_recall = 0.50   error_type -> Truncated audio, Short utterance
+reviewer_decision -> Reference error - the reference covers a longer sentence than the clip contains
+reviewer_notes -> Only photography and one more word are audible. The reference has a full sentence.
+
+=== row 3  (281474976885515_f1997_chunk_4.wav) ===
+normalised_corrected_reference: the jain universities
+reference_check   = Correct            (wer=0.00)
+  reference (norm): the jain universities
+hyp_large        _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_large (norm): design universities
+hyp_parakeet     _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_parakeet (norm): design universities
+hyp_parakeet_ctc _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_parakeet_ctc (norm): they join universities
+hyp_qwen3        _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_qwen3 (norm): design universities
+hyp_medium       _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_medium (norm): desjain universities
+ref_recall = 1.00   error_type -> Indian-language named entity, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> Jain comes out as design in four models. Three words give nothing to lean on.
+
+=== row 4  (281474976899792_f1793_chunk_2.wav) ===
+normalised_corrected_reference: puri beach gopalpur beach
+reference_check   = Correct            (wer=0.00)
+  reference (norm): puri beach gopalpur beach
+hyp_large        _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_large (norm): puri bhits gopal pur bhits
+hyp_parakeet     _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet (norm): puribs gopal purbis
+hyp_parakeet_ctc _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet_ctc (norm): for reace coual pates
+hyp_qwen3        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_qwen3 (norm): puri beach gopalpur beach
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): puri beach gopalpur beach
+ref_recall = 1.00   error_type -> Indian-language named entity, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> Qwen3 and Medium get the Odia place names. The other three turn Puri beach into puri bhits.
+
+=== row 5  (281474976885094_f2098_chunk_0.wav) ===
+normalised_corrected_reference: one thousand one hundred and nine
+reference_check   = Correct            (wer=0.00)
+  reference (norm): one thousand one hundred and nine
+hyp_large        _check = Partially correct  (wer_true=16.67, was 16.67)
+  hyp_large (norm): eleven thousand one hundred and nine
+hyp_parakeet     _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_parakeet (norm): eleven hundred nine
+hyp_parakeet_ctc _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_parakeet_ctc (norm): eleven hundred nine
+hyp_qwen3        _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_qwen3 (norm): eleven hundred nine
+hyp_medium       _check = Partially correct  (wer_true=16.67, was 16.67)
+  hyp_medium (norm): eleven thousand one hundred and nine
+ref_recall = 1.00   error_type -> Number formatting, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> The normalizer spells 1109 as one thousand one hundred and nine, so eleven hundred nine counts as wrong.
+
+=== row 6  (281474976900603_f2255_chunk_18.wav) ===
+normalised_corrected_reference: in one thousand four hundred and eighty seven
+reference_check   = Correct            (wer=0.00)
+  reference (norm): in one thousand four hundred and eighty seven
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): in one thousand four hundred and eighty seven
+hyp_parakeet     _check = Incorrect          (wer_true=62.50, was 62.5)
+  hyp_parakeet (norm): in fourteen eighty seven
+hyp_parakeet_ctc _check = Incorrect          (wer_true=62.50, was 62.5)
+  hyp_parakeet_ctc (norm): in fourteen eighty seven
+hyp_qwen3        _check = Incorrect          (wer_true=62.50, was 62.5)
+  hyp_qwen3 (norm): in fourteen eighty seven
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): in one thousand four hundred and eighty seven
+ref_recall = 1.00   error_type -> Number formatting, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> Large and Medium keep 1487 as digits and match. Fourteen eighty seven does not.
+
+=== row 7  (281474976888871_f2232_chunk_9.wav) ===
+normalised_corrected_reference: and second a
+reference_check   = Correct            (wer=0.00)
+  reference (norm): and second a
+hyp_large        _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_large (norm): and the second um
+hyp_parakeet     _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_parakeet (norm): and the second um
+hyp_parakeet_ctc _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_parakeet_ctc (norm): and the second um
+hyp_qwen3        _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_qwen3 (norm): and the second
+hyp_medium       _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_medium (norm): and the second
+ref_recall = 1.00   error_type -> Disfluency, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> A three word fragment. Every model writes and the second um where the reference has and second a.
+
+=== row 8  (281474976888899_f2549_chunk_1.wav) ===
+normalised_corrected_reference: and mpin six thousand five hundred and thirty
+reference_check   = Correct            (wer=0.00)
+  reference (norm): and mpin six thousand five hundred and thirty
+hyp_large        _check = Partially correct  (wer_true=12.50, was 12.5)
+  hyp_large (norm): and mbin six thousand five hundred and thirty
+hyp_parakeet     _check = Incorrect          (wer_true=75.00, was 75.0)
+  hyp_parakeet (norm): nmbin six five three zero
+hyp_parakeet_ctc _check = Incorrect          (wer_true=75.00, was 75.0)
+  hyp_parakeet_ctc (norm): n and bin six five three zero
+hyp_qwen3        _check = Incorrect          (wer_true=87.50, was 87.5)
+  hyp_qwen3 (norm): n m pin six five three zero
+hyp_medium       _check = Partially correct  (wer_true=12.50, was 12.5)
+  hyp_medium (norm): and ambient six thousand five hundred and thirty
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> MPIN is written mbin or n and bin, and the four digit code is read out digit by digit.
+
+=== row 9  (281474976896720_f941_chunk_0.wav) ===
+normalised_corrected_reference: got slurp farm instead on tata tea
+reference_check   = Partially correct  (wer=0.14)
+  reference (norm): got slurp farm instead on tata tea agni
+hyp_large        _check = Incorrect          (wer_true=57.14, was 62.5)
+  hyp_large (norm): slough farm instead of tata deag
+hyp_parakeet     _check = Incorrect          (wer_true=71.43, was 75.0)
+  hyp_parakeet (norm): instead of tata tier
+hyp_parakeet_ctc _check = Incorrect          (wer_true=57.14, was 62.5)
+  hyp_parakeet_ctc (norm): record slu farm instead of tata deal
+hyp_qwen3        _check = Incorrect          (wer_true=57.14, was 62.5)
+  hyp_qwen3 (norm): or slav farm instead of tata diag
+hyp_medium       _check = Incorrect          (wer_true=57.14, was 62.5)
+  hyp_medium (norm): or slough farm instead of tartar tea
+ref_recall = 1.00   error_type -> Truncated audio, Brand or product name
+reviewer_decision -> Genuine model error
+reviewer_notes -> The clip ends before Agni. Every model also misses the brands Slurp Farm and Tata Tea.
+
+=== row 10  (281474976897459_f2145_chunk_14.wav) ===
+normalised_corrected_reference: dibrugarh and taspur town
+reference_check   = Correct            (wer=0.00)
+  reference (norm): dibrugarh and taspur town
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): debrugge and tespur town
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): debrugor and tespur town
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): dibrugar and tessport town
+hyp_qwen3        _check = Partially correct  (wer_true=25.00, was 25.0)
+  hyp_qwen3 (norm): dibrugarh and tezpur town
+hyp_medium       _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_medium (norm): debrugor and tespur town
+ref_recall = 1.00   error_type -> Indian-language named entity, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> Assamese town names. Only Qwen3 gets Dibrugarh, and four models write Tespur for Taspur.
+
+=== row 11  (281474976886815_f1980_chunk_1.wav) ===
+normalised_corrected_reference: and as far as
+reference_check   = Correct            (wer=0.00)
+  reference (norm): and as far as
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): and as for us
+hyp_parakeet     _check = Incorrect          (wer_true=75.00, was 75.0)
+  hyp_parakeet (norm): and uh as for this
+hyp_parakeet_ctc _check = Incorrect          (wer_true=75.00, was 75.0)
+  hyp_parakeet_ctc (norm): and uh as for this
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): and as for us
+hyp_medium       _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_medium (norm): and as for us
+ref_recall = 1.00   error_type -> Accent / pronunciation, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> Every model hears as far as as as for us.
+
+=== row 12  (281474976894161_f2707_chunk_1.wav) ===
+normalised_corrected_reference: godrej air power pocket bathroom
+reference_check   = Partially correct  (wer=0.20)
+  reference (norm): godrej aer power pocket bathroom
+hyp_large        _check = Partially correct  (wer_true=40.00, was 60.0)
+  hyp_large (norm): goddard s air power pocket bathroom
+hyp_parakeet     _check = Partially correct  (wer_true=40.00, was 60.0)
+  hyp_parakeet (norm): godrid s air power pocket bathroom
+hyp_parakeet_ctc _check = Incorrect          (wer_true=60.00, was 80.0)
+  hyp_parakeet_ctc (norm): grid s air powered pocket bathroom
+hyp_qwen3        _check = Incorrect          (wer_true=60.00, was 80.0)
+  hyp_qwen3 (norm): gordy s air powered pocket bathroom
+hyp_medium       _check = Partially correct  (wer_true=40.00, was 60.0)
+  hyp_medium (norm): good is air power pocket bathroom
+ref_recall = 0.80   error_type -> Reference error, Brand or product name
+reviewer_decision -> Reference error
+reviewer_notes -> The reference spells the brand Aer, the reviewer hears air. No model gets Godrej.
+
+=== row 13  (281474976888894_f2922_chunk_0.wav) ===
+normalised_corrected_reference: donate rs seven hundred to helpage india
+reference_check   = Correct            (wer=0.00)
+  reference (norm): donate rs seven hundred to helpage india
+hyp_large        _check = Partially correct  (wer_true=28.57, was 28.57)
+  hyp_large (norm): donate rs seven hundred to health age india
+hyp_parakeet     _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_parakeet (norm): donate rs700 to health age india
+hyp_parakeet_ctc _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_parakeet_ctc (norm): donate rupees seven don eight to health age india
+hyp_qwen3        _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_qwen3 (norm): donate rupees seventy nine to help age india
+hyp_medium       _check = Partially correct  (wer_true=28.57, was 28.57)
+  hyp_medium (norm): donate rs seven hundred to health age india
+ref_recall = 1.00   error_type -> Number formatting, Brand or product name
+reviewer_decision -> Genuine model error
+reviewer_notes -> Helpage becomes health age in four models, and rupees against Rs costs another word.
+
+=== row 14  (281474976888909_f3258_chunk_20.wav) ===
+normalised_corrected_reference: life has two sides
+reference_check   = Correct            (wer=0.00)
+  reference (norm): life has two sides
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): life has to say
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): life has to sit
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): life has two side i
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): life has to sight
+hyp_medium       _check = Incorrect          (wer_true=75.00, was 75.0)
+  hyp_medium (norm): life has to sit down
+ref_recall = 1.00   error_type -> Accent / pronunciation, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> Every model hears two sides as to say or to sit.
+
+=== row 15  (281474976900602_f2216_chunk_13.wav) ===
+normalised_corrected_reference: here with ai4bharat too
+reference_check   = Correct            (wer=0.00)
+  reference (norm): here with ai4bharat too
+hyp_large        _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_large (norm): here with ai for bar two
+hyp_parakeet     _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet (norm): here with ai for barred to
+hyp_parakeet_ctc _check = Incorrect          (wer_true=125.00, was 125.0)
+  hyp_parakeet_ctc (norm): here with ai for about it two
+hyp_qwen3        _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_qwen3 (norm): here with ai for bharat to
+hyp_medium       _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_medium (norm): here with ai for bar two
+ref_recall = 1.00   error_type -> Brand or product name, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> No model writes AI4Bharat as one word; all of them split it into AI for bharat.
+
+=== row 16  (281474976886864_f3159_chunk_2.wav) ===
+normalised_corrected_reference: twenty eighth march one thousand nine hundred and seventy eight
+reference_check   = Correct            (wer=0.00)
+  reference (norm): twenty eighth march one thousand nine hundred and seventy eight
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): twenty eighth march one thousand nine hundred and seventy eight
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): twenty eighth march nineteen seventy eight
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): twenty eighth march nineteen seventy eight
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): twenty eighth march nineteen seventy eight
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): twenty eighth march one thousand nine hundred and seventy eight
+ref_recall = 1.00   error_type -> Number formatting
+reviewer_decision -> Genuine model error
+reviewer_notes -> Large and Medium keep the date as digits. The three that spell it out lose half the words.
+
+=== row 17  (281474976895570_f1741_chunk_1.wav) ===
+normalised_corrected_reference: one thousand nine hundred and ninety five
+reference_check   = Correct            (wer=0.00)
+  reference (norm): one thousand nine hundred and ninety five
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): one thousand nine hundred and ninety five
+hyp_parakeet     _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_parakeet (norm): nineteen ninety five
+hyp_parakeet_ctc _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_parakeet_ctc (norm): nineteen ninety five
+hyp_qwen3        _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_qwen3 (norm): nineteen ninety five
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): one thousand nine hundred and ninety five
+ref_recall = 1.00   error_type -> Number formatting
+reviewer_decision -> Genuine model error
+reviewer_notes -> Only the models that keep 1995 as digits match. Nineteen ninety five does not.
+
+=== row 18  (281474976906734_f2919_chunk_0.wav) ===
+normalised_corrected_reference: by one thousand nine hundred and seventy seven however
+reference_check   = Correct            (wer=0.00)
+  reference (norm): by one thousand nine hundred and seventy seven however
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): by one thousand nine hundred and seventy seven however
+hyp_parakeet     _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_parakeet (norm): by nineteen seventy seven however
+hyp_parakeet_ctc _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_parakeet_ctc (norm): by nineteen seventy seven however
+hyp_qwen3        _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_qwen3 (norm): by nineteen seventy seven however
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): by one thousand nine hundred and seventy seven however
+ref_recall = 1.00   error_type -> Number formatting
+reviewer_decision -> Genuine model error
+reviewer_notes -> Same as the other year clips: 1977 as digits matches, nineteen seventy seven does not.
+
+=== row 19  (281474976885793_f2091_chunk_5.wav) ===
+normalised_corrected_reference: of how to roll the ah roll the roti
+reference_check   = Partially correct  (wer=0.33)
+  reference (norm): of how to roll the roti
+hyp_large        _check = Partially correct  (wer_true=33.33, was 0.0)
+  hyp_large (norm): of how to roll the roti
+hyp_parakeet     _check = Partially correct  (wer_true=11.11, was 50.0)
+  hyp_parakeet (norm): of how to roll the uh roll the roti
+hyp_parakeet_ctc _check = Partially correct  (wer_true=22.22, was 66.67)
+  hyp_parakeet_ctc (norm): of uh how to roll the uh roll the roti
+hyp_qwen3        _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_qwen3 (norm): of how to roll the ah roll the roti
+hyp_medium       _check = Partially correct  (wer_true=33.33, was 0.0)
+  hyp_medium (norm): of how to roll the roti
+ref_recall = 0.86   error_type -> Reference error, Disfluency
+reviewer_decision -> Reference error
+reviewer_notes -> The speaker repeats roll the and the reference drops it. Qwen3 catches the repeat exactly.
+
+=== row 20  (281474976885804_f1685_chunk_3.wav) ===
+normalised_corrected_reference: times of india the hindu and the business line
+reference_check   = Partially correct  (wer=0.33)
+  reference (norm): the hindu and the business line
+hyp_large        _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_large (norm): times of india the hindu and the business line
+hyp_parakeet     _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_parakeet (norm): times of india the hindu and the business line
+hyp_parakeet_ctc _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_parakeet_ctc (norm): times of india the hindu and the business line
+hyp_qwen3        _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_qwen3 (norm): times of india the hindu and the business line
+hyp_medium       _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_medium (norm): times of india the hindu and the business line
+ref_recall = 0.62   error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> The reference starts late and misses Times of India. All five models get the clip right.
+
+=== row 21  (281474976897360_f2929_chunk_0.wav) ===
+normalised_corrected_reference: in the academic year two thousand and twenty minus two thousand and twenty one
+reference_check   = Correct            (wer=0.00)
+  reference (norm): in the academic year two thousand and twenty minus two thousand and twenty one
+hyp_large        _check = Correct            (wer_true=7.14, was 0.0)
+  hyp_large (norm): in the academic year two thousand and twenty two thousand and twenty one
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 46.15)
+  hyp_parakeet (norm): in the academic year twenty twenty twenty twenty one
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 46.15)
+  hyp_parakeet_ctc (norm): in the academic year twenty twenty twenty twenty one
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 46.15)
+  hyp_qwen3 (norm): in the academic year twenty twenty twenty twenty one
+hyp_medium       _check = Correct            (wer_true=7.14, was 0.0)
+  hyp_medium (norm): in the academic year two thousand and twenty two thousand and twenty one
+ref_recall = 1.00   error_type -> Number formatting
+reviewer_decision -> Genuine model error
+reviewer_notes -> Twenty twenty to twenty twenty one is a fair reading, but the normalizer spells the years out in full.
+
+=== row 22  (281474976925736_f3275_chunk_14.wav) ===
+normalised_corrected_reference: pradhan mantri yojana s
+reference_check   = Correct            (wer=0.00)
+  reference (norm): pradhan mantri yojana s
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): pradhan mantri yojanas
+hyp_parakeet     _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet (norm): uh pradhanmantri yojanas
+hyp_parakeet_ctc _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet_ctc (norm): prradanani yoganas
+hyp_qwen3        _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_qwen3 (norm): ah prime minister s yojanas
+hyp_medium       _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_medium (norm): pradhan mantri yojanas
+ref_recall = 1.00   error_type -> Hindi named entity, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> Pradhan Mantri Yojana is Hindi. Qwen3 translates it to Prime Minister's and Parakeet-CTC garbles it.
+
+=== row 23  (281474976900343_f1968_chunk_1.wav) ===
+normalised_corrected_reference: eid ul adha and eid ul fetr
+reference_check   = Correct            (wer=0.00)
+  reference (norm): eid ul adha and eid ul fetr
+hyp_large        _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_large (norm): a little adha and a little petra
+hyp_parakeet     _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_parakeet (norm): itll adha and uh itl fetter
+hyp_parakeet_ctc _check = Incorrect          (wer_true=85.71, was 85.71)
+  hyp_parakeet_ctc (norm): itll ada and uh itll better
+hyp_qwen3        _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_qwen3 (norm): idul adha and idul fitr
+hyp_medium       _check = Incorrect          (wer_true=85.71, was 85.71)
+  hyp_medium (norm): itll add her and itll better
+ref_recall = 1.00   error_type -> Indian-language named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Eid-ul-Adha and Eid-ul-Fitr come out as a little Adha and it'll better. The reviewer also found the speech slow here.
+
+=== row 24  (281474976899336_f3108_chunk_3.wav) ===
+normalised_corrected_reference: nine hundred
+reference_check   = Incorrect          (wer=1.50)
+  reference (norm): nine hundred and ninety nine
+hyp_large        _check = Correct            (wer_true=0.00, was 60.0)
+  hyp_large (norm): nine hundred
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 80.0)
+  hyp_parakeet (norm): mm nine hundred
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 80.0)
+  hyp_parakeet_ctc (norm): mm nine hundred
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 80.0)
+  hyp_qwen3 (norm): hmm nine hundred
+hyp_medium       _check = Correct            (wer_true=0.00, was 60.0)
+  hyp_medium (norm): nine hundred
+ref_recall = 1.00   error_type -> Reference error, Number formatting
+reviewer_decision -> Reference error - the speaker says 900 and the reference says 999; Large and Medium match the speaker
+reviewer_notes -> The reference says 999 but the speaker says 900. Large and Medium get it right.
+
+=== row 25  (281474976925493_f3129_chunk_0.wav) ===
+normalised_corrected_reference: four three twenty four twenty seventeen
+reference_check   = Incorrect          (wer=1.00)
+  reference (norm): four thousand three hundred and twenty four two thousand and seventeen
+hyp_large        _check = Incorrect          (wer_true=50.00, was 27.27)
+  hyp_large (norm): four three twenty four two thousand and seventeen
+hyp_parakeet     _check = Correct            (wer_true=0.00, was 54.55)
+  hyp_parakeet (norm): four three twenty four twenty seventeen
+hyp_parakeet_ctc _check = Correct            (wer_true=0.00, was 54.55)
+  hyp_parakeet_ctc (norm): four three twenty four twenty seventeen
+hyp_qwen3        _check = Correct            (wer_true=0.00, was 54.55)
+  hyp_qwen3 (norm): four three twenty four twenty seventeen
+hyp_medium       _check = Correct            (wer_true=0.00, was 54.55)
+  hyp_medium (norm): four three twenty four twenty seventeen
+ref_recall = 1.00   error_type -> Reference error, Number formatting
+reviewer_decision -> Reference error
+reviewer_notes -> The speaker reads the digits in groups. Parakeet, Parakeet-CTC and Qwen3 match the corrected wording exactly.
+
+=== row 26  (281474976893915_f2228_chunk_1.wav) ===
+normalised_corrected_reference: baukungri hajw gakhwnai festival or trekking of baukungri hill
+reference_check   = Correct            (wer=0.00)
+  reference (norm): baukungri hajw gakhwnai festival or trekking of baukungri hill
+hyp_large        _check = Incorrect          (wer_true=44.44, was 44.44)
+  hyp_large (norm): bhavkungri hazuka kanai festival or trekking of bhavkungri hill
+hyp_parakeet     _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_parakeet (norm): bakungri has a kakanai festival or trekking of bakkungri hill
+hyp_parakeet_ctc _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_parakeet_ctc (norm): bakungri has a kkanai festival or trekking or bakungri hill
+hyp_qwen3        _check = Incorrect          (wer_true=88.89, was 88.89)
+  hyp_qwen3 (norm): buckhungry has to go on a festival or trekking or buckhungry hill
+hyp_medium       _check = Incorrect          (wer_true=77.78, was 77.78)
+  hyp_medium (norm): babkungri has the best table and trekking of babkungri hill
+ref_recall = 1.00   error_type -> Indian-language named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Bodo festival and hill names. No model gets Baukungri Hajw Gakhwnai.
+
+=== row 27  (281474976896956_f555_chunk_0.wav) ===
+normalised_corrected_reference: is sixty four billion four hundred and twelve million fourteen thousand four hundred and eighty four on ola money
+reference_check   = Correct            (wer=0.00)
+  reference (norm): is sixty four billion four hundred and twelve million fourteen thousand four hundred and eighty four on ola money
+hyp_large        _check = Partially correct  (wer_true=10.53, was 10.53)
+  hyp_large (norm): is sixty four billion four hundred and twelve million fourteen thousand four hundred and eighty four on olamani
+hyp_parakeet     _check = Incorrect          (wer_true=68.42, was 68.42)
+  hyp_parakeet (norm): is six four four one two zero one four four eight four on olamani
+hyp_parakeet_ctc _check = Incorrect          (wer_true=68.42, was 68.42)
+  hyp_parakeet_ctc (norm): is six four four one two zero one four four eight four on o moneyi
+hyp_qwen3        _check = Incorrect          (wer_true=57.89, was 57.89)
+  hyp_qwen3 (norm): is six four four one two zero one four four eight four on ola money
+hyp_medium       _check = Incorrect          (wer_true=52.63, was 52.63)
+  hyp_medium (norm): is six hundred and forty four one hundred and twenty one thousand four hundred and eighty four on olamani
+ref_recall = 1.00   error_type -> Number formatting, Brand or product name
+reviewer_decision -> Genuine model error
+reviewer_notes -> An eleven digit number read out digit by digit, plus Ola Money written as Olamani.
+
+=== row 28  (281474976884259_f1799_chunk_0.wav) ===
+normalised_corrected_reference: five hundred and fifty six hundred and sixty seven hundred and seventy eight hundred and eighty
+reference_check   = Correct            (wer=0.00)
+  reference (norm): five hundred and fifty six hundred and sixty seven hundred and seventy eight hundred and eighty
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): five hundred and fifty six hundred and sixty seven hundred and seventy eight hundred and eighty
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): five fifty six sixty seven seventy eight eighty
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): five fifty six sixty seven seventy eight eighty
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): five fifty six sixty seven seventy eight eighty
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): five hundred and fifty six hundred and sixty seven hundred and seventy eight hundred and eighty
+ref_recall = 1.00   error_type -> Number formatting
+reviewer_decision -> Genuine model error
+reviewer_notes -> Five fifty and six sixty are correct readings, but the normalizer expects five hundred and fifty.
+
+=== row 29  (281474976892274_f3086_chunk_0.wav) ===
+normalised_corrected_reference: are there any medical stores located in pincode four hundred and seventy four thousand three hundred and ten
+reference_check   = Correct            (wer=0.00)
+  reference (norm): are there any medical stores located in pincode four hundred and seventy four thousand three hundred and ten
+hyp_large        _check = Partially correct  (wer_true=11.11, was 11.11)
+  hyp_large (norm): are there any medical stores located in pin code four hundred and seventy four thousand three hundred and ten
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): are there any medical stores located in pin code four seven four three one zero
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): are there any medical stores located in pin code four seven four three one zero
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): are there any medical stores located in pin code four seven four three one zero
+hyp_medium       _check = Partially correct  (wer_true=11.11, was 11.11)
+  hyp_medium (norm): are there any medical stores located in pin code four hundred and seventy four thousand three hundred and ten
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> A six digit pincode spoken digit by digit. Large and Medium keep the digits and stay close.
+
+=== row 30  (281474976909239_f2867_chunk_1.wav) ===
+normalised_corrected_reference: eighty three billion three hundred and fifty four million seven hundred and fourteen thousand and forty
+reference_check   = Correct            (wer=0.00)
+  reference (norm): eighty three billion three hundred and fifty four million seven hundred and fourteen thousand and forty
+hyp_large        _check = Incorrect          (wer_true=62.50, was 62.5)
+  hyp_large (norm): eight hundred and thirty three five hundred and forty seven fourteen thousand and forty
+hyp_parakeet     _check = Incorrect          (wer_true=81.25, was 81.25)
+  hyp_parakeet (norm): eight double three five four seven one four zero four zero
+hyp_parakeet_ctc _check = Incorrect          (wer_true=81.25, was 81.25)
+  hyp_parakeet_ctc (norm): eight double three five four seven one four zero four zero
+hyp_qwen3        _check = Incorrect          (wer_true=81.25, was 81.25)
+  hyp_qwen3 (norm): eight double three five four seven one four zero four zero
+hyp_medium       _check = Incorrect          (wer_true=62.50, was 62.5)
+  hyp_medium (norm): eight hundred and thirty three five hundred and forty seven fourteen thousand and forty
+ref_recall = 1.00   error_type -> Number formatting
+reviewer_decision -> Genuine model error
+reviewer_notes -> An eleven digit phone number. Nobody matches: the digit readers lose to the spelled out number and Large and Medium split it with dashes.
+
+=== row 31  (281474976895569_f3183_chunk_3.wav) ===
+normalised_corrected_reference: twenty four july one thousand nine hundred and ninety seven
+reference_check   = Correct            (wer=0.00)
+  reference (norm): twenty four july one thousand nine hundred and ninety seven
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): twenty four july one thousand nine hundred and ninety seven
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): twenty four july nineteen ninety seven
+hyp_parakeet_ctc _check = Incorrect          (wer_true=60.00, was 60.0)
+  hyp_parakeet_ctc (norm): twenty fourth july nineteen ninety seven
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): twenty four july nineteen ninety seven
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): twenty four july one thousand nine hundred and ninety seven
+ref_recall = 1.00   error_type -> Number formatting
+reviewer_decision -> Genuine model error
+reviewer_notes -> Large and Medium keep 24 July 1997 as written. The other three spell the year out.
+
+=== row 32  (281474976896961_f902_chunk_2.wav) ===
+normalised_corrected_reference: aicte in the academic year two thousand and eighteen minus two thousand and nineteen
+reference_check   = Correct            (wer=0.00)
+  reference (norm): aicte in the academic year two thousand and eighteen minus two thousand and nineteen
+hyp_large        _check = Correct            (wer_true=7.14, was 7.69)
+  hyp_large (norm): aicte in the academic year two thousand and eighteen to two thousand and nineteen
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 46.15)
+  hyp_parakeet (norm): aicte in the academic year twenty eighteen to twenty nineteen
+hyp_parakeet_ctc _check = Incorrect          (wer_true=71.43, was 69.23)
+  hyp_parakeet_ctc (norm): a i cte in the academic year twenty eighteen to twenty nineteen
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 46.15)
+  hyp_qwen3 (norm): aicte in the academic year twenty eighteen to twenty nineteen
+hyp_medium       _check = Correct            (wer_true=7.14, was 7.69)
+  hyp_medium (norm): aicte in the academic year two thousand and eighteen to two thousand and nineteen
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> AICTE survives, but twenty eighteen to twenty nineteen does not match the spelled out years.
+
+=== row 33  (281474976888873_f2272_chunk_4.wav) ===
+normalised_corrected_reference: so starting with maghi chakrati on maghi chakrati which
+reference_check   = Correct            (wer=0.00)
+  reference (norm): so starting with maghi chakrati on maghi chakrati which
+hyp_large        _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_large (norm): okay so starting with magya sakrati on magya sakrati which
+hyp_parakeet     _check = Incorrect          (wer_true=44.44, was 44.44)
+  hyp_parakeet (norm): okay so starting with magi sakrati on maghi sakrati which
+hyp_parakeet_ctc _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_parakeet_ctc (norm): okay so starting with magi saakrati on magi saakrati which
+hyp_qwen3        _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_qwen3 (norm): okay so starting with magisakrati on magisakrati ah which
+hyp_medium       _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_medium (norm): okay so starting with magesakrati on magesakrati which
+ref_recall = 1.00   error_type -> Indian-language named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Maghi Chakrati is a Nepali festival and every model writes Magi or Magya Sakrati. All five also open with okay, which the reference leaves out.
+
+=== row 34  (281474976896761_f1924_chunk_6.wav) ===
+normalised_corrected_reference: on the other hand very mediocre choreography won
+reference_check   = Partially correct  (wer=0.12)
+  reference (norm): but on the other hand very mediocre choreography won
+hyp_large        _check = Partially correct  (wer_true=25.00, was 33.33)
+  hyp_large (norm): on the other hand a very mediocre choreography
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 55.56)
+  hyp_parakeet (norm): on the other hand uh uh very mediocre choreography uh one
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 55.56)
+  hyp_parakeet_ctc (norm): on the other hand uh a very mediocre choreography uh one
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 55.56)
+  hyp_qwen3 (norm): on the other hand ah ah very mediocre choreography ah one
+hyp_medium       _check = Partially correct  (wer_true=12.50, was 22.22)
+  hyp_medium (norm): on the other hand very mediocre choreography
+ref_recall = 1.00   error_type -> Reference error, Disfluency
+reviewer_decision -> Genuine model error
+reviewer_notes -> The reference opens with But, which is not in the clip, and three models add the speaker's fillers.
+
+=== row 35  (281474976887644_f479_chunk_0.wav) ===
+normalised_corrected_reference: are there any esic centres located in pincode five hundred and sixty five thousand two hundred and fifty nine
+reference_check   = Correct            (wer=0.00)
+  reference (norm): are there any esic centres located in pincode five hundred and sixty five thousand two hundred and fifty nine
+hyp_large        _check = Partially correct  (wer_true=15.79, was 15.79)
+  hyp_large (norm): are there any esic centers located in pin code five hundred and sixty five thousand two hundred and fifty nine
+hyp_parakeet     _check = Incorrect          (wer_true=52.63, was 52.63)
+  hyp_parakeet (norm): are there any esic centers located in pin code five six five two five nine
+hyp_parakeet_ctc _check = Incorrect          (wer_true=68.42, was 68.42)
+  hyp_parakeet_ctc (norm): are there any e s i c centres located in pin code five six five two five nine
+hyp_qwen3        _check = Incorrect          (wer_true=52.63, was 52.63)
+  hyp_qwen3 (norm): are there any esic centers located in pin code five six five two five nine
+hyp_medium       _check = Partially correct  (wer_true=15.79, was 15.79)
+  hyp_medium (norm): are there any esic centers located in pin code five hundred and sixty five thousand two hundred and fifty nine
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> ESIC survives, the six digit pincode does not. Large and Medium keep the digits.
+
+=== row 36  (281474976888917_f3178_chunk_7.wav) ===
+normalised_corrected_reference: narai is a caste of nepali community
+reference_check   = Partially correct  (wer=0.14)
+  reference (norm): rai is a caste of nepali community
+hyp_large        _check = Correct            (wer_true=0.00, was 14.29)
+  hyp_large (norm): narai is a caste of nepali community
+hyp_parakeet     _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_parakeet (norm): rise caste of nepali community
+hyp_parakeet_ctc _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_parakeet_ctc (norm): n raai is a m caste of nepali community uh like
+hyp_qwen3        _check = Incorrect          (wer_true=57.14, was 57.14)
+  hyp_qwen3 (norm): the rise cast of nepali community
+hyp_medium       _check = Partially correct  (wer_true=14.29, was 14.29)
+  hyp_medium (norm): narayi is a caste of nepali community
+ref_recall = 0.86   error_type -> Reference error, Indian-language named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> The reference writes Rai, the reviewer hears Narai. Large matches the corrected version exactly.
+
+=== row 37  (281474976899934_f960_chunk_0.wav) ===
+normalised_corrected_reference: filter vaccination centres for corbevax vaccine in district warangal
+reference_check   = Correct            (wer=0.00)
+  reference (norm): filter vaccination centres for corbevax vaccine in district warangal
+hyp_large        _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_large (norm): filter vaccination centers for corv e vax vaccine in district varangal
+hyp_parakeet     _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_parakeet (norm): filter vaccination centers for corp v wax vaccine in district varangal
+hyp_parakeet_ctc _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_parakeet_ctc (norm): filter vaccination centers for corp v vax vaccine in district barangal
+hyp_qwen3        _check = Partially correct  (wer_true=22.22, was 22.22)
+  hyp_qwen3 (norm): filter vaccination centres for corbivax vaccine in district varangal
+hyp_medium       _check = Partially correct  (wer_true=22.22, was 22.22)
+  hyp_medium (norm): filter vaccination centers for corvivax vaccine in district warangal
+ref_recall = 1.00   error_type -> Brand or product name, Indian-language named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Corbevax becomes corv-e-vax or corp v wax, and Warangal becomes Varangal in three models.
+
+=== row 38  (281474976925467_f2918_chunk_0.wav) ===
+normalised_corrected_reference: my pran number is four billion eight hundred and nineteen million one hundred and twenty two thousand two hundred and thirty nine
+reference_check   = Correct            (wer=0.00)
+  reference (norm): my pran number is four billion eight hundred and nineteen million one hundred and twenty two thousand two hundred and thirty nine
+hyp_large        _check = Partially correct  (wer_true=31.82, was 31.82)
+  hyp_large (norm): my pran number is four hundred and eighty one million nine hundred and twelve thousand two hundred and thirty nine
+hyp_parakeet     _check = Incorrect          (wer_true=59.09, was 59.09)
+  hyp_parakeet (norm): my pran number is four eight one nine one triple two three nine
+hyp_parakeet_ctc _check = Incorrect          (wer_true=72.73, was 72.73)
+  hyp_parakeet_ctc (norm): my p r a number is four eight one nine one triple two three nine
+hyp_qwen3        _check = Incorrect          (wer_true=77.27, was 77.27)
+  hyp_qwen3 (norm): my p r a n number is four eight one nine one triple two three nine
+hyp_medium       _check = Partially correct  (wer_true=31.82, was 31.82)
+  hyp_medium (norm): my pran number is four hundred and eighty one million nine hundred and twelve thousand two hundred and thirty nine
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> PRAN survives in three models. The ten digit number read aloud does not match the spelled out one.
+
+=== row 39  (281474976893642_f2096_chunk_2.wav) ===
+normalised_corrected_reference: colleges run by devaswom board that is actually from a hindu background
+reference_check   = Correct            (wer=0.00)
+  reference (norm): colleges run by devaswom board that is actually from a hindu background
+hyp_large        _check = Partially correct  (wer_true=33.33, was 33.33)
+  hyp_large (norm): colleges run by devasambodh that is actually a hindu from a hindu background
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): uh colleges run by devasan board that that is actually a hindu uh from a hindu background
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): colleges run by davison board that that is actually a hindu uh from hindu background
+hyp_qwen3        _check = Incorrect          (wer_true=41.67, was 41.67)
+  hyp_qwen3 (norm): colleges run by devi s board that that is actually a hindu from a hindu background
+hyp_medium       _check = Partially correct  (wer_true=33.33, was 33.33)
+  hyp_medium (norm): colleges run by devsang board that that is actually a hindu from a hindu background
+ref_recall = 1.00   error_type -> Indian-language named entity, Disfluency
+reviewer_decision -> Genuine model error
+reviewer_notes -> Devaswom board comes out as devasan or devi's board, and the speaker's that that repeat is not in the reference.
+
+=== row 40  (281474976889888_f469_chunk_0.wav) ===
+normalised_corrected_reference: find out esic centres located in area with pincode six hundred and ninety five thousand four hundred and fifty three
+reference_check   = Correct            (wer=0.00)
+  reference (norm): find out esic centres located in area with pincode six hundred and ninety five thousand four hundred and fifty three
+hyp_large        _check = Partially correct  (wer_true=15.00, was 15.0)
+  hyp_large (norm): find out esic centers located in area with pin code six hundred and ninety five thousand four hundred and fifty three
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): find out esic centers located in area with pin code six nine five four five three
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): find out esic centers located in area with pen code six nine five four five three
+hyp_qwen3        _check = Incorrect          (wer_true=70.00, was 70.0)
+  hyp_qwen3 (norm): find out e s i c centers located in area with pin code six nine five four five three
+hyp_medium       _check = Partially correct  (wer_true=15.00, was 15.0)
+  hyp_medium (norm): find out esic centers located in area with pin code six hundred and ninety five thousand four hundred and fifty three
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> Same shape as the other pincode rows. Large and Medium keep the digits and stay close.
+
+=== row 41  (281474976901605_f2022_chunk_8.wav) ===
+normalised_corrected_reference: started using the multi like multimedia use of multimedia
+reference_check   = Incorrect          (wer=0.67)
+  reference (norm): like now they have started using the multimedia use of multimedia
+hyp_large        _check = Correct            (wer_true=0.00, was 54.55)
+  hyp_large (norm): started using the multi like multimedia use of multimedia
+hyp_parakeet     _check = Partially correct  (wer_true=22.22, was 63.64)
+  hyp_parakeet (norm): started using the multi it uh like multimedia use of multimedia
+hyp_parakeet_ctc _check = Correct            (wer_true=0.00, was 54.55)
+  hyp_parakeet_ctc (norm): started using the multi like multimedia use of multimedia
+hyp_qwen3        _check = Correct            (wer_true=0.00, was 54.55)
+  hyp_qwen3 (norm): started using the multi like multimedia use of multimedia
+hyp_medium       _check = Correct            (wer_true=0.00, was 54.55)
+  hyp_medium (norm): started using the multi like multimedia use of multimedia
+ref_recall = 0.88   error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> The reference starts earlier than the audio. Four models match the corrected transcript exactly.
+
+=== row 42  (281474976888938_f2386_chunk_2.wav) ===
+normalised_corrected_reference: seventy six billion eight hundred and ninety nine million two hundred and thirty three thousand seven hundred and fifty three upi
+reference_check   = Correct            (wer=0.00)
+  reference (norm): seventy six billion eight hundred and ninety nine million two hundred and thirty three thousand seven hundred and fifty three upi
+hyp_large        _check = Partially correct  (wer_true=19.05, was 19.05)
+  hyp_large (norm): seventy six billion eight hundred and ninety nine million two hundred and thirty three thousand seven hundred and fifty three at the rate of upi
+hyp_parakeet     _check = Incorrect          (wer_true=76.19, was 76.19)
+  hyp_parakeet (norm): seven six eight nine nine two three three seven five three at the rate of upi
+hyp_parakeet_ctc _check = Incorrect          (wer_true=80.95, was 80.95)
+  hyp_parakeet_ctc (norm): seven six eight nine nine two three three seven five three at the rate of u p i
+hyp_qwen3        _check = Incorrect          (wer_true=76.19, was 76.19)
+  hyp_qwen3 (norm): seven six eight nine nine two three three seven five three at the rate of upi
+hyp_medium       _check = Partially correct  (wer_true=19.05, was 19.05)
+  hyp_medium (norm): seventy six billion eight hundred and ninety nine million two hundred and thirty three thousand seven hundred and fifty three at the rate of upi
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> An eleven digit UPI handle. Every model writes at the rate of for the @ sign.
+
+=== row 43  (281474976888936_f2388_chunk_0.wav) ===
+normalised_corrected_reference: check if i recieved seven hundred rupees from ninety three billion four hundred and eighty six million fifty one thousand and fifty eight
+reference_check   = Correct            (wer=0.00)
+  reference (norm): check if i recieved seven hundred rupees from ninety three billion four hundred and eighty six million fifty one thousand and fifty eight
+hyp_large        _check = Partially correct  (wer_true=39.13, was 39.13)
+  hyp_large (norm): check if i received seven hundred rupees from nine hundred and thirty four eight hundred and sixty fifty one thousand and fifty eight
+hyp_parakeet     _check = Incorrect          (wer_true=47.83, was 47.83)
+  hyp_parakeet (norm): check if i received seven hundred rupees from nine three four eight six zero five one zero five eight
+hyp_parakeet_ctc _check = Incorrect          (wer_true=47.83, was 47.83)
+  hyp_parakeet_ctc (norm): check if i received seven hundred rupees from nine three four eight six zero five one zero five eight
+hyp_qwen3        _check = Incorrect          (wer_true=47.83, was 47.83)
+  hyp_qwen3 (norm): check if i received seven hundred rupees from nine three four eight six zero five one zero five eight
+hyp_medium       _check = Partially correct  (wer_true=39.13, was 39.13)
+  hyp_medium (norm): check if i received seven hundred rupees from nine hundred and thirty four eight hundred and sixty fifty one thousand and fifty eight
+ref_recall = 1.00   error_type -> Number formatting
+reviewer_decision -> Genuine model error
+reviewer_notes -> An eleven digit number again. The three that read it out lose about half the words.
+
+=== row 44  (281474976884470_f3243_chunk_1.wav) ===
+normalised_corrected_reference: it s idea wise that is the wisdom of the overself wisdom of the overself by paul branton
+reference_check   = Correct            (wer=0.00)
+  reference (norm): it s idea wise that is the wisdom of the overself wisdom of the overself by paul branton
+hyp_large        _check = Incorrect          (wer_true=44.44, was 44.44)
+  hyp_large (norm): idea wise that is a wisdom of the our self wisdom of the our self by paul brunton
+hyp_parakeet     _check = Incorrect          (wer_true=44.44, was 44.44)
+  hyp_parakeet (norm): idea wise that is a wisdom of the our self wisdom of the our self by paul brenton
+hyp_parakeet_ctc _check = Incorrect          (wer_true=44.44, was 44.44)
+  hyp_parakeet_ctc (norm): idea wise that is a wisdom of the over self wisdom of the over self by paul brangon
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): idea wise there is a wisdom of the over self wisdom of the over self by paul brunton
+hyp_medium       _check = Partially correct  (wer_true=27.78, was 27.78)
+  hyp_medium (norm): idea wise that is the wisdom of the ourself wisdom of the ourself by paul brunton
+ref_recall = 1.00   error_type -> Disfluency, English name or rare word
+reviewer_decision -> Genuine model error
+reviewer_notes -> The speaker repeats wisdom of the overself. Four models hear overself as our self and write the author as Brunton.
+
+=== row 45  (281474976888917_f3178_chunk_21.wav) ===
+normalised_corrected_reference: and ornaments like dhaka sari jaubandi cholo pharia dhungri pote sribandi and so on
+reference_check   = Correct            (wer=0.00)
+  reference (norm): and ornaments like dhaka sari jaubandi cholo pharia dhungri pote sribandi and so on
+hyp_large        _check = Incorrect          (wer_true=57.14, was 57.14)
+  hyp_large (norm): and ornaments like dhaka saree chau bandi cholo fariya dhuri pote siru bandi and so on and
+hyp_parakeet     _check = Incorrect          (wer_true=57.14, was 57.14)
+  hyp_parakeet (norm): and ornaments like dhakasari jobandi cholu faria dhuri poti sirubandhi and so on
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): and ornaments like dhakasari jobandi cholo fara dhoripote sirbandi and so on
+hyp_qwen3        _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_qwen3 (norm): and ornaments like dhaka sari jawbandi cholo phariya dhuri poti sirbandi and so on and
+hyp_medium       _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_medium (norm): and ornaments like dhaka sari jau bandi cholo fariya dhuri pote sir bandi and so on
+ref_recall = 1.00   error_type -> Indian-language named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> A list of Nepali garment names. No model gets more than two of them right.
+
+=== row 46  (281474976885081_f1482_chunk_0.wav) ===
+normalised_corrected_reference: use my uan number seven hundred and twenty one billion four hundred and seventy eight million two hundred and eighty eight thousand eight hundred and thirty three to check my epfo passbook balance
+reference_check   = Correct            (wer=0.00)
+  reference (norm): use my uan number seven hundred and twenty one billion four hundred and seventy eight million two hundred and eighty eight thousand eight hundred and thirty three to check my epfo passbook balance
+hyp_large        _check = Partially correct  (wer_true=30.30, was 30.3)
+  hyp_large (norm): use my uan number seventy two billion one hundred and forty seven million eight hundred and twenty eight thousand eight hundred and thirty three to check my epfo passbook balance
+hyp_parakeet     _check = Incorrect          (wer_true=48.48, was 48.48)
+  hyp_parakeet (norm): use my un number seven two one four seven eight two eight eight double three to check my epfo passbook balance
+hyp_parakeet_ctc _check = Incorrect          (wer_true=60.61, was 60.61)
+  hyp_parakeet_ctc (norm): use my u number seven two one four seven eight two triple eight double three to check my epf for passook balance
+hyp_qwen3        _check = Incorrect          (wer_true=48.48, was 48.48)
+  hyp_qwen3 (norm): use my uan number seven two one four seven eight two triple eight double three to check my epfo passbook balance
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): use my uan number seven hundred and twenty one billion four hundred and seventy eight million two hundred and eighty eight thousand eight hundred and thirty three to check my epfo passbook balance
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> Medium reproduces the twelve digit UAN exactly. The three that read it out do not.
+
+=== row 47  (281474976934169_f3288_chunk_0.wav) ===
+normalised_corrected_reference: kamrup metro nalbari nagaon sonitpur lakhimpur
+reference_check   = Correct            (wer=0.00)
+  reference (norm): kamrup metro nalbari nagaon sonitpur lakhimpur
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): kamrook metro nalwari nagaon sunitpur lakhimpur
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): kamroop metro nalbari nagaon sunitpur lockhamp
+hyp_parakeet_ctc _check = Incorrect          (wer_true=116.67, was 116.67)
+  hyp_parakeet_ctc (norm): cambrobe met through nulberry norugam sunitpur luckingpur
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): kamrup metro nolbari nogao sunidpur lakhimpur
+hyp_medium       _check = Incorrect          (wer_true=83.33, was 83.33)
+  hyp_medium (norm): kamroop metro nallabhari nagang sunidpur lokhandpur
+ref_recall = 1.00   error_type -> Indian-language named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Assamese district names. Parakeet-CTC turns Kamrup metro into cambrobe met through.
+
+=== row 48  (281474976884044_f1919_chunk_21.wav) ===
+normalised_corrected_reference: which is a late night show and the most interesting part of the entire show is the monologue
+reference_check   = Partially correct  (wer=0.33)
+  reference (norm): and the most interesting part of the entire show is the monologue
+hyp_large        _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_large (norm): which is a late night show and the most interesting part of the entire show is the monologue
+hyp_parakeet     _check = Partially correct  (wer_true=16.67, was 75.0)
+  hyp_parakeet (norm): which is a late night show uh and the most uh interesting part of the entire show is uh the monologue
+hyp_parakeet_ctc _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_parakeet_ctc (norm): which is a late night show and the most interesting part of the entire show is the monologue
+hyp_qwen3        _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_qwen3 (norm): which is a late night show and the most interesting part of the entire show is the monologue
+hyp_medium       _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_medium (norm): which is a late night show and the most interesting part of the entire show is the monologue
+ref_recall = 0.71   error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> The reference drops the opening clause. Four models transcribe the clip exactly.
+
+=== row 49  (281474976888936_f1603_chunk_0.wav) ===
+normalised_corrected_reference: check if i received seven hundred rupees from ninety three billion four hundred and eighty six million fifty one thousand and fifty eight upi
+reference_check   = Correct            (wer=0.00)
+  reference (norm): check if i received seven hundred rupees from ninety three billion four hundred and eighty six million fifty one thousand and fifty eight upi
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): check if i received seven hundred rupees from nine hundred and thirty four eight hundred and sixty fifty one thousand and fifty eight at the rate of upi
+hyp_parakeet     _check = Incorrect          (wer_true=58.33, was 58.33)
+  hyp_parakeet (norm): check if i received seven hundred rupees from nine three four eight six zero five one zero five eight at the rate of upi
+hyp_parakeet_ctc _check = Incorrect          (wer_true=70.83, was 70.83)
+  hyp_parakeet_ctc (norm): check if i received seven hundred rupees from nine three four eight six zero five one zero five eight at the rate of u p i
+hyp_qwen3        _check = Incorrect          (wer_true=58.33, was 58.33)
+  hyp_qwen3 (norm): check if i received seven hundred rupees from nine three four eight six zero five one zero five eight at the rate of upi
+hyp_medium       _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_medium (norm): check if i received seven hundred rupees from nine hundred and thirty four eight hundred and sixty fifty one thousand and fifty eight at the rate of upi
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> Same number as row 43 with a UPI handle added, and the same split between digit writers and digit readers.
+
+=== row 50  (281474976884450_f325_chunk_0.wav) ===
+normalised_corrected_reference: i seem to have accidentally blocked an account four quadrillion four hundred and forty two trillion four hundred and forty five billion three hundred and fifty six million one hundred and eighty three thousand two hundred and twenty two so please unblock it
+reference_check   = Correct            (wer=0.00)
+  reference (norm): i seem to have accidentally blocked an account four quadrillion four hundred and forty two trillion four hundred and forty five billion three hundred and fifty six million one hundred and eighty three thousand two hundred and twenty two so please unblock it
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): i seem to have accidentally blocked an account four quadrillion four hundred and forty two trillion four hundred and forty five billion three hundred and fifty six million one hundred and eighty three thousand two hundred and twenty two so please unblock it
+hyp_parakeet     _check = Incorrect          (wer_true=46.51, was 46.51)
+  hyp_parakeet (norm): i seem to have accidentally blocked an account four four four two four four five three five six one eight three two two two so please unblock it
+hyp_parakeet_ctc _check = Incorrect          (wer_true=46.51, was 46.51)
+  hyp_parakeet_ctc (norm): i seem to have accidentally blocked an account four four four two four four five three five six one eight three two two two so please unblock it
+hyp_qwen3        _check = Incorrect          (wer_true=46.51, was 46.51)
+  hyp_qwen3 (norm): i seem to have accidentally blocked an account four four four two four four five three five six one eight three two two two so please unblock it
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): i seem to have accidentally blocked an account four quadrillion four hundred and forty two trillion four hundred and forty five billion three hundred and fifty six million one hundred and eighty three thousand two hundred and twenty two so please unblock it
+ref_recall = 1.00   error_type -> Number formatting
+reviewer_decision -> Genuine model error
+reviewer_notes -> A sixteen digit account number. Large and Medium keep the digits and score zero, the other three lose 47 percent.
+
+=== row 51  (281474976894171_f2343_chunk_0.wav) ===
+normalised_corrected_reference: for registered application id mk201839611100749221
+reference_check   = Correct            (wer=0.00)
+  reference (norm): for registered application id mk201839611100749221
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): for registered application id mk201839611100749221
+hyp_parakeet     _check = Incorrect          (wer_true=380.00, was 380.0)
+  hyp_parakeet (norm): for registered application id mk two zero one eight three nine six one one one zero zero seven four nine two two one
+hyp_parakeet_ctc _check = Incorrect          (wer_true=440.00, was 440.0)
+  hyp_parakeet_ctc (norm): for registered application i d m k two zero one eight three nine six one one one zero zero seven four nine two two one
+hyp_qwen3        _check = Incorrect          (wer_true=380.00, was 380.0)
+  hyp_qwen3 (norm): for registered application id mk two zero one eight three nine six one one one zero zero seven four nine two two one
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): for registered application id mk201839611100749221
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> A twenty digit application ID. Reading it aloud on a five word reference is what pushes WER past 380 percent.
+
+=== row 52  (281474976890932_f1939_chunk_0.wav) ===
+normalised_corrected_reference: one hundred and twenty three five thousand six hundred seven thousand seven hundred and fourteen three thousand eight hundred two thousand two hundred and sixty two
+reference_check   = Correct            (wer=0.00)
+  reference (norm): one hundred and twenty three five thousand six hundred seven thousand seven hundred and fourteen three thousand eight hundred two thousand two hundred and sixty two
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): one hundred and twenty three five thousand six hundred seven thousand seven hundred and fourteen three thousand eight hundred two thousand two hundred and sixty two
+hyp_parakeet     _check = Incorrect          (wer_true=65.38, was 65.38)
+  hyp_parakeet (norm): one two three five six zero zero seven seven one four three eight zero zero two two six two
+hyp_parakeet_ctc _check = Incorrect          (wer_true=65.38, was 65.38)
+  hyp_parakeet_ctc (norm): one two three five six zero zero seven seven one four three eight zero zero two two six two
+hyp_qwen3        _check = Incorrect          (wer_true=65.38, was 65.38)
+  hyp_qwen3 (norm): one two three five six zero zero seven seven one four three eight zero zero two two six two
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): one hundred and twenty three five thousand six hundred seven thousand seven hundred and fourteen three thousand eight hundred two thousand two hundred and sixty two
+ref_recall = 1.00   error_type -> Number formatting
+reviewer_decision -> Genuine model error
+reviewer_notes -> A card number in four digit groups. Large and Medium keep it as digits and match.
+
+=== row 53  (281474976894786_f2052_chunk_0.wav) ===
+normalised_corrected_reference: upper dibang valley karbi anglong raipur jalpaiguri kadapa
+reference_check   = Partially correct  (wer=0.12)
+  reference (norm): upper dibang valley karbi anglong raipur jalpaiguri kadappa
+hyp_large        _check = Partially correct  (wer_true=37.50, was 50.0)
+  hyp_large (norm): upper diwang valley karvi anglong raipur jalpaigudi kadapa
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 62.5)
+  hyp_parakeet (norm): upper devang valley karvi anglong raipur jalpai guri kadapa
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 62.5)
+  hyp_parakeet_ctc (norm): upper dibang valley karvi anglong ripur jalpi guri kadapa
+hyp_qwen3        _check = Partially correct  (wer_true=25.00, was 37.5)
+  hyp_qwen3 (norm): upper divang valley karvi anglong raipur jalpaiguri kadapa
+hyp_medium       _check = Partially correct  (wer_true=37.50, was 50.0)
+  hyp_medium (norm): upper deewang valley karwi anglong raipur jalpaigudi kadapa
+ref_recall = 0.88   error_type -> Reference error, Indian-language named entity
+reviewer_decision -> Reference error
+reviewer_notes -> The reference writes Kadappa, the speaker says Kadapa. The rest is a list of Indian place names.
+
+=== row 54  (281474976899478_f1090_chunk_0.wav) ===
+normalised_corrected_reference: what is the total holding in my apy account with pran number four hundred and forty one billion one hundred and sixty two million one hundred and seventy nine thousand eight hundred and seventy one
+reference_check   = Correct            (wer=0.00)
+  reference (norm): what is the total holding in my apy account with pran number four hundred and forty one billion one hundred and sixty two million one hundred and seventy nine thousand eight hundred and seventy one
+hyp_large        _check = Correct            (wer_true=2.86, was 2.86)
+  hyp_large (norm): what is the total holding in my apy account with the pran number four hundred and forty one billion one hundred and sixty two million one hundred and seventy nine thousand eight hundred and seventy one
+hyp_parakeet     _check = Incorrect          (wer_true=62.86, was 62.86)
+  hyp_parakeet (norm): what is the total holding in my a p y account with the p r a n number four four one one six two one seven nine eight seven one
+hyp_parakeet_ctc _check = Incorrect          (wer_true=62.86, was 62.86)
+  hyp_parakeet_ctc (norm): what is the total holding in my a p y account with the p r a n number four four one one six two one seven nine eight seven one
+hyp_qwen3        _check = Incorrect          (wer_true=62.86, was 62.86)
+  hyp_qwen3 (norm): what is the total holding in my a p y account with the p r a n number four four one one six two one seven nine eight seven one
+hyp_medium       _check = Correct            (wer_true=2.86, was 2.86)
+  hyp_medium (norm): what is the total holding in my apy account with the pran number four hundred and forty one billion one hundred and sixty two million one hundred and seventy nine thousand eight hundred and seventy one
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> APY and PRAN survive. The twelve digit number read aloud does not.
+
+=== row 55  (281474976888913_f3176_chunk_3.wav) ===
+normalised_corrected_reference: dakshineswar kali mandir or kali temple azadara palace radha vinod temple
+reference_check   = Partially correct  (wer=0.27)
+  reference (norm): dakshineswar kali temple azadara palace radha vinod temple
+hyp_large        _check = Partially correct  (wer_true=36.36, was 12.5)
+  hyp_large (norm): dakshineswar kali temple hazardara palace radha vinod temple
+hyp_parakeet     _check = Partially correct  (wer_true=27.27, was 75.0)
+  hyp_parakeet (norm): mm dakshineswar kali mandir or kali temple azadora palace radha binod temple
+hyp_parakeet_ctc _check = Incorrect          (wer_true=81.82, was 150.0)
+  hyp_parakeet_ctc (norm): mm doksine is for kali mandir or kali temple ajad dora palace rather be no temple
+hyp_qwen3        _check = Incorrect          (wer_true=281.82, was 387.5)
+  hyp_qwen3 (norm): दक ष ण ओर क ल म द र और क ल ट म पल आज र द व र प ल स र ध ब न द ट म पल
+hyp_medium       _check = Incorrect          (wer_true=45.45, was 25.0)
+  hyp_medium (norm): dakshineshwar kali temple hazardora palace radha vinod temple
+ref_recall = 0.78   error_type -> Reference error, Hindi named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> The reference drops Kali Mandir or. Qwen3 answers in Devanagari.
+
+=== row 56  (281474976888917_f3178_chunk_2.wav) ===
+normalised_corrected_reference: are maghe sagrati khepa sung losar sakewa barahimi jung sakadawa chaite dussai
+reference_check   = Partially correct  (wer=0.25)
+  reference (norm): are maghe sagrati khepa sung losar sa ke wa barahimi jung sakadawa chaite dussai
+hyp_large        _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_large (norm): 倍 i thank the authorities revelation
+hyp_parakeet     _check = Incorrect          (wer_true=83.33, was 78.57)
+  hyp_parakeet (norm): are mmage sograti kepasung losal sake wa mm barahimizung sakadawa choite dozo
+hyp_parakeet_ctc _check = Incorrect          (wer_true=91.67, was 92.86)
+  hyp_parakeet_ctc (norm): magi sokari keppaung losal saiawa m bara himizong sakadawa joyi do
+hyp_qwen3        _check = Incorrect          (wer_true=91.67, was 100.0)
+  hyp_qwen3 (norm): al magisograte kipasong lossal sakewa barahimisong sakadawa choice daw sa
+hyp_medium       _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_medium (norm): thank you
+ref_recall = 0.92   error_type -> Indian-language named entity, Reference error
+reviewer_decision -> Genuine model error
+reviewer_notes -> A list of Nepali festival names. Large and Medium give up and return one unrelated line each.
+
+=== row 57  (281474976887698_f2175_chunk_2.wav) ===
+normalised_corrected_reference: this book i keep coming back to this book because first it is an experimental novel this type of novels are not usually written in gujarati and second it is written by madurai my favorite gujarati author
+reference_check   = Partially correct  (wer=0.30)
+  reference (norm): this book i keep coming back to this book because first it is an experimental novel this type of novels are not usually written in gujarati
+hyp_large        _check = Correct            (wer_true=0.00, was 42.31)
+  hyp_large (norm): this book i keep coming back to this book because first it is an experimental novel this type of novels are not usually written in gujarati and second it is written by madurai my favorite gujarati author
+hyp_parakeet     _check = Correct            (wer_true=2.70, was 42.31)
+  hyp_parakeet (norm): this book i keep coming back to this book because first it is an experimental novel this type of novels are not usually written in gujarati and second it is written by madhurai my favorite gujarati author
+hyp_parakeet_ctc _check = Correct            (wer_true=5.41, was 42.31)
+  hyp_parakeet_ctc (norm): this book i keep coming back to this book because first it is an experimental novel this type of novels are not usually written in gujarati and second it is written by madhurai my favourite gujarati author
+hyp_qwen3        _check = Correct            (wer_true=2.70, was 42.31)
+  hyp_qwen3 (norm): this book i keep coming back to this book because first it is an experimental novel this type of novels are not usually written in gujarati and second it is written by madhurai my favorite gujarati author
+hyp_medium       _check = Correct            (wer_true=0.00, was 42.31)
+  hyp_medium (norm): this book i keep coming back to this book because first it is an experimental novel this type of novels are not usually written in gujarati and second it is written by madurai my favorite gujarati author
+ref_recall = 0.77   error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> The reference stops halfway through the clip. All five models transcribe the whole thing almost exactly.
+
+=== row 58  (281474976893846_f3264_chunk_6.wav) ===
+normalised_corrected_reference: to yeah digital influence yeah there is a lot of digital influence in the field of art like
+reference_check   = Partially correct  (wer=0.33)
+  reference (norm): there is a lot of digital influence in the field of art
+hyp_large        _check = Correct            (wer_true=5.56, was 41.67)
+  hyp_large (norm): to digital influence yeah there is a lot of digital influence in the field of art like
+hyp_parakeet     _check = Correct            (wer_true=5.56, was 41.67)
+  hyp_parakeet (norm): to digital influence yeah there is a lot of digital influence in the field of art like
+hyp_parakeet_ctc _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_parakeet_ctc (norm): to yeah digital influence yeah there is a lot of digital influence in the field of art like
+hyp_qwen3        _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_qwen3 (norm): to yeah digital influence yeah there is a lot of digital influence in the field of art like
+hyp_medium       _check = Partially correct  (wer_true=11.11, was 50.0)
+  hyp_medium (norm): and to digital influence yeah there is a lot of digital influence in the field of art like
+ref_recall = 0.79   error_type -> Reference error, Disfluency
+reviewer_decision -> Reference error
+reviewer_notes -> The reference drops the speaker's false start and the trailing like. Four models match the audio.
+
+=== row 59  (281474976888944_f1604_chunk_0.wav) ===
+normalised_corrected_reference: can you list all the submitted fresh scholarship applications in the academic year two thousand and nineteen minus two thousand and twenty on nsp for phone number sixty one billion five hundred and eighty nine million nine hundred and ninety thousand one hundred and eighty three
+reference_check   = Correct            (wer=0.00)
+  reference (norm): can you list all the submitted fresh scholarship applications in the academic year two thousand and nineteen minus two thousand and twenty on nsp for phone number sixty one billion five hundred and eighty nine million nine hundred and ninety thousand one hundred and eighty three
+hyp_large        _check = Partially correct  (wer_true=19.57, was 17.78)
+  hyp_large (norm): can you list all the submitted fresh scholarship applications in the academic year two thousand and nineteen two thousand and twenty on nsp for phone number six thousand one hundred and fifty eight nine hundred and ninety nine one hundred and eighty three
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 48.89)
+  hyp_parakeet (norm): can you list all the submitted fresh scholarship applications in the academic year two zero one nine two zero two zero on n s p for phone number six one five eight nine nine nine zero one eight three
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 48.89)
+  hyp_parakeet_ctc (norm): can you list all the submitted fresh scholarship applications in the academic year two zero one nine two zero two zero on n s p for phone number six one five eight nine nine nine zero one eight three
+hyp_qwen3        _check = Incorrect          (wer_true=54.35, was 53.33)
+  hyp_qwen3 (norm): can you list all the submitted fresh scholarship applications in the academy here two zero one nine two zero two zero on n s p for phone number six one five eight nine nine nine zero one eight three
+hyp_medium       _check = Partially correct  (wer_true=19.57, was 17.78)
+  hyp_medium (norm): can you list all the submitted fresh scholarship applications in the academic year two thousand and nineteen two thousand and twenty on nsp for phone number six million one hundred and fifty eight thousand nine hundred and ninety nine one hundred and eighty three
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> A year range and an eleven digit phone number in one clip. Large and Medium keep both as digits.
+
+=== row 60  (281474976884613_f167_chunk_0.wav) ===
+normalised_corrected_reference: can you list all the submitted renewal scholarship applications on nsp of user with application id nz2022211011104111034911 and date of birth seventeen seven two thousand and eighteen
+reference_check   = Correct            (wer=0.00)
+  reference (norm): can you list all the submitted renewal scholarship applications on nsp of user with application id nz2022211011104111034911 and date of birth seventeen seven two thousand and eighteen
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): can you list all the submitted renewal scholarship applications on nsp of user with application id nz2022211011104111034911 and date of birth seventeen seven two thousand and eighteen
+hyp_parakeet     _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet (norm): can you list all the submitted renewal scholarship applications on nsp of user with application id nz two zero two two two one one zero one one one zero four one one one zero three four nine one one and date of birth seventeen seventeen twenty eighteen
+hyp_parakeet_ctc _check = Incorrect          (wer_true=111.11, was 111.11)
+  hyp_parakeet_ctc (norm): can you list all the submitted renewal scholarship applications on ns p of user with application i d yz z two zero two two two one one zero one one one zero four one one one zero three four nine one one and date of birth seventeen sevven two thousand eighteen
+hyp_qwen3        _check = Incorrect          (wer_true=92.59, was 92.59)
+  hyp_qwen3 (norm): can you list all the submitted renewal scholarship applications on nsp of user with application id n z two zero two two two one one zero one one one zero four one one one zero three four nine one one and date of birth seventeen seven two thousand eighteen
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): can you list all the submitted renewal scholarship applications on nsp of user with application id nz2022211011104111034911 and date of birth seventeen seven two thousand and eighteen
+ref_recall = 1.00   error_type -> Number formatting, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> A twenty four character application ID plus a date. Only Large reproduces it exactly.
+
+=== error_type the reviewer typed, and the final label ===
+row 1: reviewer typed "Incomplete/Truncated Audio", final label is "Truncated audio, Short utterance"
+row 2: reviewer typed "Incomplete/Truncated Audio", final label is "Truncated audio, Short utterance"
+row 9: reviewer typed "Incomplete/Truncated Audio", final label is "Truncated audio, Brand or product name"
+row 11: reviewer typed "Accent-induced word substitution", final label is "Accent / pronunciation, Short utterance"
+row 23: reviewer typed "The audio is too slow, so the correct reference cannot be determined.", final label is "Indian-language named entity"

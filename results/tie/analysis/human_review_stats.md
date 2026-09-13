@@ -16,3 +16,17 @@ Wilcoxon signed-rank, two-sided, normal approximation with tie correction.
 | parakeet_ctc | 50.3 | 1.2e-09 | 5.5e-09 |
 | qwen3 | 50.7 | 1.2e-09 | 5.5e-09 |
 | medium | 42.2 | 3.5e-08 | 3.5e-08 |
+
+| Reviewer verdict | Clips |
+|---|:---:|
+| Reference error | 46 |
+| Genuine model error | 2 |
+| (none) | 1 |
+
+| Error label | Clips |
+|---|:---:|
+| Reference error | 42 |
+| Technical vocabulary | 13 |
+| Disfluency | 7 |
+| Misalignment | 5 |
+| Number formatting | 1 |

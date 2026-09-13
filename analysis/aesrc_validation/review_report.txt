@@ -1,0 +1,514 @@
+=== row 1  (AESRC2020-INDIAN-ACCENT-G03556-G03556S2365) ===
+normalised_corrected_reference: skip chitrahaar
+reference_check   = Correct            (wer=0.00)
+  reference (norm): skip chitrahaar
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): skip chitrahar
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): skip chitrahar
+hyp_parakeet_ctc _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet_ctc (norm): cip chitrahar
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): skip chitrahar
+hyp_medium       _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_medium (norm): skip chitrahar
+ref_recall = 1.00   error_type -> Hindi named entity, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> Chitrahaar is a Hindi show name. Every model writes chitrahar with one a, so the only error is the spelling.
+
+=== row 2  (AESRC2020-INDIAN-ACCENT-G13083-G13083S2364) ===
+normalised_corrected_reference: favourite karuthamuthu
+reference_check   = Correct            (wer=0.00)
+  reference (norm): favourite karuthamuthu
+hyp_large        _check = Incorrect          (wer_true=200.00, was 200.0)
+  hyp_large (norm): favorite karu tamil tu
+hyp_parakeet     _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet (norm): favourite karuta myutho
+hyp_parakeet_ctc _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet_ctc (norm): favorite karutamoto
+hyp_qwen3        _check = Incorrect          (wer_true=150.00, was 150.0)
+  hyp_qwen3 (norm): favorite karutha meethu
+hyp_medium       _check = Incorrect          (wer_true=150.00, was 150.0)
+  hyp_medium (norm): favorite karuta mithu
+ref_recall = 1.00   error_type -> Indian-language named entity, Spelling variant, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> Karuthamuthu is a Malayalam serial and no model gets it. Four models also write favorite instead of favourite.
+
+=== row 3  (AESRC2020-INDIAN-ACCENT-G13915-G13915S5400) ===
+normalised_corrected_reference: five fifty four am
+reference_check   = Correct            (wer=0.00)
+  reference (norm): five fifty four am
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): five point five four am
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): five hundred and fifty four am
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): five fifty four a m
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): five fifty four a m
+hyp_medium       _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_medium (norm): five fifty four a m
+ref_recall = 1.00   error_type -> Number formatting, Short utterance
+reviewer_decision -> Not a real error - Parakeet-CTC, Qwen3 and Medium only differ by writing am as a m; Large and Parakeet-TDT do misread the time
+reviewer_notes -> A clock time. Three models are right apart from writing am as a m. Large hears 5.54 and Parakeet-TDT hears five hundred and fifty four.
+
+=== row 4  (AESRC2020-INDIAN-ACCENT-G32335-G32335S2354) ===
+normalised_corrected_reference: where is one kamal hotel
+reference_check   = Partially correct  (wer=0.40)
+  reference (norm): where is vanakamal hotel
+hyp_large        _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_large (norm): where is one kamal hotel
+hyp_parakeet     _check = Partially correct  (wer_true=20.00, was 50.0)
+  hyp_parakeet (norm): where is one common hotel
+hyp_parakeet_ctc _check = Partially correct  (wer_true=20.00, was 50.0)
+  hyp_parakeet_ctc (norm): where is one cal hotel
+hyp_qwen3        _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_qwen3 (norm): where is one kamal hotel
+hyp_medium       _check = Correct            (wer_true=0.00, was 50.0)
+  hyp_medium (norm): where is one kamal hotel
+ref_recall = 0.60   error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> The reference says vanakamal, the reviewer hears one kamal. Three models match the corrected version exactly.
+
+=== row 5  (AESRC2020-INDIAN-ACCENT-G32681-G32681S2355) ===
+normalised_corrected_reference: when did one dollar azul day zero and first debit
+reference_check   = Incorrect          (wer=0.60)
+  reference (norm): when did banda ola azul de zirahuen first debut
+hyp_large        _check = Correct            (wer_true=0.00, was 66.67)
+  hyp_large (norm): when did one dollar azul day zero and first debit
+hyp_parakeet     _check = Incorrect          (wer_true=60.00, was 55.56)
+  hyp_parakeet (norm): when did mandawallah azul de zerohan s first debate
+hyp_parakeet_ctc _check = Incorrect          (wer_true=70.00, was 66.67)
+  hyp_parakeet_ctc (norm): when did vandalla assume this eurohan first debate
+hyp_qwen3        _check = Incorrect          (wer_true=70.00, was 55.56)
+  hyp_qwen3 (norm): when did bandhaola azulde zerohan first debut
+hyp_medium       _check = Partially correct  (wer_true=40.00, was 55.56)
+  hyp_medium (norm): when did bandawla azul day zero one first debut
+ref_recall = 0.40   error_type -> Reference error, Foreign named entity
+reviewer_decision -> Unsure - the reference names the Spanish band Banda Ola Azul de Zirahuen, the speaker's reading does not match it, and Large matches what the reviewer heard
+reviewer_notes -> The reference names a Spanish band. The speaker says something else, and Large matches the reviewer word for word.
+
+=== row 6  (AESRC2020-INDIAN-ACCENT-G53025-G53025S2364) ===
+normalised_corrected_reference: put im the shit on next
+reference_check   = Correct            (wer=0.00)
+  reference (norm): put im the shit on next
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): put i am the seed on next
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): put i am the seat on next
+hyp_parakeet_ctc _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_parakeet_ctc (norm): put i am the seat on nest
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): put and sit on next
+hyp_medium       _check = Partially correct  (wer_true=33.33, was 33.33)
+  hyp_medium (norm): put iam the seed on next
+ref_recall = 1.00   error_type -> English name or rare word, Accent / pronunciation, Spelling variant
+reviewer_decision -> Genuine model error
+reviewer_notes -> The song title I'm the Shit is written im in the reference. Every model hears the last word as seed or seat.
+
+=== row 7  (AESRC2020-INDIAN-ACCENT-G90236-G90236S2355) ===
+normalised_corrected_reference: play all episodes of aane wala pal
+reference_check   = Correct            (wer=0.00)
+  reference (norm): play all episodes of aane wala pal
+hyp_large        _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_large (norm): play all episodes of n a walapal
+hyp_parakeet     _check = Incorrect          (wer_true=57.14, was 57.14)
+  hyp_parakeet (norm): play all episodes of any wall of all
+hyp_parakeet_ctc _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_parakeet_ctc (norm): play all episodes of ann wul
+hyp_qwen3        _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_qwen3 (norm): play all episodes of आन व ल प ल
+hyp_medium       _check = Incorrect          (wer_true=128.57, was 128.57)
+  hyp_medium (norm): play all episodes of n a v a l a p a l
+ref_recall = 1.00   error_type -> Hindi named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Aane Wala Pal is a Hindi song. Medium spells it out letter by letter and Qwen3 writes it in Devanagari.
+
+=== row 8  (AESRC2020-INDIAN-ACCENT-G02032-G02032S2363) ===
+normalised_corrected_reference: create a playlist with only tn seshagopalan songs
+reference_check   = Correct            (wer=0.00)
+  reference (norm): create a playlist with only tn seshagopalan songs
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): create a playlist with only t n shesha gopalan songs
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): create a playlist with only t and shesha gopalan songs
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): create a playlist with only t and shisha gopaland songs
+hyp_qwen3        _check = Partially correct  (wer_true=37.50, was 37.5)
+  hyp_qwen3 (norm): create a playlist with only t n sheshagopalan songs
+hyp_medium       _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_medium (norm): create a playlist with only t and shesha gopalan songs
+ref_recall = 1.00   error_type -> Indian-language named entity, Acronym or code
+reviewer_decision -> Genuine model error
+reviewer_notes -> T. N. Seshagopalan is a Tamil name. Four models turn the initials tn into t and.
+
+=== row 9  (AESRC2020-INDIAN-ACCENT-G02725-G02725S2354) ===
+normalised_corrected_reference: tell me more about the show yahan main ghar ghar kheli
+reference_check   = Correct            (wer=0.00)
+  reference (norm): tell me more about the show yahan main ghar ghar kheli
+hyp_large        _check = Partially correct  (wer_true=9.09, was 9.09)
+  hyp_large (norm): tell me more about the show yehaan main ghar ghar kheli
+hyp_parakeet     _check = Incorrect          (wer_true=45.45, was 45.45)
+  hyp_parakeet (norm): tell me more about the show yaha magargar khilli
+hyp_parakeet_ctc _check = Incorrect          (wer_true=45.45, was 45.45)
+  hyp_parakeet_ctc (norm): tell me more about the show jha mcgregor kelly
+hyp_qwen3        _check = Incorrect          (wer_true=54.55, was 54.55)
+  hyp_qwen3 (norm): tell me more about the show यह म घर घर ख ल
+hyp_medium       _check = Incorrect          (wer_true=54.55, was 54.55)
+  hyp_medium (norm): tell me more about the show here i played house to house
+ref_recall = 1.00   error_type -> Hindi named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Yahan Main Ghar Ghar Kheli is a Hindi serial. Qwen3 writes it in Devanagari and Medium translates it.
+
+=== row 10  (AESRC2020-INDIAN-ACCENT-G03133-G03133S2364) ===
+normalised_corrected_reference: lay the prince ascetic next
+reference_check   = Correct            (wer=0.00)
+  reference (norm): lay the prince ascetic next
+hyp_large        _check = Incorrect          (wer_true=60.00, was 60.0)
+  hyp_large (norm): play the prince as ketik next
+hyp_parakeet     _check = Partially correct  (wer_true=40.00, was 40.0)
+  hyp_parakeet (norm): play the prince aesthetic next
+hyp_parakeet_ctc _check = Incorrect          (wer_true=60.00, was 60.0)
+  hyp_parakeet_ctc (norm): play the prince as ketics next
+hyp_qwen3        _check = Incorrect          (wer_true=60.00, was 60.0)
+  hyp_qwen3 (norm): play the prince as katic next
+hyp_medium       _check = Incorrect          (wer_true=60.00, was 60.0)
+  hyp_medium (norm): lay the prints as static next
+ref_recall = 1.00   error_type -> English name or rare word, Accent / pronunciation
+reviewer_decision -> Genuine model error
+reviewer_notes -> Four models hear lay as play, the more common command. All five split ascetic into as ketik or similar.
+
+=== row 11  (AESRC2020-INDIAN-ACCENT-G03161-G03161S2365) ===
+normalised_corrected_reference: add sajan ghar jaana hai to up next
+reference_check   = Correct            (wer=0.00)
+  reference (norm): add sajan ghar jaana hai to up next
+hyp_large        _check = Partially correct  (wer_true=12.50, was 12.5)
+  hyp_large (norm): add sajan ghar jana hai to up next
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): ed sajan gharzana had to up next
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): add sergeant gajana to up next
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): add sajan घर ज न ह to up next
+hyp_medium       _check = Partially correct  (wer_true=37.50, was 37.5)
+  hyp_medium (norm): add sajan ghar jana hai to upnext
+ref_recall = 1.00   error_type -> Hindi named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Sajan Ghar Jaana Hai is a Hindi song. Parakeet-CTC turns sajan into sergeant.
+
+=== row 12  (AESRC2020-INDIAN-ACCENT-G03233-G03233S2365) ===
+normalised_corrected_reference: when will the next series of bhagonwali baante apni taqdeer come out
+reference_check   = Correct            (wer=0.00)
+  reference (norm): when will the next series of bhagonwali baante apni taqdeer come out
+hyp_large        _check = Partially correct  (wer_true=25.00, was 25.0)
+  hyp_large (norm): when will the next series of bhaago wali baante apni takdeer come out
+hyp_parakeet     _check = Incorrect          (wer_true=41.67, was 41.67)
+  hyp_parakeet (norm): when will the next series of bhago mali bante apne tagdir come out
+hyp_parakeet_ctc _check = Incorrect          (wer_true=41.67, was 41.67)
+  hyp_parakeet_ctc (norm): when will the next series of bhago maly bante abneid takdir come out
+hyp_qwen3        _check = Incorrect          (wer_true=83.33, was 83.33)
+  hyp_qwen3 (norm): when will the next series of भ ग व ल ब ध अपन धक क र come out
+hyp_medium       _check = Partially correct  (wer_true=25.00, was 25.0)
+  hyp_medium (norm): when will the next series of bhaagonwali baanthe apni thakdeer come out
+ref_recall = 1.00   error_type -> Hindi named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Bhagonwali Baante Apni Taqdeer is a Hindi serial. Qwen3 writes the whole title in Devanagari.
+
+=== row 13  (AESRC2020-INDIAN-ACCENT-G03247-G03247S2366) ===
+normalised_corrected_reference: play rahmat da darya illahi
+reference_check   = Correct            (wer=0.00)
+  reference (norm): play rahmat da darya illahi
+hyp_large        _check = Incorrect          (wer_true=60.00, was 60.0)
+  hyp_large (norm): play rehmat da dariya ilahi
+hyp_parakeet     _check = Incorrect          (wer_true=80.00, was 80.0)
+  hyp_parakeet (norm): play rehmada daria ilahi
+hyp_parakeet_ctc _check = Incorrect          (wer_true=80.00, was 80.0)
+  hyp_parakeet_ctc (norm): play ramada daryia ilahi
+hyp_qwen3        _check = Partially correct  (wer_true=20.00, was 20.0)
+  hyp_qwen3 (norm): play rahmat da darya ilahi
+hyp_medium       _check = Partially correct  (wer_true=40.00, was 40.0)
+  hyp_medium (norm): play rehmat da darya ilaahi
+ref_recall = 1.00   error_type -> Indian-language named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Rahmat Da Darya Illahi is Punjabi, not Hindi. Qwen3 comes closest.
+
+=== row 14  (AESRC2020-INDIAN-ACCENT-G03268-G03268S2351) ===
+normalised_corrected_reference: does hermanas aguila have an upcoming release
+reference_check   = Correct            (wer=0.00)
+  reference (norm): does hermanas aguila have an upcoming release
+hyp_large        _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_large (norm): does armand s aquila have an upcoming release
+hyp_parakeet     _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_parakeet (norm): does airman s ocula have an upcoming release
+hyp_parakeet_ctc _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_parakeet_ctc (norm): does amon s aila have an upcoming release
+hyp_qwen3        _check = Partially correct  (wer_true=28.57, was 28.57)
+  hyp_qwen3 (norm): does armands acula have an upcoming release
+hyp_medium       _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_medium (norm): does armand s acula have an upcoming release
+ref_recall = 1.00   error_type -> Foreign named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Hermanas Aguila is a Spanish name. Every model splits it into armand s or airman s.
+
+=== row 15  (AESRC2020-INDIAN-ACCENT-G03453-G03453S2355) ===
+normalised_corrected_reference: add the show jeet jayenge hum to the queue
+reference_check   = Correct            (wer=0.00)
+  reference (norm): add the show jeet jayenge hum to the queue
+hyp_large        _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_large (norm): at the show we will win the queue
+hyp_parakeet     _check = Partially correct  (wer_true=33.33, was 33.33)
+  hyp_parakeet (norm): add the show jeez jangeham to the queue
+hyp_parakeet_ctc _check = Incorrect          (wer_true=44.44, was 44.44)
+  hyp_parakeet_ctc (norm): at the show j jang a hum to the queue
+hyp_qwen3        _check = Incorrect          (wer_true=77.78, was 77.78)
+  hyp_qwen3 (norm): at the show ज त ज ए ग हम to the queue
+hyp_medium       _check = Partially correct  (wer_true=11.11, was 11.11)
+  hyp_medium (norm): add the show jeet jaenge hum to the queue
+ref_recall = 1.00   error_type -> Hindi named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Jeet Jayenge Hum is a Hindi serial. Large translates it into English as we will win.
+
+=== row 16  (AESRC2020-INDIAN-ACCENT-G12416-G12416S2355) ===
+normalised_corrected_reference: how popular is the show rukawat ke liye khed hai
+reference_check   = Correct            (wer=0.00)
+  reference (norm): how popular is the show rukawat ke liye khed hai
+hyp_large        _check = Partially correct  (wer_true=10.00, was 10.0)
+  hyp_large (norm): how popular is the show rakaawat ke liye khed hai
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): how popular is the show
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): how popular is the show recovered kll ha hair
+hyp_qwen3        _check = Incorrect          (wer_true=70.00, was 70.0)
+  hyp_qwen3 (norm): how popular is the show recruitment क ल ए ख द ह
+hyp_medium       _check = Partially correct  (wer_true=10.00, was 10.0)
+  hyp_medium (norm): how popular is the show urkavat ke liye khed hai
+ref_recall = 1.00   error_type -> Hindi named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Rukawat Ke Liye Khed Hai is a Hindi title. Parakeet-TDT stops early and drops it.
+
+=== row 17  (AESRC2020-INDIAN-ACCENT-G13145-G13145S2366) ===
+normalised_corrected_reference: is de souza resorts adult only
+reference_check   = Correct            (wer=0.00)
+  reference (norm): is de souza resorts adult only
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): is the user resource adult only
+hyp_parakeet     _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet (norm): is this user resort adult only
+hyp_parakeet_ctc _check = Partially correct  (wer_true=33.33, was 33.33)
+  hyp_parakeet_ctc (norm): is dessess or resorts adult only
+hyp_qwen3        _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_qwen3 (norm): its diseases are results adult only
+hyp_medium       _check = Partially correct  (wer_true=33.33, was 33.33)
+  hyp_medium (norm): is dissues or resorts adult only
+ref_recall = 1.00   error_type -> Foreign named entity, Accent / pronunciation
+reviewer_decision -> Genuine model error
+reviewer_notes -> De Souza is a Portuguese name. Three models also hear resorts as resource or results.
+
+=== row 18  (AESRC2020-INDIAN-ACCENT-G23372-G23372S2354) ===
+normalised_corrected_reference: restart this episode of yahan main ghar ghar kheli
+reference_check   = Correct            (wer=0.00)
+  reference (norm): restart this episode of yahan main ghar ghar kheli
+hyp_large        _check = Partially correct  (wer_true=33.33, was 33.33)
+  hyp_large (norm): restart this episode of yaha main gargar kheli
+hyp_parakeet     _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_parakeet (norm): restart this episode of yahame gharder kelly
+hyp_parakeet_ctc _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_parakeet_ctc (norm): restart this episode of yhamed gherher kelly
+hyp_qwen3        _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_qwen3 (norm): restart this episode of यह म घर घर ख ल
+hyp_medium       _check = Partially correct  (wer_true=33.33, was 33.33)
+  hyp_medium (norm): restart this episode of yaha mai ghar ghar khaili
+ref_recall = 1.00   error_type -> Hindi named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Same Hindi serial as row 9. Qwen3 writes it in Devanagari again.
+
+=== row 19  (AESRC2020-INDIAN-ACCENT-G23553-G23553S2365) ===
+normalised_corrected_reference: tell me more about son ensemble
+reference_check   = Correct            (wer=0.00)
+  reference (norm): tell me more about son ensemble
+hyp_large        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_large (norm): tell me more about sun and symbol
+hyp_parakeet     _check = Partially correct  (wer_true=16.67, was 16.67)
+  hyp_parakeet (norm): tell me more about sun ensemble
+hyp_parakeet_ctc _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_parakeet_ctc (norm): tell me more about sun and symbol
+hyp_qwen3        _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_qwen3 (norm): tell me more about sun and symbol
+hyp_medium       _check = Partially correct  (wer_true=16.67, was 16.67)
+  hyp_medium (norm): tell me more about sun ensemble
+ref_recall = 1.00   error_type -> Foreign named entity, Accent / pronunciation
+reviewer_decision -> Genuine model error
+reviewer_notes -> Son Ensemble is a French name. Three models hear it as sun and symbol.
+
+=== row 20  (AESRC2020-INDIAN-ACCENT-G32681-G32681S2354) ===
+normalised_corrected_reference: is there free wifi at vishnu hotel
+reference_check   = Correct            (wer=0.00)
+  reference (norm): is there free wifi at vishnu hotel
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): is there free wifi at vishnu hotel
+hyp_parakeet     _check = Incorrect          (wer_true=71.43, was 71.43)
+  hyp_parakeet (norm): is there free wi fiat with snow water
+hyp_parakeet_ctc _check = Incorrect          (wer_true=57.14, was 57.14)
+  hyp_parakeet_ctc (norm): is there free wii with no water
+hyp_qwen3        _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_qwen3 (norm): is there free wi fi at besto hotel
+hyp_medium       _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_medium (norm): is there free wifi at wish to order
+ref_recall = 1.00   error_type -> Hindi named entity, Accent / pronunciation
+reviewer_decision -> Genuine model error
+reviewer_notes -> Large gets the clip right. The other four lose the whole ending, not just the name Vishnu.
+
+=== row 21  (AESRC2020-INDIAN-ACCENT-G43652-G43652S2366) ===
+normalised_corrected_reference: skip apni mitti
+reference_check   = Correct            (wer=0.00)
+  reference (norm): skip apni mitti
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): skip apni mitti
+hyp_parakeet     _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet (norm): escape eponymity
+hyp_parakeet_ctc _check = Incorrect          (wer_true=100.00, was 100.0)
+  hyp_parakeet_ctc (norm): escape eonymity
+hyp_qwen3        _check = Incorrect          (wer_true=166.67, was 166.67)
+  hyp_qwen3 (norm): उसक अपन म ट ट
+hyp_medium       _check = Partially correct  (wer_true=33.33, was 33.33)
+  hyp_medium (norm): escape apni mitti
+ref_recall = 1.00   error_type -> Hindi named entity, Short utterance
+reviewer_decision -> Genuine model error
+reviewer_notes -> Apni Mitti is a Hindi song. Parakeet and Parakeet-CTC turn the whole clip into escape eponymity.
+
+=== row 22  (AESRC2020-INDIAN-ACCENT-G53371-G53371S2354) ===
+normalised_corrected_reference: restart this episode of rukawat ke liye khed hai
+reference_check   = Correct            (wer=0.00)
+  reference (norm): restart this episode of rukawat ke liye khed hai
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): restart this episode of rukawat ke liye khed hai
+hyp_parakeet     _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_parakeet (norm): restart this episode of rocovad killie kede
+hyp_parakeet_ctc _check = Incorrect          (wer_true=55.56, was 55.56)
+  hyp_parakeet_ctc (norm): restart this episode of recovered killer heye
+hyp_qwen3        _check = Incorrect          (wer_true=77.78, was 77.78)
+  hyp_qwen3 (norm): restart this episode of rukavat क ल ए ख द ह
+hyp_medium       _check = Partially correct  (wer_true=11.11, was 11.11)
+  hyp_medium (norm): restart this episode of rukhawat ke liye khed hai
+ref_recall = 1.00   error_type -> Hindi named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Same Hindi title as row 16. Large is exactly right, the other four garble it.
+
+=== row 23  (AESRC2020-INDIAN-ACCENT-G53709-G53709S2373) ===
+normalised_corrected_reference: how large is splashtop wired x display free
+reference_check   = Partially correct  (wer=0.38)
+  reference (norm): how large is splashtop wired xd is play free
+hyp_large        _check = Partially correct  (wer_true=37.50, was 55.56)
+  hyp_large (norm): how large is splash top wired as display free
+hyp_parakeet     _check = Correct            (wer_true=0.00, was 33.33)
+  hyp_parakeet (norm): how large is splashtop wired x display free
+hyp_parakeet_ctc _check = Partially correct  (wer_true=25.00, was 55.56)
+  hyp_parakeet_ctc (norm): how large is splash top wired x display free
+hyp_qwen3        _check = Partially correct  (wer_true=12.50, was 44.44)
+  hyp_qwen3 (norm): how large is flashtop wired x display free
+hyp_medium       _check = Incorrect          (wer_true=50.00, was 55.56)
+  hyp_medium (norm): how large is splash top wired xdisplay free
+ref_recall = 0.75   error_type -> Reference error, Brand or product name
+reviewer_decision -> Reference error
+reviewer_notes -> Splashtop Wired XDisplay is an app. The reference splits it as xd is play. Parakeet matches the corrected version.
+
+=== row 24  (AESRC2020-INDIAN-ACCENT-G63002-G63002S2363) ===
+normalised_corrected_reference: does best jumbo wada pav center have takeaway
+reference_check   = Correct            (wer=0.00)
+  reference (norm): does best jumbo wada pav center have takeaway
+hyp_large        _check = Partially correct  (wer_true=12.50, was 12.5)
+  hyp_large (norm): does best jumbo bada pav center have takeaway
+hyp_parakeet     _check = Incorrect          (wer_true=87.50, was 87.5)
+  hyp_parakeet (norm): dutch best jambo bada power centre have take away
+hyp_parakeet_ctc _check = Incorrect          (wer_true=62.50, was 62.5)
+  hyp_parakeet_ctc (norm): dutch best jumbo baraa center have take away
+hyp_qwen3        _check = Incorrect          (wer_true=62.50, was 62.5)
+  hyp_qwen3 (norm): das best jumbo bada pow center have take away
+hyp_medium       _check = Incorrect          (wer_true=50.00, was 50.0)
+  hyp_medium (norm): does best jumbo bada pow center have take away
+ref_recall = 1.00   error_type -> Hindi named entity, Accent / pronunciation
+reviewer_decision -> Genuine model error
+reviewer_notes -> Wada pav is a Hindi dish name and every model writes bada or baraa. Three also split takeaway into two words.
+
+=== row 25  (AESRC2020-INDIAN-ACCENT-G90144-G90144S3370) ===
+normalised_corrected_reference: stop cleaning anymore
+reference_check   = Correct            (wer=0.00)
+  reference (norm): stop cleaning anymore
+hyp_large        _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_large (norm): stop cleaning anymore
+hyp_parakeet     _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_parakeet (norm): stop cleaning any more
+hyp_parakeet_ctc _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_parakeet_ctc (norm): stop cleaning any more
+hyp_qwen3        _check = Incorrect          (wer_true=66.67, was 66.67)
+  hyp_qwen3 (norm): stop cleaning any more
+hyp_medium       _check = Correct            (wer_true=0.00, was 0.0)
+  hyp_medium (norm): stop cleaning anymore
+ref_recall = 1.00   error_type -> Spelling variant, Short utterance
+reviewer_decision -> Not a real error - three models write any more as two words, which is the same phrase
+reviewer_notes -> Large and Medium match. The other three write any more as two words, which costs a three word clip 66.7 percent.
+
+=== row 26  (AESRC2020-INDIAN-ACCENT-G90222-G90222S2355) ===
+normalised_corrected_reference: i want to listen to fledermausland again
+reference_check   = Correct            (wer=0.00)
+  reference (norm): i want to listen to fledermausland again
+hyp_large        _check = Partially correct  (wer_true=28.57, was 28.57)
+  hyp_large (norm): i want to listen to flutter mouseland again
+hyp_parakeet     _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_parakeet (norm): i want to listen to flattered mouse land again
+hyp_parakeet_ctc _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_parakeet_ctc (norm): i want to listen to flleter mouseth land again
+hyp_qwen3        _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_qwen3 (norm): i want to listen to flutter mouse land again
+hyp_medium       _check = Partially correct  (wer_true=28.57, was 28.57)
+  hyp_medium (norm): i want to listen to flutter mouseland again
+ref_recall = 1.00   error_type -> Foreign named entity
+reviewer_decision -> Genuine model error
+reviewer_notes -> Fledermausland is a German name. Every model splits it into flutter mouse land.
+
+=== row 27  (AESRC2020-INDIAN-ACCENT-G90277-G90277S2355) ===
+normalised_corrected_reference: add the show shanti to the quick
+reference_check   = Correct            (wer=0.00)
+  reference (norm): add the show shanti to the quick
+hyp_large        _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_large (norm): add the shoshanti to the creek
+hyp_parakeet     _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_parakeet (norm): add the shoshanti to the creek
+hyp_parakeet_ctc _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_parakeet_ctc (norm): add the shoshanti to the creek
+hyp_qwen3        _check = Partially correct  (wer_true=14.29, was 14.29)
+  hyp_qwen3 (norm): add the show shanti to the queue
+hyp_medium       _check = Incorrect          (wer_true=42.86, was 42.86)
+  hyp_medium (norm): add the shoshanti to the creak
+ref_recall = 1.00   error_type -> Hindi named entity, Accent / pronunciation
+reviewer_decision -> Genuine model error
+reviewer_notes -> Shanti is a Hindi serial. Four models merge show shanti into shoshanti. Row 15 ends to the queue, so quick may be wrong here.
+
+=== row 28  (AESRC2020-INDIAN-ACCENT-G91743-G91743S1199) ===
+normalised_corrected_reference: even in china a century is a long time to wait
+reference_check   = Partially correct  (wer=0.36)
+  reference (norm): e v e n in china a century is a long time to wait
+hyp_large        _check = Partially correct  (wer_true=18.18, was 42.86)
+  hyp_large (norm): even in china essentially is a long time to wait
+hyp_parakeet     _check = Incorrect          (wer_true=54.55, was 21.43)
+  hyp_parakeet (norm): e v e and in china eight centuries is a long time to wait
+hyp_parakeet_ctc _check = Partially correct  (wer_true=36.36, was 42.86)
+  hyp_parakeet_ctc (norm): eve and in china essentury is a long time to wait
+hyp_qwen3        _check = Incorrect          (wer_true=45.45, was 64.29)
+  hyp_qwen3 (norm): even in china it s sure it s a long time to wait
+hyp_medium       _check = Partially correct  (wer_true=18.18, was 42.86)
+  hyp_medium (norm): even in china is a long time to wait
+ref_recall = 0.90   error_type -> Reference error
+reviewer_decision -> Reference error
+reviewer_notes -> The reference spells the first word as e v e n. Parakeet-TDT copies that, so its WER rises against the corrected version.
+
+=== error_type the reviewer typed, and the final label ===
+row 9: reviewer typed "Hindi Named-Entity Transliteration Error", final label is "Hindi named entity"
+row 11: reviewer typed "Hindi Named-Entity Transliteration Error", final label is "Hindi named entity"
+row 12: reviewer typed "Hindi Named-Entity Transliteration Error", final label is "Hindi named entity"
+row 13: reviewer typed "Hindi Named-Entity Transliteration Error", final label is "Indian-language named entity"
+row 15: reviewer typed "Hindi Named-Entity Transliteration Error", final label is "Hindi named entity"
+row 16: reviewer typed "Hindi Named-Entity Transliteration Error", final label is "Hindi named entity"
+row 18: reviewer typed "Hindi Named-Entity Transliteration Error", final label is "Hindi named entity"
+row 22: reviewer typed "Hindi Named-Entity Transliteration Error", final label is "Hindi named entity"
+row 24: reviewer typed "Hindi Named-Entity Transliteration Error", final label is "Hindi named entity, Accent / pronunciation"
