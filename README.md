@@ -132,7 +132,7 @@ That is why the hero chart above and every table in [SUMMARY.md](SUMMARY.md) reb
 in minutes. Adding a dataset or model is a one-line registry entry.
 
 Per-clip Stage-2 output is not tracked in git (about 200 MB that rebuilds in minutes). Only the
-per-dataset summary CSV is committed, and CI checks that a fresh rebuild matches it byte for byte.
+per-dataset summary CSV is committed, and a fresh rebuild matches it byte for byte.
 Stage table and decode-config detail: [SUMMARY.md, Pipeline in detail](SUMMARY.md#pipeline-in-detail).
 
 ---
@@ -152,7 +152,7 @@ What stood out:
 - Bigger is not always better: on TIE, WER falls from Tiny to Medium, then rises again at Large-v3, and a smaller model wins outright.
 - The median clip beats corpus WER by 3 to 12 pp; a small tail of severe misses, largely reference artifacts, pulls the average up.
 - The normalizer changes conclusions, not just numbers: 6 of 36 Holm-corrected pairwise verdicts on TIE flip depending on which normalizer is used, against 0 of 36 on either curated corpus. What drives it is how tightly the leaderboard is packed, not how far WER moves.
-- Human review of TIE's 49 hardest clips (WER above 40% for at least 3 of 4 strong models): correcting the reference drops mean WER on that subset from 64.8% to 17.0%, and 46 of 49 clips trace to a bad reference, not a model failure. See [Classifier validation (human review)](SUMMARY.md#classifier-validation-human-review).
+- Human review of the 137 hardest clips across all three corpora (WER above 40% for at least 3 of 4 strong models) separates the corpora. On TIE, correcting the reference drops mean WER on that subset from 64.8% to 17.0% and 46 of 49 clips trace to a bad reference. On Svarah the same correction moves 56.7% to 48.8%, and on AESRC 51.5% to 48.4%, which is not significant. The curated corpora are hard because the speech is hard; TIE is hard largely because its references are wrong. See [Classifier validation (human review)](SUMMARY.md#classifier-validation-human-review).
 - Batching reorders the cost ranking, so the measurement protocol decides the conclusion. Qwen3-ASR is near the bottom at batch 1 and reaches parity with the best Whisper by batch 128, with the highest GPU utilization of anything tested (83.8% mean SM on TIE).
 - Whisper gains least from batching because its short-form path pads every clip to 30 seconds. On Svarah, Whisper Tiny runs at 1.8% mean GPU utilization, and the padded window inflates its RTFx by up to 6.6x on the short-clip corpora. The aggregator reports both numbers.
 - The pre-registered 0.10 pp quality gate never rejects a Whisper configuration and only ever binds on Parakeet and Qwen3. It understates Parakeet-CTC on TIE by 7.5x, and the aggregator now reports that cost for every model. See [Inference efficiency](SUMMARY.md#inference-efficiency).
@@ -162,14 +162,17 @@ sensitivity, error-artifact analysis, and the throughput panel: **[SUMMARY.md](S
 
 ### Human review status
 
-| Corpus | Review | Clips |
-|---|---|:---:|
-| TIE_shorts | complete (single annotator, non-blind) | 49 |
-| Svarah | pending, sheet built, not yet annotated | 60 |
-| AESRC2020 (Indian) | pending, sheet built, not yet annotated | 28 |
+All three reviews are complete, single annotator, non-blind. Mean WER on the reviewed subset,
+before and after the reference is corrected:
 
-Nothing in the published numbers depends on the two pending reviews. Sheets and audio extraction
-live in `analysis/<dataset>_validation/`.
+| Corpus | Clips | Before | After | Drop | Clips improved |
+|---|:---:|:---:|:---:|:---:|:---:|
+| TIE_shorts | 49 | 64.8% | 17.0% | 47.8 pp | 48 of 49 |
+| Svarah | 60 | 56.7% | 48.8% | 7.8 pp | 17 of 60 |
+| AESRC2020 (Indian) | 28 | 51.5% | 48.4% | 3.1 pp | 4 of 28 |
+
+Sheets, audio extraction and per-clip error labels live in `analysis/<dataset>_validation/`.
+The numbers are recomputed by `python analysis/review_stats.py --dataset <ds>`.
 
 ### Exploratory: fine-tuning
 
@@ -220,8 +223,8 @@ from the cluster. Use those if the two engine `.yaml` files fail to solve, which
 The committed results were produced on Python 3.10.20, linux-64, one NVIDIA A100-SXM4-40GB per
 job, torch 2.5.1. The engine environments used CUDA 11.8; the throughput environments used
 CUDA 12.4. Per-run package versions are recorded in
-`results/<dataset>/stage1_raw_transcripts/*_manifest.json`. The CPU analysis path is tested in CI
-on Ubuntu with Python 3.10 and 3.12. The full list, and where the pinned files differ from what
+`results/<dataset>/stage1_raw_transcripts/*_manifest.json`. The CPU analysis path was tested on
+Ubuntu and macOS with Python 3.10 and 3.12. The full list, and where the pinned files differ from what
 actually ran, is in [SUMMARY.md, Tested environment](SUMMARY.md#tested-environment).
 
 ### Known limits of reproduction
@@ -229,7 +232,7 @@ actually ran, is in [SUMMARY.md, Tested environment](SUMMARY.md#tested-environme
 - Stage 2 and 3 reproduce every number bit for bit from the committed transcripts. Stage 1 does not: openai-whisper's temperature fallback is stochastic, so a fresh transcription can differ on a few hard clips.
 - `environments/parakeet.yaml` and `environments/qwen3.yaml` no longer solve because of conda channel drift. Rebuild those two from [`environments/resolved/`](environments/resolved/).
 - The engine environments need CUDA 11.8 and the throughput environments need CUDA 12.4. One machine can host both only if its driver supports both runtimes.
-- The requirements files were captured after the runs. They pin numpy 1.26.4 and jiwer 3.1.0 for Whisper, while the run manifests record numpy 2.2.6 and jiwer 4.0.0. This does not change any published number, because scoring runs in the top-level environment and CI checks the rebuild.
+- The requirements files were captured after the runs. They pin numpy 1.26.4 and jiwer 3.1.0 for Whisper, while the run manifests record numpy 2.2.6 and jiwer 4.0.0. This does not change any published number, because scoring runs in the top-level environment and the rebuild reproduces every committed table.
 - The throughput sweep was measured on A100-40GB nodes. Results on any other GPU are a different experiment and the aggregator refuses to merge them.
 
 ---
@@ -275,7 +278,7 @@ Done.
 ```
 
 Anything other than `14.76` for `medium` under `transcript_clean` means something has
-drifted; CI checks exactly this on every push.
+drifted.
 </details>
 
 ### Transcribe with a model (GPU)
@@ -356,9 +359,9 @@ indian-asr-bench/
 ├── throughput/          quality-gated batched-throughput drivers and environments
 ├── finetune/            exploratory fine-tuning, multi-seed runner, evaluation scripts
 ├── analysis/            Stage 3: comparisons, statistics, error analysis, throughput, seeds
-│   ├── tie_validation/      human review of TIE's 49 hardest clips (complete)
-│   ├── svarah_validation/   review sheet for Svarah (pending)
-│   └── aesrc_validation/    review sheet for AESRC (pending)
+│   ├── tie_validation/      human review of TIE's 49 hardest clips
+│   ├── svarah_validation/   human review of Svarah's 60 sampled hard clips
+│   └── aesrc_validation/    human review of AESRC's 28 hardest clips
 ├── results/<dataset>/   stage1_raw_transcripts/, stage2_processed/ (summary only), analysis/, throughput/
 ├── hpc/                 PBS job scripts, with a SLURM translation table
 ├── environments/        conda env specs per engine, plus the resolved package sets

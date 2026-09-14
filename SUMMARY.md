@@ -35,7 +35,7 @@ overview; come here for the evidence.
 
 Any normalization or metric change re-runs Stages 2 and 3 from the committed transcripts. No re-inference needed.
 
-The per-clip Stage-2 CSVs are not tracked in git. `python normalize_and_score.py --dataset <ds>` rebuilds them in minutes and must be run before any `analysis/` script on a fresh clone. Only `wer_summary_all_models.csv` per dataset is committed, and CI checks that a rebuild is byte-identical to it.
+The per-clip Stage-2 CSVs are not tracked in git. `python normalize_and_score.py --dataset <ds>` rebuilds them in minutes and must be run before any `analysis/` script on a fresh clone. Only `wer_summary_all_models.csv` per dataset is committed. A rebuild from the committed Stage-1 transcripts reproduces it byte for byte.
 
 Extending the benchmark:
 
@@ -561,12 +561,12 @@ Implications:
 | Corpus | Status | Sheet |
 |---|---|---|
 | TIE_shorts | Complete, 49 clips annotated | [`analysis/tie_validation/`](analysis/tie_validation/) |
-| Svarah | Pending: 60-clip sheet built, not annotated | [`analysis/svarah_validation/`](analysis/svarah_validation/) |
-| AESRC (Indian) | Pending: 28-clip sheet built, not annotated | [`analysis/aesrc_validation/`](analysis/aesrc_validation/) |
+| Svarah | Complete, 60 clips annotated | [`analysis/svarah_validation/`](analysis/svarah_validation/) |
+| AESRC (Indian) | Complete, 28 clips annotated | [`analysis/aesrc_validation/`](analysis/aesrc_validation/) |
 
 The classifier is a heuristic, not ground truth. To check it, a human transcribed the true content of the 49 TIE clips with WER above 40% on at least 3 of 4 strong models (Large-v3, Parakeet-TDT, Parakeet-CTC, Qwen3), listening to the audio directly. Every model hypothesis and the dataset reference were then scored against that corrected transcript under the same `transcript_clean` normalization used everywhere else.
 
-**Headline result.** Mean WER on these 49 clips is 64.8% against the original reference and 17.0% against the corrected one, a 47.8 pp drop (95% bootstrap CI 40.3 to 55.9 pp; Wilcoxon signed-rank p < 1e-8). Every model shows the same pattern, all significant after Holm correction, and 48 of 49 clips improve. The one exception (a list of Gujarat place names) is also the one clip judged a genuine model failure. The numbers are recomputed by `analysis/tie_validation/review_stats.py`, which writes [`human_review_stats.md`](results/tie/analysis/human_review_stats.md).
+**Headline result.** Mean WER on these 49 clips is 64.8% against the original reference and 17.0% against the corrected one, a 47.8 pp drop (95% bootstrap CI 40.3 to 55.9 pp; Wilcoxon signed-rank p < 1e-8). Every model shows the same pattern, all significant after Holm correction, and 48 of 49 clips improve. The one exception (a list of Gujarat place names) is also the one clip judged a genuine model failure. The numbers are recomputed by `python analysis/review_stats.py --dataset tie`, which writes [`human_review_stats.md`](results/tie/analysis/human_review_stats.md).
 
 **Cause per clip:** 46 of 49 are reference errors (a dropped clause, a wrong number, a mangled technical term, or in 5 cases a reference from a different segment of the lecture), 2 are genuine model failures, 1 stays unresolved. The `-2aOCNaOiLs` example above is one of the 49, and the review independently reaches the same verdict for it.
 
@@ -576,7 +576,25 @@ Other findings from the review:
 - **Some reference errors flip the meaning.** One reference drops the word "no", turning "there is no functional dependency" into its opposite.
 - **Model-level pattern.** Medium comes out cleanest against the corrected reference (mean WER 15.1%, 2 of 49 clips still wrong) and Large-v3 the worst (20.9%, 8 of 49), mostly through degenerate repetition loops.
 
-**Scope:** this sample is not random. It was built by requiring several strong models to agree a clip is hard, so it explains why these 49 clips are hard and does not estimate what fraction of corpus errors are reference-caused. It is also a single annotator working non-blind, chosen for diagnostic depth over a formal blind protocol. Svarah and AESRC review sheets use the same flagging rule and are built but not annotated, so nothing in this document depends on them.
+### The same review on Svarah and AESRC
+
+The same protocol was run on the other two corpora, with the same flagging rule, the same annotator and the same shared error labels. The result is the clearest evidence in this document that TIE and the curated corpora fail for different reasons.
+
+| Corpus | Clips | Mean WER vs reference | vs corrected | Drop | Wilcoxon p | Clips improved |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| TIE_shorts | 49 | 64.8% | 17.0% | 47.8 pp | 1.2e-09 | 48 of 49 |
+| Svarah | 60 | 56.7% | 48.8% | 7.8 pp | 4.5e-04 | 17 of 60 |
+| AESRC (Indian) | 28 | 51.5% | 48.4% | 3.1 pp | 0.068 | 4 of 28 |
+
+On TIE the correction removes three quarters of the measured error. On Svarah it removes an eighth, and on AESRC the drop is not significant at all. Read together: the hard clips in the curated corpora really are hard speech, while TIE's hard clips are mostly a transcript problem.
+
+**What goes wrong instead.** Each clip carries one or more labels from a set shared across the three sheets. The three corpora load onto different ones:
+
+- **Svarah, 29 of 60 clips: number formatting.** The references write digits, and account numbers, pincodes, UPI handles and PRAN identifiers dominate the flagged set. Whisper Large-v3 and Medium emit digits, which is what the normalizer expects, while Parakeet, Parakeet-CTC and Qwen3 read the same number aloud, a fair transcription that scores as wrong. On one 5-word clip holding a 20-digit application ID, reading it aloud pushes Parakeet past 380% WER while Large scores 0%. Part of the gap between those two groups on Svarah is formatting, not accuracy.
+- **AESRC, 16 of 28 clips: named entities.** Song, show, dish and place names, 13 of them Hindi and the rest Tamil, Malayalam, Punjabi, Spanish, Portuguese, German or French. Two clips are not real errors once spelling variants ("any more" against "anymore") and clock-time formatting are allowed for.
+- **TIE, 42 of 49 clips: reference errors**, 5 of which are references taken from a different segment of the lecture.
+
+**Scope:** these samples are not random. They were built by requiring several strong models to agree a clip is hard, so they explain why those clips are hard and do not estimate what fraction of corpus errors are reference-caused. All three are one annotator working non-blind, chosen for diagnostic depth over a formal blind protocol.
 
 ---
 
@@ -596,7 +614,7 @@ Stage 1 (inference) is not re-run; the committed transcripts are the anchor. Eve
 | Speaker overlap counts (TIE and AESRC) | `python finetune/check_speaker_overlap.py --dataset <ds>` | `results/<ds>/analysis/speaker_overlap.md` |
 | Throughput table and gate-cost figures | `python analysis/compare_throughput.py --dataset <ds>` | `results/<ds>/analysis/throughput_<ds>.{csv,md}` and `throughput_<ds>_sweep.csv` |
 | Benchmark overview figure (README hero figure) | `python analysis/make_overview_figure.py` | `results/benchmark_overview.png` |
-| Human review numbers (49-clip TIE study) | `python analysis/tie_validation/review_stats.py` | `analysis/tie_validation/review_sheet.csv` in, `results/tie/analysis/human_review_stats.md` out |
+| Human review numbers (all three corpora) | `python analysis/review_stats.py --dataset <ds>` | `analysis/<ds>_validation/review_sheet.csv` in, `results/<ds>/analysis/human_review_stats.md` out |
 | Empty-hypothesis counts | `python normalize_and_score.py --dataset <ds>`, then count empty `hypothesis` cells | `results/<ds>/stage2_processed/transcript_clean/wer_<model>_transcript_clean.csv` |
 
 Two items have no generating script in `analysis/`. The dataset split and demographic tables are taken from the dataset metadata at the pinned HF revisions. The TIE disjoint-control numbers are read from the committed [`finetune_disjoint_control.md`](results/tie/analysis/finetune_disjoint_control.md).
@@ -620,9 +638,9 @@ Recorded per family:
 | Qwen3 | qwen-asr 0.0.6, transformers 4.57.6, numpy 2.2.6 |
 | Fine-tuning | transformers 4.46.3, numpy 1.26.4, jiwer 3.1.0, soundfile 0.12.1 |
 
-The requirements files were captured after the runs. They pin numpy 1.26.4 and, for Whisper, jiwer 3.1.0, which differ from the manifests. This does not change any published number: scoring runs in the top-level `requirements.txt` environment, and CI rebuilds Stage 2 byte-identically from the committed transcripts.
+The requirements files were captured after the runs. They pin numpy 1.26.4 and, for Whisper, jiwer 3.1.0, which differ from the manifests. This does not change any published number: scoring runs in the top-level `requirements.txt` environment, and Stage 2 rebuilds byte-identically from the committed transcripts.
 
-The CPU analysis path is tested on Python 3.10 and 3.12 in CI (Ubuntu). The two engine conda YAMLs (`environments/parakeet.yaml` and `environments/qwen3.yaml`) no longer solve; [`environments/resolved/`](environments/resolved/) is the working route.
+The CPU analysis path was tested on Python 3.10 and 3.12 (Ubuntu and macOS). The two engine conda YAMLs (`environments/parakeet.yaml` and `environments/qwen3.yaml`) no longer solve; [`environments/resolved/`](environments/resolved/) is the working route.
 
 ---
 
@@ -653,11 +671,11 @@ AESRC licence position: the mirror (`pengyizhou/accented_english`) states no lic
 - Training-data contamination is possible: NPTEL lectures are public and may appear in Whisper's training data. A small probe (n=10) found no memorization signal, but it is low-powered.
 - Stage-1 transcripts are single runs with temperature-fallback decoding. The committed raw CSVs are the reproducibility anchor.
 - Some cells are small: duration extremes have n=4 to 5 clips, and TIE has only 58 female-speaker clips. Read those qualitatively.
+- The Svarah number-formatting finding is a property of the scoring convention, not of the models. The normalizer spells every number as one cardinal, so a model that reads digits aloud is penalised against one that writes them. This affects the corpus WER tables too, not just the reviewed subset.
 
 ---
 
 ## Future work
 
-- Annotate the staged Svarah (60-clip) and AESRC (28-clip) review sheets with the same protocol as TIE.
 - Run a blind review on a random sample of TIE to get a corpus-wide reference-fault rate, which the targeted 49-clip sample cannot give.
 - Evaluate the AESRC fine-tuned checkpoints on TIE and Svarah, to see whether the gains carry across registers or stay domain-locked.

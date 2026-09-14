@@ -48,8 +48,8 @@ pytorch-cuda-11.8-h7e8668a_6
 `transformers 4.57.6` for the Parakeet runs that produced the committed transcripts. The same
 holds for numpy (manifests say 2.2.6 for every Whisper, Parakeet and Qwen3 run, the pins say
 1.26.4) and jiwer (Whisper runs recorded 4.0.0, Parakeet runs 3.1.0). None of this changes a
-published number: scoring happens in the top-level `requirements.txt` environment and CI rebuilds
-every Stage 2 table byte-identically from the committed transcripts. Use the manifests to know
+published number: scoring happens in the top-level `requirements.txt` environment and every
+Stage 2 table rebuilds byte-identically from the committed transcripts. Use the manifests to know
 what produced a given result, and these files to get a working environment. They answer
 different questions.
 
