@@ -43,9 +43,10 @@ plt.rcParams.update({
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.wer_compute import compute_corpus_wer  # noqa: E402
-from utils.registry import ALL_MODES as MODES, PRIMARY_MODE, MODEL_ORDER, MODEL_BY_KEY  # noqa: E402
-from utils.io_helpers import stage2_dir, analysis_dir  # noqa: E402
-from analysis.statistics import B_DEFAULT, _clip_errors, _holm, analyze  # noqa: E402
+from utils.registry import PRIMARY_MODE, MODEL_ORDER, MODEL_BY_KEY, get_dataset, modes_for_dataset  # noqa: E402
+from utils.io_helpers import stage2_dir, analysis_dir, text_value  # noqa: E402
+from analysis.statistics import B_DEFAULT, SEED, _clip_errors, _holm, analyze  # noqa: E402
+from analysis.compare_all import DURATION_BINS, DURATION_LABELS  # noqa: E402
 
 # One entry per model size, each running the same minimal protocol: one official-split
 # fine-tune vs its own HF-pipeline pretrained baseline. For TIE, out_stem=
@@ -53,24 +54,24 @@ from analysis.statistics import B_DEFAULT, _clip_errors, _holm, analyze  # noqa:
 # (finetune_comparison.md/.png, finetune_wer_distribution.png).
 FT_PAIRS_BY_DATASET = {
     "tie": (
-        dict(key="tiny", display_name="Whisper Tiny", params="39M",
+        dict(key="tiny", display_name="Whisper Tiny",
              secondary="tiny", baseline="tiny_hf", finetuned="tiny_ft",
              out_stem="finetune_comparison_tiny"),
-        dict(key="small", display_name="Whisper Small", params="244M",
+        dict(key="small", display_name="Whisper Small",
              secondary="small", baseline="small_hf", finetuned="small_ft",
              out_stem="finetune_comparison_small"),
-        dict(key="medium", display_name="Whisper Medium", params="769M",
+        dict(key="medium", display_name="Whisper Medium",
              secondary="medium", baseline="medium_hf", finetuned="medium_ft",
              out_stem="finetune_comparison"),
     ),
     "aesrc": (
-        dict(key="tiny", display_name="Whisper Tiny", params="39M",
+        dict(key="tiny", display_name="Whisper Tiny",
              secondary="tiny", baseline="tiny_hf", finetuned="tiny_aesrc_ft",
              out_stem="finetune_comparison_tiny"),
-        dict(key="small", display_name="Whisper Small", params="244M",
+        dict(key="small", display_name="Whisper Small",
              secondary="small", baseline="small_hf", finetuned="small_aesrc_ft",
              out_stem="finetune_comparison_small"),
-        dict(key="medium", display_name="Whisper Medium", params="769M",
+        dict(key="medium", display_name="Whisper Medium",
              secondary="medium", baseline="medium_hf", finetuned="medium_aesrc_ft",
              out_stem="finetune_comparison_medium"),
     ),
@@ -134,7 +135,7 @@ def corpus_wer(df: pd.DataFrame) -> float:
 
 
 def paired_speaker_bootstrap(df_base: pd.DataFrame, df_ft: pd.DataFrame,
-                             B: int = 2000, seed: int = 42):
+                             B: int = B_DEFAULT, seed: int = SEED):
     """Paired bootstrap CI + p for corpus-WER(ft) - corpus-WER(base), resampling
     SPEAKERS (accounts for within-speaker correlation; see analysis/statistics.py).
 
@@ -142,7 +143,7 @@ def paired_speaker_bootstrap(df_base: pd.DataFrame, df_ft: pd.DataFrame,
     if B < 1:
         raise ValueError("bootstrap resamples must be positive")
     for label, df in (("baseline", df_base), ("fine-tuned", df_ft)):
-        ids = df["ID"].map(lambda value: "" if pd.isna(value) else str(value).strip())
+        ids = df["ID"].map(text_value)
         if (ids == "").any() or ids.duplicated().any():
             raise ValueError(f"{label} table has empty or duplicate IDs")
 
@@ -164,7 +165,7 @@ def paired_speaker_bootstrap(df_base: pd.DataFrame, df_ft: pd.DataFrame,
     ea, eb, wa = np.array(ea, float), np.array(eb, float), np.array(wa, float)
 
     # NaN-safe (astype(str) would merge missing speakers into one "nan" cluster)
-    spk = a["Speaker_ID"].map(lambda v: "" if pd.isna(v) else str(v).strip())
+    spk = a["Speaker_ID"].map(text_value)
     labels = np.where(spk != "", spk, "clip:" + a["ID"].astype(str))
     uniq = sorted(set(labels))
     gpos = {g: i for i, g in enumerate(uniq)}
@@ -200,16 +201,12 @@ def fmt_delta(base: float, ft: float) -> tuple[str, str]:
 def run_pair(pair: dict) -> dict:
     """Generate the full pretrained-vs-fine-tuned report + charts for one model size.
 
-    Always returns a dict with key/display_name/params plus a "headline" entry, that
-    entry is a small dict of headline-comparison stats (for the cross-size capacity
-    summary) if both the HF baseline and fine-tuned results were available, else None.
-    The returned stats are NOT written into this pair's own .md, they exist only to
-    feed finetune_capacity_summary.{md,csv} below, so medium's committed report text
-    is unaffected by this addition.
+    Returns key/display_name/params plus `headline`: the stats the capacity summary
+    needs, or None if either the HF baseline or the fine-tuned table is missing.
     """
     key = pair["key"]
     display_name = pair["display_name"]
-    params = pair["params"]
+    params = MODEL_BY_KEY[pair["baseline"]].params
     secondary = pair["secondary"]
     baseline = pair["baseline"]
     finetuned = pair["finetuned"]
@@ -237,7 +234,7 @@ def run_pair(pair: dict) -> dict:
     print("\n--- Corpus WER by mode ---")
     all_ft_models = (secondary, baseline, finetuned)
     have = {m: {} for m in all_ft_models}
-    for mode in MODES:
+    for mode in modes_for_dataset(DATASET):
         for model in all_ft_models:
             df = load(model, mode)
             if df is not None:
@@ -251,10 +248,10 @@ def run_pair(pair: dict) -> dict:
     lines += [
         "## Corpus WER (%) by evaluation mode",
         "",
-        "| Mode | Pretrained (HF) | Fine-tuned | Δ abs | Δ rel | _openai-whisper ref_ |",
+        "| Mode | Pretrained (HF) | Fine-tuned | Delta abs | Delta rel | _openai-whisper ref_ |",
         "|------|:---------------:|:----------:|:-----:|:-----:|:--------------------:|",
     ]
-    for mode in MODES:
+    for mode in modes_for_dataset(DATASET):
         base = have[baseline].get(mode)
         ft = have[finetuned].get(mode)
         sec = have[secondary].get(mode)
@@ -278,7 +275,7 @@ def run_pair(pair: dict) -> dict:
         verdict = "improves" if f < b else "does NOT improve"
         lines += [
             f"> **Headline ({PRIMARY_MODE})**: fine-tuning {verdict} WER "
-            f"{b:.2f}% → {f:.2f}%  ({d_abs}, {d_rel} relative).",
+            f"{b:.2f}% to {f:.2f}%  ({d_abs}, {d_rel} relative).",
             "",
         ]
 
@@ -297,17 +294,11 @@ def run_pair(pair: dict) -> dict:
     df_ft = load(finetuned, PRIMARY_MODE)
 
     if df_base is not None and df_ft is not None:
-        breakdowns = [
-            ("Native_Region", "Region"),
-            ("Speech_Class", "Speech rate"),
-            ("Gender", "Gender"),
-            ("Discipline_Group", "Discipline"),
-        ]
-        for col, title in breakdowns:
+        for col, title in get_dataset(DATASET).subgroup_dims:
             if col not in df_base.columns or col not in df_ft.columns:
                 continue
             lines += [f"## By {title} (`{PRIMARY_MODE}`)", "",
-                      "| Group | Pretrained (HF) | Fine-tuned | Δ abs | Samples |",
+                      "| Group | Pretrained (HF) | Fine-tuned | Delta abs | Samples |",
                       "|-------|:---------------:|:----------:|:-----:|:-------:|"]
             for g in sorted(set(df_base[col].dropna()) | set(df_ft[col].dropna())):
                 gb = df_base[df_base[col] == g]
@@ -326,13 +317,11 @@ def run_pair(pair: dict) -> dict:
             d["Speech_Duration_seconds"] = pd.to_numeric(d["Speech_Duration_seconds"], errors="coerce")
         if df_base["Speech_Duration_seconds"].notna().any():
             lines += [f"## By Audio Duration (`{PRIMARY_MODE}`)", "",
-                      "| Duration | Pretrained (HF) | Fine-tuned | Δ abs |",
+                      "| Duration | Pretrained (HF) | Fine-tuned | Delta abs |",
                       "|----------|:---------------:|:----------:|:-----:|"]
-            bins = [0, 5, 15, 30, 60, float("inf")]
-            labels = ["0-5s", "5-15s", "15-30s", "30-60s", "60s+"]
             for d in (df_base, df_ft):
-                d["_bucket"] = pd.cut(d["Speech_Duration_seconds"], bins=bins, labels=labels)
-            for bucket in labels:
+                d["_bucket"] = pd.cut(d["Speech_Duration_seconds"], bins=DURATION_BINS, labels=DURATION_LABELS)
+            for bucket in DURATION_LABELS:
                 gb = df_base[df_base["_bucket"] == bucket]
                 gf = df_ft[df_ft["_bucket"] == bucket]
                 if gb.empty or gf.empty:
@@ -355,7 +344,7 @@ def run_pair(pair: dict) -> dict:
         merged["delta"] = merged["wer_base"] - merged["wer_ft"]  # positive = FT better
 
         lines += [
-            "## Per-sample paired analysis (`transcript_clean`)",
+            f"## Per-sample paired analysis (`{PRIMARY_MODE}`)",
             "",
             f"- Samples compared: **{len(merged)}**",
             f"- Improved by fine-tuning: **{improved}** ({improved/len(merged)*100:.1f}%)",
@@ -364,8 +353,8 @@ def run_pair(pair: dict) -> dict:
             "",
             "### Biggest improvements (top 10)",
             "",
-            "| ID | Pretrained WER | Fine-tuned WER | Δ |",
-            "|----|:--------------:|:--------------:|:-:|",
+            "| ID | Pretrained WER | Fine-tuned WER | Delta |",
+            "|----|:--------------:|:--------------:|:-----:|",
         ]
         # ID tie-break + stable sort keeps the top-10 cutoff deterministic among tied deltas.
         gains = (merged[merged["delta"] > 1e-9]
@@ -374,8 +363,8 @@ def run_pair(pair: dict) -> dict:
             lines.append(f"| {r['ID']} | {r['wer_base']*100:.1f}% | {r['wer_ft']*100:.1f}% | "
                          f"-{r['delta']*100:.1f} pp |")
         lines += ["", "### Biggest regressions (top 10)", "",
-                  "| ID | Pretrained WER | Fine-tuned WER | Δ |",
-                  "|----|:--------------:|:--------------:|:-:|"]
+                  "| ID | Pretrained WER | Fine-tuned WER | Delta |",
+                  "|----|:--------------:|:--------------:|:-----:|"]
         losses = (merged[merged["delta"] < -1e-9]
                   .sort_values(["delta", "ID"], ascending=[True, True], kind="stable").head(10))
         if losses.empty:
@@ -387,7 +376,7 @@ def run_pair(pair: dict) -> dict:
 
         # --------------- 4. Chart ---------------
         fig, ax = plt.subplots(figsize=(9, 5.2))
-        modes_present = [m for m in MODES if m in have[baseline] and m in have[finetuned]]
+        modes_present = [m for m in modes_for_dataset(DATASET) if m in have[baseline] and m in have[finetuned]]
         x = range(len(modes_present))
         w = 0.38
         base_vals = [have[baseline][m] for m in modes_present]
@@ -477,7 +466,7 @@ def main(dataset: str) -> None:
         return
 
     pvals = [r["headline"]["p"] for r in capacity_rows]
-    p_holm = _holm(pvals) if len(pvals) > 1 else pvals
+    p_holm = _holm(pvals)
     summary_label = DATASET_BLURBS[dataset]["summary_label"]
     cap_lines = [
         f"# Fine-tuning capacity summary: Tiny / Small / Medium ({summary_label})",
@@ -491,8 +480,10 @@ def main(dataset: str) -> None:
         "the fine-tuned variants run through a different decoding engine, so mixing them in would",
         "confound fine-tuning with an engine change, see `analysis/statistics.py`).",
         "",
-        "| Size | Params | Pretrained (openai) | HF baseline | Fine-tuned | Δ (paired, speaker-clustered) | 95% CI | p | p (Holm) | n clips | n speakers |",
-        "|------|:------:|:--------------------:|:-----------:|:----------:|:-----------------------------:|:------:|:-:|:--------:|:-------:|:----------:|",
+        f"Paired speaker-clustered bootstrap, B={B_DEFAULT} resamples, seed {SEED}.",
+        "",
+        "| Size | Params | Pretrained (openai) | HF baseline | Fine-tuned | Delta (paired, speaker-clustered) | 95% CI | p | p (Holm) | n clips | n speakers |",
+        "|------|:------:|:--------------------:|:-----------:|:----------:|:---------------------------------:|:------:|:-:|:--------:|:-------:|:----------:|",
     ]
     csv_rows = []
     for r, ph in zip(capacity_rows, p_holm):
@@ -512,10 +503,7 @@ def main(dataset: str) -> None:
     cap_lines.append("")
 
     # --------------- Pretrained capacity curve (tiny -> large), for context ---------------
-    # analyze() is write-free (only analysis/statistics.py's main() writes files) and its
-    # `per_model` entries are UNCONDITIONAL per-model bootstrap CIs, not the pairwise/Holm
-    # family, so pulling them here does not touch or imply anything about the deferred
-    # statistics_pairwise_*.csv regeneration flagged above.
+    # analyze() only computes; statistics.py's main() is what writes files.
     res = analyze(DATASET, PRIMARY_MODE)
     if res is not None:
         curve_keys = [m for m in ("tiny", "base", "small", "medium", "large") if m in res["models"]]
@@ -524,9 +512,9 @@ def main(dataset: str) -> None:
             cap_lines += [
                 "## Pretrained capacity curve (for context; not a fine-tuning statistic)",
                 "",
-                f"Speaker-clustered bootstrap CIs from `analysis/statistics.py:analyze()` "
-                f"(N={res['N']} clips, G={res['G']} {res['cluster_unit']}s, B={B_DEFAULT}). Point estimates only "
-                ", no Holm correction applied or needed here (these are per-model CIs, not pairwise tests).",
+                f"{res['cluster_unit'].capitalize()}-clustered bootstrap CIs from `analysis/statistics.py:analyze()` "
+                f"(N={res['N']} clips, G={res['G']} {res['cluster_unit']}s, B={B_DEFAULT}). Point estimates only; "
+                "no Holm correction is applied here (per-model CIs, not pairwise tests).",
                 "",
                 "| Model | Params | Corpus WER | 95% CI |",
                 "|-------|:------:|:----------:|:------:|",

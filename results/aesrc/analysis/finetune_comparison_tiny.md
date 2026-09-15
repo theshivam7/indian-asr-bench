@@ -12,17 +12,17 @@ number is shown as a secondary reference.
 
 ## Corpus WER (%) by evaluation mode
 
-| Mode | Pretrained (HF) | Fine-tuned | Δ abs | Δ rel | _openai-whisper ref_ |
+| Mode | Pretrained (HF) | Fine-tuned | Delta abs | Delta rel | _openai-whisper ref_ |
 |------|:---------------:|:----------:|:-----:|:-----:|:--------------------:|
 | `transcript_raw` | 17.64% | 12.49% | -5.15 pp | -29.2% | 13.91% |
 | `transcript_clean` **(gold)** | 17.45% | 12.64% | -4.81 pp | -27.6% | 13.66% |
 | `whisper_norm` | 16.97% | 9.83% | -7.13 pp | -42.0% | 13.21% |
 
-> **Headline (transcript_clean)**: fine-tuning improves WER 17.45% → 12.64%  (-4.81 pp, -27.6% relative).
+> **Headline (transcript_clean)**: fine-tuning improves WER 17.45% to 12.64%  (-4.81 pp, -27.6% relative).
 
 ## By Audio Duration (`transcript_clean`)
 
-| Duration | Pretrained (HF) | Fine-tuned | Δ abs |
+| Duration | Pretrained (HF) | Fine-tuned | Delta abs |
 |----------|:---------------:|:----------:|:-----:|
 | 0-5s | 19.22% | 14.74% | -4.48 pp |
 | 5-15s | 14.66% | 9.34% | -5.32 pp |
@@ -36,8 +36,8 @@ number is shown as a secondary reference.
 
 ### Biggest improvements (top 10)
 
-| ID | Pretrained WER | Fine-tuned WER | Δ |
-|----|:--------------:|:--------------:|:-:|
+| ID | Pretrained WER | Fine-tuned WER | Delta |
+|----|:--------------:|:--------------:|:-----:|
 | AESRC2020-INDIAN-ACCENT-G12929-G12929S2350 | 3990.9% | 18.2% | -3972.7 pp |
 | AESRC2020-INDIAN-ACCENT-G13842-G13842S1299 | 1453.3% | 26.7% | -1426.7 pp |
 | AESRC2020-INDIAN-ACCENT-G33289-G33289S2353 | 116.7% | 0.0% | -116.7 pp |
@@ -51,8 +51,8 @@ number is shown as a secondary reference.
 
 ### Biggest regressions (top 10)
 
-| ID | Pretrained WER | Fine-tuned WER | Δ |
-|----|:--------------:|:--------------:|:-:|
+| ID | Pretrained WER | Fine-tuned WER | Delta |
+|----|:--------------:|:--------------:|:-----:|
 | AESRC2020-INDIAN-ACCENT-G32681-G32681S2355 | 77.8% | 4911.1% | +4833.3 pp |
 | AESRC2020-INDIAN-ACCENT-G93639-G93639S2366 | 20.0% | 100.0% | +80.0 pp |
 | AESRC2020-INDIAN-ACCENT-G02287-G02287S3376 | 66.7% | 133.3% | +66.7 pp |

@@ -30,7 +30,7 @@ set -euo pipefail
 # across several submissions (the runner skips seeds that are already scored, so
 # resubmitting the same command after a walltime kill resumes rather than restarts).
 #
-# Submit serially, not in parallel: NSCC one-job GPU etiquette, and concurrent jobs would
+# Submit serially, not in parallel: concurrent jobs would
 # race on the shared stage-1 output directory.
 #
 # After every size has finished:

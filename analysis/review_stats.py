@@ -16,7 +16,6 @@ Writes results/<dataset>/analysis/human_review_stats.md
 
 import argparse
 import collections
-import csv
 import math
 import os
 import sys
@@ -27,10 +26,10 @@ import pandas as pd
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.io_helpers import analysis_dir  # noqa: E402
+from analysis.statistics import _holm as holm  # noqa: E402
+from analysis.review_common import REVIEW_FOLDERS as FOLDERS, REVIEW_MODELS as MODELS  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FOLDERS = {"tie": "tie_validation", "svarah": "svarah_validation", "aesrc": "aesrc_validation"}
-MODELS = ("large", "parakeet", "parakeet_ctc", "qwen3", "medium")
 B = 10000
 SEED = 42
 
@@ -48,16 +47,6 @@ def wilcoxon_two_sided(diff: np.ndarray) -> float:
     var = n * (n + 1) * (2 * n + 1) / 24 - tie_term
     z = (w_plus - mean) / math.sqrt(var)
     return math.erfc(abs(z) / math.sqrt(2))
-
-
-def holm(pvals: list[float]) -> list[float]:
-    order = sorted(range(len(pvals)), key=lambda i: pvals[i])
-    adjusted = [0.0] * len(pvals)
-    running = 0.0
-    for rank, i in enumerate(order):
-        running = max(running, pvals[i] * (len(pvals) - rank))
-        adjusted[i] = min(running, 1.0)
-    return adjusted
 
 
 def main() -> None:

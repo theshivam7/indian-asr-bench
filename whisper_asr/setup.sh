@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 # Run from repo root: bash whisper_asr/setup.sh
-# One env for all openai-whisper models (base / medium / large / large_v3_turbo).
+# One env for all six openai-whisper sizes.
 
 ENV_NAME="${1:-whisper}"
 

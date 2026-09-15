@@ -2,8 +2,8 @@
 Pre-flight leakage check: speaker overlap across train / validation / test splits.
 
 A dataset's splits are disjoint *sets of clips*, but ASR results are inflated if the same
-SPEAKERS appear in both train and test (the model can memorize a speaker's voice). We don't
-control the official splits, so the right thing to do is measure and DISCLOSE the overlap.
+speakers appear in both train and test (the model can memorize a speaker's voice). The
+official splits are not modified; the overlap is measured and reported.
 
 CPU-only and light: only the speaker column is read (plus, for adapter-loaded datasets,
 the adapter's single-clip probe decode). Writes results/<dataset>/analysis/speaker_overlap.md.
@@ -78,7 +78,7 @@ def main(dataset: str) -> None:
 
     lines += [
         "",
-        "## Train ∩ Test (the relevant leakage)",
+        "## Train and test overlap (the relevant leakage)",
         "",
         f"- Test speakers also present in train: **{len(test_in_train)} / {len(test_set)}** "
         f"({len(test_in_train) / max(len(test_set), 1) * 100:.1f}% of test speakers)",

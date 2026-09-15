@@ -41,7 +41,7 @@ def test_custom_normalizer_contract():
     assert normalize_text("3.5") == "three point five"     # decimal
     assert normalize_text("don't") == "dont"               # contraction: apostrophe stripped, not expanded
     assert normalize_text("Bernoulli's") == "bernoulli s"  # possessive split
-    assert normalize_text("") == "" and normalize_text(None or "") == ""
+    assert normalize_text("") == ""
     assert normalize_text(float("nan")) == ""
 
 
@@ -243,6 +243,8 @@ if __name__ == "__main__":
         try:
             fn()
             print(f"PASS {fn.__name__}")
+        except pytest.skip.Exception as e:
+            print(f"SKIP {fn.__name__}: {e}")
         except AssertionError as e:
             failed += 1
             print(f"FAIL {fn.__name__}: {e}")

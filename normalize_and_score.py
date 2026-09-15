@@ -115,6 +115,9 @@ def process(df: pd.DataFrame, model: str, mode: str) -> tuple[list[dict], dict]:
         })
         rows.append(out)
 
+    if not rows:
+        raise ValueError(f"{model}/{mode}: no scorable rows, refusing to write a 0% summary row")
+
     refs = [r["reference"] for r in rows]
     hyps = [r["hypothesis"] for r in rows]
     wers = [r["wer"] for r in rows]
@@ -227,7 +230,7 @@ def main(dataset: str, models: tuple | None = None) -> None:
             f"wer_summary_all_models.csv is the canonical panel that compare_all, the "
             f"figures and SUMMARY.md all read, so it is not written from a partial run. "
             f"Transcribe the missing models, or score the ones you have with "
-            f"--models {' '.join(sorted(scored))}."
+            f"--models {','.join(sorted(scored))}."
         )
 
     df_summary.to_csv(os.path.join(s2, "wer_summary_all_models.csv"), index=False)

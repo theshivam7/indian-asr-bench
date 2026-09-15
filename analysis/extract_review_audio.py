@@ -39,8 +39,9 @@ def main() -> None:
     ds, dspec = load_eval(args.dataset)
     pos = {cid: i for i, cid in enumerate(extract_ids(ds, dspec))}
 
-    out_dir = args.out_dir  # kept relative: an absolute path would bake this
-    os.makedirs(out_dir, exist_ok=True)  # machine's home directory into the CSV
+    # Keep relative so the CSV does not record this machine's home directory.
+    out_dir = args.out_dir
+    os.makedirs(out_dir, exist_ok=True)
 
     audio_paths = []
     missing = 0

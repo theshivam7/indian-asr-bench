@@ -11,7 +11,7 @@ set -euo pipefail
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-PARAKEET_ENV=${PARAKEET_ENV:-${SCRATCH:-$HOME/scratch}/envs/parakeet_env}
+PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
 # Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
 # will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
 HF_CACHE=${HF_CACHE:-${SCRATCH:-$HOME/scratch}/hf_cache}
@@ -35,7 +35,8 @@ mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 cd "${WORKDIR}"
 
 echo "=== ENV CHECK ==="
-python -c "import torch; print('torch:', torch.__version__, '| cuda:', torch.version.cuda, '| gpu:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU-ONLY')"
+python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch:', torch.__version__, '| cuda:', torch.version.cuda, '| gpu:', torch.cuda.get_device_name(0) if ok else 'none'); sys.exit(0 if ok else 1)" \
+    || { echo "[FATAL] CUDA not available - aborting before a CPU-bound run"; exit 1; }
 python -c "import nemo.collections.asr; print('nemo: OK')"
 echo "=== END ENV CHECK ==="
 

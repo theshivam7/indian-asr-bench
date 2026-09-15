@@ -1,4 +1,4 @@
-"""Audio extraction and Whisper transcription."""
+"""Temp-WAV staging shared by all engines, plus the openai-whisper transcribe call."""
 
 import os
 import tempfile

@@ -74,13 +74,8 @@ else:
     sys.exit(f"[ERROR] MODEL_NAME='{MODEL_NAME}' needs an explicit MODEL_SOURCE "
              f"(path or HF id), or use 'medium_ft' / 'medium_hf'.")
 
-# Local model dirs must exist; HF ids are downloaded. Distinguish by the project's own
-# convention (every local weight path in the registry starts with "models/", see
-# utils/registry.py) rather than by presence of a path separator: HF namespaced ids like
-# "openai/whisper-medium" also contain "/", so that check alone misfires on every HF-hosted
-# pretrained baseline (medium_hf, tiny_hf, small_hf, ...) and would incorrectly exit before
-# ever calling build_asr_pipeline. Registry-resolved local paths become absolute after the
-# REPO_ROOT join, so the branch above marks them explicitly rather than re-matching the prefix.
+# Local model dirs must exist; HF ids are downloaded. Local weight paths start with
+# models/ by project convention (HF ids such as openai/whisper-medium also contain "/").
 if (_is_local_dir or model_path.startswith(("models/", "models" + os.sep))) \
         and not os.path.isdir(model_path):
     sys.exit(f"[ERROR] model weights not found at {model_path}. "

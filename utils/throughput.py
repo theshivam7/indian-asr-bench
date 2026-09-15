@@ -1,8 +1,7 @@
 """Shared, engine-independent saturated-throughput benchmark.
 
-The existing :mod:`utils.efficiency` protocol remains the batch-1, end-to-end
-single-stream latency measurement.  This module measures the complementary
-offline scenario: short-form audio is converted to identical 16 kHz mono WAVs
+:mod:`utils.efficiency` supplies the timing and provenance helpers; this module
+is the offline saturated-throughput protocol: short-form audio is converted to identical 16 kHz mono WAVs
 before the clock starts, clips are sorted by duration for every model, and the
 native batch API is swept until the configured maximum or an OOM.
 
@@ -25,7 +24,6 @@ import time
 import wave
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from importlib import metadata as importlib_metadata
 from pathlib import Path
 from typing import Callable, Sequence
 
@@ -39,7 +37,15 @@ from utils.efficiency import (
     subset_fingerprint,
     synchronize_device,
 )
-from utils.io_helpers import audio_to_wav_16k, probe_audio_duration, text_value, throughput_dir
+from utils.io_helpers import (
+    audio_to_wav_16k,
+    git_commit,
+    package_versions,
+    probe_audio_duration,
+    text_value,
+    throughput_dir,
+    WHISPER_MAX_CLIP_SECONDS,
+)
 from utils.normalize import normalize_for_mode
 from utils.registry import MODEL_BY_KEY
 from utils.wer_compute import compute_corpus_cer, compute_corpus_wer
@@ -57,7 +63,7 @@ DEFAULT_REPEATS = 3
 DEFAULT_SEED = 42
 DEFAULT_TELEMETRY_INTERVAL_MS = 250
 DEFAULT_MAX_WER_DELTA_PP = 0.10
-DEFAULT_MAX_CLIP_SECONDS = 30.0
+DEFAULT_MAX_CLIP_SECONDS = float(WHISPER_MAX_CLIP_SECONDS)
 THROUGHPUT_TIE_TOLERANCE = 0.01
 
 
@@ -78,33 +84,6 @@ def parse_batch_sizes(value: str | Sequence[int]) -> tuple[int, ...]:
     if 1 not in sizes:
         raise ValueError("batch-size sweep must include 1 for the quality baseline")
     return tuple(sizes)
-
-
-def package_versions(names: Sequence[str]) -> dict[str, str]:
-    versions = {}
-    for name in names:
-        try:
-            versions[name] = importlib_metadata.version(name)
-        except importlib_metadata.PackageNotFoundError:
-            pass
-    return versions
-
-
-def _git_commit() -> str:
-    supplied = os.environ.get("GIT_COMMIT", "").strip()
-    if supplied:
-        return supplied
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-        return result.stdout.strip() if result.returncode == 0 else ""
-    except Exception:
-        return ""
 
 
 def _declared_duration(ds, spec, index: int) -> float | None:
@@ -338,7 +317,8 @@ class NvidiaSmiSampler:
                 stderr=subprocess.DEVNULL,
                 text=True,
             )
-        except Exception:
+        except Exception as exc:
+            print(f"[telemetry] could not start nvidia-smi sampler: {exc}")
             self.stop()
 
     def _give_up(self) -> None:
@@ -348,12 +328,8 @@ class NvidiaSmiSampler:
 
     def stop(self) -> dict:
         if self.process is not None:
-            # A wedged `nvidia-smi -lms` must not take the benchmark down with it.
-            # The second wait was unguarded, so a sampler that survived SIGKILL
-            # raised TimeoutExpired out of stop(), which the batch loop then treated
-            # as a benchmark failure and re-raised, ending the whole job. Give up on
-            # reaping instead and fall through to whatever samples reached the file;
-            # a batch with no telemetry still fails loudly on its own below.
+            # A wedged nvidia-smi must not take the benchmark down. If SIGKILL does
+            # not reap it, give up and use whatever samples reached the file.
             try:
                 self.process.terminate()
                 self.process.wait(timeout=5)
@@ -536,8 +512,8 @@ def run_throughput_benchmark(
             "model_key": model_key,
             "model_display": MODEL_BY_KEY[model_key].display,
             # Engine-specific drivers record the checkpoint they actually load.
-            # Whisper's throughput runtime uses HF IDs rather than the short
-            # aliases used by the existing openai-whisper latency runtime.
+            # Whisper's throughput runtime uses HF IDs rather than the
+            # openai-whisper short aliases the registry uses for Stage 1.
             "model_id": runtime_config.get(
                 "checkpoint", MODEL_BY_KEY[model_key].model_id
             ),
@@ -545,7 +521,7 @@ def run_throughput_benchmark(
             "runtime_config": runtime_config,
             "model_load_seconds": round(float(model_load_seconds), 3),
             "parameter_count": count_parameters(model),
-            "git_commit": _git_commit(),
+            "git_commit": git_commit(),
             "source_sha256": os.environ.get("SOURCE_SHA256", "").strip(),
             "workload": workload,
             "protocol": {
@@ -760,7 +736,7 @@ def run_throughput_benchmark(
                     _write_result(result, output_path)
                     raise
             _write_result(result, output_path)
-            if entry["status"] in {"oom", "failed", "telemetry_lost"}:
+            if entry["status"] in {"oom", "telemetry_lost"}:
                 break
 
         valid = [

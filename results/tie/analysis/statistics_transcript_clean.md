@@ -1,8 +1,8 @@
 # Statistical significance: TIE_shorts, mode `transcript_clean`
 
-Corpus WER with 95% bootstrap CI: 10000 resamples, seed 42, N=985 clips, resampled by **speaker** (280 clusters). Headline (chart) models only, the fine-tuning study is a separate hypothesis family with its own paired test in `finetune_comparison.md`. Speaker-level resampling accounts for within-speaker correlation (clips from one speaker share accent/channel); clip-level CIs are in the CSV for comparison and are narrower, i.e. anti-conservative.
+Corpus WER with 95% bootstrap CI: 10000 resamples, seed 42, N=985 clips, resampled by **speaker** (280 clusters). Headline (chart) models only; the fine-tuning study is a separate hypothesis family with its own paired test. Speaker-level resampling accounts for within-speaker correlation (clips from one speaker share accent/channel); clip-level CIs are in the CSV for comparison and are narrower, i.e. anti-conservative.
 
-| Model | Corpus WER % | CI low | CI high | ±pp |
+| Model | Corpus WER % | CI low | CI high | CI half-width (pp) |
 | --- | --- | --- | --- | --- |
 | Whisper Medium | 14.76 | 13.7 | 15.86 | 1.08 |
 | Parakeet-TDT-0.6B-v2 | 15.6 | 14.52 | 16.71 | 1.1 |

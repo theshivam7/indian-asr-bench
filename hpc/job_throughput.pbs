@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -N asr_throughput
-# `normal` is NSCC's routing queue; the 8-hour request routes this full sweep to
+# `normal` is the cluster's routing queue; the 8-hour request routes this full sweep to
 # an eligible production GPU execution queue instead of the 2-hour gdev queue.
 #PBS -q normal
 # g1 normalizes one-GPU jobs to this full-node CPU/RAM allocation. Request it
@@ -35,6 +35,7 @@ echo "=== throughput job start $(date -Is) ==="
 echo "host=$(hostname) workdir=${WORKDIR} engine=${ENGINE} model=${MODEL} datasets=${DATASETS}"
 echo "clips=${CLIPS} batches=${BATCH_SIZES} warmups=${WARMUP_BATCHES} repeats=${REPEATS} seed=${SEED}"
 
+# Only loaded when explicitly requested, so a failure here is a real misconfiguration.
 if [ -n "${CUDA_MODULE:-}" ]; then
     module load "${CUDA_MODULE}" || exit 1
 fi
@@ -52,11 +53,11 @@ case "${ENGINE}" in
     DRIVER=throughput/run_whisper_hf.py
     ;;
   parakeet)
-    ENV_NAME=${PARAKEET_ENV:-${SCRATCH_DIR}/envs/parakeet_throughput}
+    ENV_NAME=${PARAKEET_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/parakeet_throughput}
     DRIVER=throughput/run_parakeet.py
     ;;
   qwen3)
-    ENV_NAME=${QWEN3_ENV:-${SCRATCH_DIR}/envs/qwen3_throughput}
+    ENV_NAME=${QWEN3_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/qwen3_throughput}
     DRIVER=throughput/run_qwen3.py
     ;;
   *)

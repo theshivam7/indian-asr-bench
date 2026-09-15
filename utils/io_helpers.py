@@ -1,4 +1,4 @@
-"""Dataset loading and CSV I/O utilities."""
+"""Audio decode, result paths, raw-CSV rows, checkpoints and run manifests."""
 
 import io
 import math
@@ -6,11 +6,6 @@ import os
 
 import numpy as np
 import pandas as pd
-
-# `datasets` is only needed for Stage 1 transcription (loading the audio). It is imported
-# lazily inside load_dataset_test() so the CPU-only Stage 2/3 pipeline (normalize_and_score.py,
-# analysis/), which only uses the CSV/markdown helpers below, does not require the heavy
-# (GPU-side) `datasets`/`torch` stack just to recompute WER or draw charts.
 
 # Resolve the HF cache from any of the common env vars so manual runs and PBS jobs
 # agree. Defaulting to $HOME/.cache fills the (small) HOME quota on HPC clusters, so
@@ -21,25 +16,10 @@ HF_CACHE = (
     or (os.path.join(os.environ["HF_HOME"], "datasets") if os.environ.get("HF_HOME") else None)
     or os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
 )
-os.makedirs(HF_CACHE, exist_ok=True)
 os.environ.setdefault("HF_DATASETS_CACHE", HF_CACHE)
 
-
-def load_dataset_test():
-    """Load raianand/TIE_shorts test split (kept for backward compatibility).
-
-    New code should use utils.datasets.load_eval(dataset_key) which is dataset-aware.
-    """
-    from datasets import load_dataset
-
-    print("Loading dataset raianand/TIE_shorts (test split) ...")
-    print(f"  Cache directory: {HF_CACHE}")
-    from utils.registry import TIE
-
-    ds = load_dataset(TIE.hf_id, split=TIE.splits["eval"], cache_dir=HF_CACHE,
-                      revision=TIE.hf_revision)
-    print(f"  Loaded {len(ds)} samples\n")
-    return ds
+# Whisper's receptive field; shared by the fine-tuning filter and the throughput protocol.
+WHISPER_MAX_CLIP_SECONDS = 30
 
 
 def raw_audio_column(ds, audio_col: str = "audio"):
@@ -233,7 +213,7 @@ def audio_to_wav_16k(audio_value, wav_path: str) -> None:
 
 def build_sample_row(
     sample: dict,
-    sample_id: str,
+    sid: str,
     transcript: str,
     hyp_raw: str,
     spec,
@@ -259,7 +239,7 @@ def build_sample_row(
 
     row = {
         "split": split,
-        "ID": sample_id,
+        "ID": sid,
         "Speaker_ID": sample.get(spec.speaker_col, "") if spec.speaker_col else "",
         "Speech_Duration_seconds": duration,
     }
@@ -275,6 +255,39 @@ _MANIFEST_PACKAGES = ("torch", "datasets", "numpy", "librosa", "soundfile", "jiw
                       "openai-whisper", "transformers", "nemo_toolkit", "qwen-asr")
 
 
+def package_versions(names) -> dict[str, str]:
+    from importlib import metadata
+
+    versions = {}
+    for name in names:
+        try:
+            versions[name] = metadata.version(name)
+        except metadata.PackageNotFoundError:
+            pass
+    return versions
+
+
+def git_commit() -> str:
+    """GIT_COMMIT wins when set: git is not on PATH on every compute node. A failed
+    rev-parse is reported rather than left blank."""
+    import subprocess
+
+    commit = os.environ.get("GIT_COMMIT", "").strip()
+    if commit:
+        return commit
+    try:
+        proc = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_PROJECT_ROOT,
+                              capture_output=True, text=True, timeout=10)
+        if proc.returncode == 0:
+            return proc.stdout.strip()
+        print(f"[manifest] git rev-parse failed (rc={proc.returncode}): "
+              f"{proc.stderr.strip()[:120]}; set GIT_COMMIT to record provenance")
+    except Exception as exc:
+        print(f"[manifest] cannot run git ({exc.__class__.__name__}: {exc}); "
+              f"set GIT_COMMIT to record provenance")
+    return ""
+
+
 def write_run_manifest(model_key: str, dataset_key: str, spec=None, extra: dict | None = None) -> str:
     """Write wer_<model>_manifest.json beside the raw CSV: everything needed to
     reproduce (or audit) a Stage-1 run, model/dataset identity, pinned dataset
@@ -283,34 +296,10 @@ def write_run_manifest(model_key: str, dataset_key: str, spec=None, extra: dict 
     produced this?' question later."""
     import json
     import platform
-    import subprocess
     from datetime import datetime, timezone
-    from importlib import metadata
 
-    versions = {}
-    for pkg in _MANIFEST_PACKAGES:
-        try:
-            versions[pkg] = metadata.version(pkg)
-        except metadata.PackageNotFoundError:
-            pass
-    # GIT_COMMIT wins when set, because `git` is not on PATH on every compute node and
-    # this field was silently empty in every manifest written before that was noticed:
-    # capture_output=True swallows the error, a non-zero exit leaves stdout empty, and
-    # the bare `except` never fires. So check the return code and say so on failure
-    # rather than publishing a blank provenance field that looks deliberate.
-    commit = os.environ.get("GIT_COMMIT", "").strip()
-    if not commit:
-        try:
-            proc = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_PROJECT_ROOT,
-                                  capture_output=True, text=True, timeout=10)
-            if proc.returncode == 0:
-                commit = proc.stdout.strip()
-            else:
-                print(f"[manifest] git rev-parse failed (rc={proc.returncode}): "
-                      f"{proc.stderr.strip()[:120]}; set GIT_COMMIT to record provenance")
-        except Exception as exc:
-            print(f"[manifest] cannot run git ({exc.__class__.__name__}: {exc}); "
-                  f"set GIT_COMMIT to record provenance")
+    versions = package_versions(_MANIFEST_PACKAGES)
+    commit = git_commit()
     from utils.registry import MODEL_BY_KEY, get_dataset
 
     mspec = MODEL_BY_KEY.get(model_key)

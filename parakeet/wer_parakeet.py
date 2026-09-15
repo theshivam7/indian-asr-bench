@@ -31,10 +31,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.efficiency import cudnn_disabled, timed
 from utils.io_helpers import positive_float, probe_audio_duration, text_value
+from utils.registry import MODEL_SPECS
 from utils.transcribe import temp_wavs
 
+NEMO_MODELS = tuple(m.key for m in MODEL_SPECS if m.engine.startswith("nemo"))
 BATCH_SIZE = 16
-CHECKPOINT_EVERY = 50
+CHECKPOINT_EVERY = 200
 
 
 def transcribe_batch(model, samples, audio_col):
@@ -50,7 +52,7 @@ def transcribe_batch(model, samples, audio_col):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default="parakeet", choices=["parakeet", "parakeet_ctc"])
+    ap.add_argument("--model", default="parakeet", choices=NEMO_MODELS)
     ap.add_argument("--dataset", default="tie")
     args = ap.parse_args()
 
@@ -162,10 +164,12 @@ def main():
 
     out_path = os.path.join(stage1_raw_dir(dataset), f"wer_{model_key}_raw.csv")
     pd.DataFrame(all_rows).to_csv(out_path, index=False)
-    write_run_manifest(model_key, dataset, spec,
-                       extra={**run_timing,
-                              "decode_kwargs": {"batch_size": BATCH_SIZE, "engine_defaults": "nemo"}})
+    manifest = write_run_manifest(model_key, dataset, spec,
+                                  extra={**run_timing,
+                                         "decode_kwargs": {"batch_size": BATCH_SIZE, "engine_defaults": "nemo"}})
     print(f"\nSaved: {out_path}  ({len(all_rows)} samples)")
+    print(f"Manifest: {manifest}")
+    print(f"Run 'python normalize_and_score.py --dataset {dataset}' for scoring.")
     remove_checkpoint(model_key, dataset)
     print("Done.")
 

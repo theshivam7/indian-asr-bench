@@ -17,9 +17,9 @@ set -euo pipefail
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-$HOME/scratch}/envs/whisper}
-PARAKEET_ENV=${PARAKEET_ENV:-${SCRATCH:-$HOME/scratch}/envs/parakeet_env}
-QWEN3_ENV=${QWEN3_ENV:-${SCRATCH:-$HOME/scratch}/envs/qwen3_env}
+WHISPER_ENV=${WHISPER_ENV:-whisper}
+PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
+QWEN3_ENV=${QWEN3_ENV:-qwen3}
 # Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
 # will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
 HF_CACHE=${HF_CACHE:-${SCRATCH:-$HOME/scratch}/hf_cache}
@@ -36,11 +36,10 @@ echo "=== AESRC (Indian) pipeline started $(date) on $(hostname) ==="
 echo "--- GPU / CUDA diagnostics ---"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
 
-# Stage 1 -- Whisper family (whisper env)
+# Stage 1: Whisper family (whisper env)
 conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
-# Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
-# non-interactive PBS batch shell (same quirk documented in job_svarah.pbs); without
-# this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
+# Conda's activation hooks do not always update PATH/LD_LIBRARY_PATH in a
+# non-interactive PBS batch shell; without this, the env's ffmpeg and libraries lose to the system copies.
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok, '| device count:', torch.cuda.device_count()); sys.exit(0 if ok else 1)" \
     || { echo "[FATAL] CUDA not available in ${WHISPER_ENV} - aborting before a CPU-bound run"; exit 1; }

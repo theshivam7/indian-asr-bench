@@ -45,34 +45,31 @@ import string
 import sys
 import unicodedata
 
+import jiwer
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.normalize import normalize_text  # noqa: E402
 from utils.wer_compute import reference_word_recall  # noqa: E402
+from analysis.review_common import (  # noqa: E402
+    CHECK_OPTIONS, LABELS, REVIEW_FOLDERS, REVIEW_MODELS, REVIEWER_DECISION_OPTIONS,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ALL_MODELS = ["large", "parakeet", "parakeet_ctc", "qwen3", "medium"]
+ALL_MODELS = list(REVIEW_MODELS)
 
 # Per corpus: the folder and the columns between avg_wer_true and reference_check.
+# The sheet itself is always review_sheet.csv / review_sheet.xlsx.
 DATASETS = {
-    "tie": {"dir": "tie_validation", "sheet": "review_sheet",
+    "tie": {"dir": REVIEW_FOLDERS["tie"],
             "middle": ["n_models_flagged", "native_region", "duration_seconds"]},
-    "svarah": {"dir": "svarah_validation", "sheet": "review_sheet",
+    "svarah": {"dir": REVIEW_FOLDERS["svarah"],
                "middle": ["n_models_flagged", "native_language",
                           "duration_seconds", "ref_words"]},
-    "aesrc": {"dir": "aesrc_validation", "sheet": "review_sheet",
+    "aesrc": {"dir": REVIEW_FOLDERS["aesrc"],
               "middle": ["n_models_flagged", "duration_seconds"]},
 }
-
-# One vocabulary across all three sheets. Comma separated when a clip has several causes.
-LABELS = [
-    "Reference error", "Misalignment", "Truncated audio", "Disfluency",
-    "Number formatting", "Technical vocabulary", "Acronym or code",
-    "Hindi named entity", "Indian-language named entity",
-    "Foreign named entity", "English name or rare word",
-    "Brand or product name", "Accent / pronunciation", "Spelling variant",
-    "Short utterance",
-]
+SHEET_NAME = "review_sheet"
 
 # Both conditions must hold for a clip to count as short.
 SHORT_WORDS = 4
@@ -192,7 +189,6 @@ def normalize_for_compare(text: str) -> str:
 
 
 def word_wer(ref: str, hyp: str):
-    import jiwer
     if not ref and not hyp:
         return 0.0
     if not ref:
@@ -261,11 +257,11 @@ def main() -> None:
 
     cfg = DATASETS[args.dataset]
     folder = os.path.join(HERE, cfg["dir"])
-    sheet_csv = os.path.join(folder, cfg["sheet"] + ".csv")
+    sheet_csv = os.path.join(folder, SHEET_NAME + ".csv")
     args.in_path = args.in_path or sheet_csv
     args.base = args.base or sheet_csv
     args.out_csv = args.out_csv or sheet_csv
-    args.out_xlsx = args.out_xlsx or os.path.join(folder, cfg["sheet"] + ".xlsx")
+    args.out_xlsx = args.out_xlsx or os.path.join(folder, SHEET_NAME + ".xlsx")
     args.error_types = args.error_types or os.path.join(folder, "error_types.csv")
     args.report = args.report or os.path.join(folder, "review_report.txt")
 
@@ -453,20 +449,6 @@ def write_xlsx(fieldnames, rows, xlsx_path) -> None:
     from openpyxl.utils import get_column_letter
     from openpyxl.comments import Comment
 
-    REFERENCE_CHECK_OPTIONS = ["Correct", "Partially correct", "Incorrect"]
-    HYP_CHECK_OPTIONS = ["Correct", "Partially correct", "Incorrect"]
-    REVIEWER_DECISION_OPTIONS = [
-        "Genuine model error", "Reference error", "Audio artifact",
-        "Not a real error", "Unsure",
-    ]
-    ERROR_TYPE_OPTIONS = [
-        "Noise / audio quality", "Speed (fast or slow / unclear)",
-        "Accent / pronunciation", "Technical vocabulary (jargon, numbers, names)",
-        "Disfluency (fillers, repetitions, false starts)",
-        "Code-switching (non-English words)", "Reference error",
-        "Misalignment (wrong clip boundary)", "Other",
-    ]
-
     wb = Workbook()
     ws = wb.active
     ws.title = "review"
@@ -491,7 +473,7 @@ def write_xlsx(fieldnames, rows, xlsx_path) -> None:
             cell.fill = flag_fill
             cell.comment = Comment(
                 "Free text. Pick from these, comma-separated if more than one applies:\n"
-                + "\n".join(f"- {o}" for o in ERROR_TYPE_OPTIONS),
+                + "\n".join(f"- {o}" for o in LABELS),
                 "review sheet",
             )
         elif name == "reviewer_decision":
@@ -548,14 +530,11 @@ def write_xlsx(fieldnames, rows, xlsx_path) -> None:
         ws.add_data_validation(dv)
         dv.add(f"{letter}2:{letter}{len(rows) + 1}")
 
-    add_dropdown("reference_check", REFERENCE_CHECK_OPTIONS)
+    add_dropdown("reference_check", CHECK_OPTIONS)
     for m in ALL_MODELS:
-        add_dropdown(f"hyp_{m}_check", HYP_CHECK_OPTIONS)
-    # reviewer_decision has no dropdown, see its header comment above.
+        add_dropdown(f"hyp_{m}_check", CHECK_OPTIONS)
 
     wb.save(xlsx_path)
-
-
 
 
 if __name__ == "__main__":

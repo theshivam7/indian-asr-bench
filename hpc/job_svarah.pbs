@@ -9,17 +9,17 @@
 
 set -euo pipefail
 
-# Full Svarah benchmark: 7 models -> Stage 2 -> Stage 3 (compare + statistics +
-# error analysis). Svarah is gated on HF: run `huggingface-cli login` (or set
-# HF_TOKEN) once so the download works. Its pinned schema is verified by the adapter.
+# Full Svarah benchmark: 7 models, then Stage 2 and Stage 3 (compare, statistics,
+# error analysis). Svarah is gated on HF: run `hf auth login` (or set HF_TOKEN)
+# once so the download works. Its pinned schema is verified by the adapter.
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-$HOME/scratch}/envs/whisper}
-PARAKEET_ENV=${PARAKEET_ENV:-${SCRATCH:-$HOME/scratch}/envs/parakeet_env}
-QWEN3_ENV=${QWEN3_ENV:-${SCRATCH:-$HOME/scratch}/envs/qwen3_env}
-# Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
-# will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
+WHISPER_ENV=${WHISPER_ENV:-whisper}
+PARAKEET_ENV=${PARAKEET_ENV:-parakeet}
+QWEN3_ENV=${QWEN3_ENV:-qwen3}
+# Default to scratch: $HOME is quota-limited on most clusters and a dataset cache
+# can exhaust it mid-run. Override with -v HF_CACHE=...
 HF_CACHE=${HF_CACHE:-${SCRATCH:-$HOME/scratch}/hf_cache}
 CUDA_MODULE=${CUDA_MODULE:-cuda/11.8.0}
 
@@ -34,11 +34,10 @@ echo "=== Svarah pipeline started $(date) on $(hostname) ==="
 echo "--- GPU / CUDA diagnostics ---"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv 2>&1 || echo "[WARN] nvidia-smi unavailable"
 
-# Stage 1. Whisper family (base / medium / large / large-v3-turbo)
+# Stage 1: Whisper family (base / medium / large / large-v3-turbo)
 conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
-# Conda's activation hooks don't always fully update PATH/LD_LIBRARY_PATH in a
-# non-interactive PBS batch shell (same quirk documented in job_finetune.pbs)
-# without this, openai-whisper's ffmpeg subprocess call silently fails per-clip.
+# Conda's activation hooks do not always update PATH/LD_LIBRARY_PATH in a
+# non-interactive PBS batch shell; without this, the env's ffmpeg and libraries lose to the system copies.
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 python -c "import torch,sys; ok=torch.cuda.is_available(); print('torch sees CUDA:', ok, '| device count:', torch.cuda.device_count()); sys.exit(0 if ok else 1)" \
     || { echo "[FATAL] CUDA not available in ${WHISPER_ENV} - aborting before a CPU-bound run"; exit 1; }
@@ -53,7 +52,7 @@ for M in base medium large large_v3_turbo; do
   python whisper_asr/run_whisper.py --model "${M}" --dataset svarah
 done
 
-# Stage 1. Parakeet TDT + CTC (parakeet env)
+# Stage 1: Parakeet TDT and CTC (parakeet env)
 conda activate "${PARAKEET_ENV}" || { echo "[FATAL] conda activate failed for '${PARAKEET_ENV}'"; conda info --envs; exit 1; }
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 for M in parakeet parakeet_ctc; do
@@ -61,13 +60,13 @@ for M in parakeet parakeet_ctc; do
   python parakeet/wer_parakeet.py --model "${M}" --dataset svarah
 done
 
-# Stage 1. Qwen3 (qwen3 env)
+# Stage 1: Qwen3 (qwen3 env)
 conda activate "${QWEN3_ENV}" || { echo "[FATAL] conda activate failed for '${QWEN3_ENV}'"; conda info --envs; exit 1; }
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 echo -e "\n=== Svarah Stage 1: qwen3 ==="
 python qwen3/wer_qwen3.py --dataset svarah
 
-# Stage 2 + 3 (CPU; whisper env has pandas/jiwer/matplotlib + whisper_normalizer)
+# Stage 2 and 3 (CPU; the whisper env has pandas, jiwer, matplotlib and whisper_normalizer)
 conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
 export PATH="${CONDA_PREFIX}/bin:${PATH}" LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 echo -e "\n=== Svarah Stage 2 + 3 ==="
@@ -75,10 +74,5 @@ python normalize_and_score.py --dataset svarah
 python analysis/compare_all.py --dataset svarah
 python analysis/statistics.py --dataset svarah
 python analysis/error_analysis.py --dataset svarah
-if [ -f paper/figures/make_paper_figures.py ]; then
-    python paper/figures/make_paper_figures.py --dataset tie,svarah
-else
-    echo "[skip] paper/ is local-only (not tracked in git) - generate figures locally"
-fi
 
 echo "=== Svarah pipeline complete $(date) ==="

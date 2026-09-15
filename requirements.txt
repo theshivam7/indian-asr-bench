@@ -15,17 +15,14 @@ num2words==0.5.14
 whisper_normalizer==0.1.0   # Whisper EnglishTextNormalizer for the whisper_norm mode (no torch)
 soundfile==0.13.1           # audio decode for scripts/smoke_test.py + validation audio extraction
 librosa==0.11.0             # resampling for the same tools (not needed for scoring)
-openpyxl==3.1.5             # .xlsx review sheets written by analysis/*_validation/build_sample.py
+openpyxl==3.1.5             # .xlsx review sheets written by analysis/build_review_sample.py and fill_review_checks.py
 # Imported directly by utils/io_helpers.raw_audio_column and utils/finetune_data, not
 # just pulled in transitively. Left unpinned on purpose: datasets owns the version, and
 # an exact pin here fights it (datasets 4.8.5 needs pa.json_(), absent before pyarrow 19).
 pyarrow
-# Optional: spaCy adds named-entity tokens to the Svarah NEER metric
-#   pip install spacy && python -m spacy download en_core_web_sm
-
 # For Stage 1 (ASR transcription), see per-engine requirements / conda specs:
-#   whisper_asr/requirements.txt           . Whisper base / medium / large / large-v3-turbo
-#   parakeet/requirements.txt         . Parakeet-TDT-0.6B-v2 + Parakeet-CTC-1.1B
-#   qwen3/requirements.txt        . Qwen3-ASR-1.7B
-#   finetune/requirements.txt. Whisper Medium fine-tuning (HF transformers)
-#   environments/{whisper,parakeet,qwen3}.yaml, reproducible conda envs
+#   whisper_asr/requirements.txt  all six openai-whisper sizes
+#   parakeet/requirements.txt     Parakeet-TDT-0.6B-v2 and Parakeet-CTC-1.1B
+#   qwen3/requirements.txt        Qwen3-ASR-1.7B
+#   finetune/requirements.txt     Whisper fine-tuning (HF transformers)
+#   environments/                 conda specs and resolved package lists

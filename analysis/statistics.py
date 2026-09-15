@@ -15,7 +15,8 @@ resampling clips i.i.d. understates variance and overstates significance
 (TIE: 985 scored clips from 280 speakers, median 3 clips/speaker). Clip-level CIs are
 reported alongside for transparency. Datasets without a speaker id fall back to
 the recording tag embedded in the clip ID when the registry defines
-`cluster_id_regex` (Svarah: 3232 recordings over 6656 clips), else to clip-level, each fallback is stated explicitly in the report.
+`cluster_id_regex` (Svarah: 3232 recordings over 6656 clips), else to clip level.
+The report states which fallback was used.
 
 Consistency guards: duplicate clip IDs raise; a model whose scored table covers
 fewer clips than the common intersection triggers a loud warning (prevents two
@@ -93,12 +94,12 @@ def _load_clip_table(dataset: str, model: str, mode: str) -> pd.DataFrame | None
     return out.set_index("ID")
 
 
-def _bootstrap_paired(E: dict, W: np.ndarray, B: int, rng) -> tuple[dict, np.ndarray]:
+def _bootstrap_paired(E: dict, W: np.ndarray, B: int, rng) -> dict:
     """Shared-index bootstrap over rows of E[m] / W. Returns per-model (B,) corpus WERs."""
     n = len(W)
     idx = rng.integers(0, n, size=(B, n))
     sw = W[idx].sum(axis=1)
-    return {m: e[idx].sum(axis=1) / sw for m, e in E.items()}, sw
+    return {m: e[idx].sum(axis=1) / sw for m, e in E.items()}
 
 
 def _holm(pvals: list[float]) -> list[float]:
@@ -141,8 +142,6 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
             f"Run normalize_and_score.py for these models first."
         )
     models = list(tables)
-    if not models:
-        return None
 
     # Common clips (intersection) so all models are compared on identical resamples.
     common = None
@@ -190,8 +189,7 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
     # --- Cluster structure: speakers if available, else recording tag from the
     # clip ID (spec.cluster_id_regex), else clips ---
     speakers = tables[models[0]].loc[common, "speaker"].to_numpy()
-    have_speakers = pd.Series(speakers).mask(pd.Series(speakers) == "").notna().sum() > 0 and \
-        len(set(s for s in speakers if s)) > 1
+    have_speakers = len({s for s in speakers if s}) > 1
     if have_speakers:
         # clips with a missing speaker id become their own singleton cluster
         labels = np.array([s if s else f"clip:{cid}" for s, cid in zip(speakers, common)])
@@ -219,9 +217,9 @@ def analyze(dataset: str, mode: str, B: int = B_DEFAULT):
     E_grp = {m: np.bincount(gidx, weights=E_clip[m], minlength=G) for m in models}
 
     rng = np.random.default_rng(SEED)
-    boot_cl, _ = _bootstrap_paired(E_grp, W_grp, B, rng)       # cluster-level (primary)
+    boot_cl = _bootstrap_paired(E_grp, W_grp, B, rng)       # cluster-level (primary)
     rng2 = np.random.default_rng(SEED)
-    boot_clip, _ = _bootstrap_paired(E_clip, ref_words, B, rng2)  # clip-level (secondary)
+    boot_clip = _bootstrap_paired(E_clip, ref_words, B, rng2)  # clip-level (secondary)
 
     per_model = []
     for m in models:
@@ -274,10 +272,6 @@ def main(dataset: str, mode: str, B: int) -> None:
     res = analyze(dataset, mode, B)
     out = analysis_dir(dataset)
 
-    if res is None:
-        print(f"[statistics] {spec.display} / {mode}: no scored clip tables found, nothing to analyze.")
-        return
-
     per_model, pairwise = res["per_model"], res["pairwise"]
     N, G, unit = res["N"], res["G"], res["cluster_unit"]
 
@@ -287,13 +281,12 @@ def main(dataset: str, mode: str, B: int) -> None:
     df_pw.to_csv(os.path.join(out, f"statistics_pairwise_{mode}.csv"), index=False)
 
     md_pm = df_pm[["display", "corpus_wer_pct", "ci_lo_pct", "ci_hi_pct", "ci_halfwidth_pp"]].copy()
-    md_pm.columns = ["Model", "Corpus WER %", "CI low", "CI high", "±pp"]
+    md_pm.columns = ["Model", "Corpus WER %", "CI low", "CI high", "CI half-width (pp)"]
     with open(os.path.join(out, f"statistics_{mode}.md"), "w") as f:
         f.write(f"# Statistical significance: {spec.display}, mode `{mode}`\n\n")
         f.write(f"Corpus WER with 95% bootstrap CI: {B} resamples, seed {SEED}, N={N} clips, "
-                f"resampled by **{unit}** ({G} clusters). Headline (chart) models only, "
-                f"the fine-tuning study is a separate hypothesis family with its own paired "
-                f"test in `finetune_comparison.md`. ")
+                f"resampled by **{unit}** ({G} clusters). Headline (chart) models only; "
+                f"the fine-tuning study is a separate hypothesis family with its own paired test. ")
         if unit == "speaker":
             f.write("Speaker-level resampling accounts for within-speaker correlation "
                     "(clips from one speaker share accent/channel); clip-level CIs are in the "

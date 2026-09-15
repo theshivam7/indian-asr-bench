@@ -56,7 +56,7 @@ Settings are recorded per run in `results/<dataset>/stage1_raw_transcripts/wer_<
 
 openai-whisper's temperature fallback is stochastic: clips that fail its quality gates at temperature 0 are re-decoded at sampled temperatures, so a fresh Stage-1 run can differ slightly on those clips. Decode settings were left at community defaults on purpose, because they are what practitioners run. This is why the **committed Stage-1 raw CSVs are the reproducibility anchor**, not the decode process.
 
-HF dataset revisions are pinned in [`utils/registry.py`](utils/registry.py) (`hf_revision`), so an upstream dataset update cannot silently change the benchmark. The `whisper_norm` mode uses [`whisper_normalizer==0.1.0`](https://pypi.org/project/whisper-normalizer/), verified byte-identical to [`openai/whisper`](https://github.com/openai/whisper)'s `EnglishTextNormalizer` on all 7,391 distinct reference and hypothesis strings in TIE.
+HF dataset revisions are pinned in [`utils/registry.py`](utils/registry.py) (`hf_revision`), so an upstream dataset update cannot silently change the benchmark. The `whisper_norm` mode uses [`whisper_normalizer==0.1.0`](https://pypi.org/project/whisper-normalizer/), verified byte-identical to [`openai/whisper`](https://github.com/openai/whisper)'s `EnglishTextNormalizer` on all 9,493 distinct gold-reference and hypothesis strings in TIE.
 
 ---
 
@@ -103,7 +103,7 @@ All nine pretrained models run as-is on all three datasets; that is the headline
 
 TIE's and AESRC's `test` splits are the eval sets; `train` and `validation` are used only for fine-tuning. Svarah has no train or validation split and is eval-only.
 
-**TIE_shorts test-split demographics:**
+**TIE_shorts test-split demographics (985 scored clips):**
 
 | Attribute | Distribution |
 |-----------|-------------|
@@ -310,7 +310,7 @@ AESRC's Indian subset is short, prompted read speech (mean 4.47s/clip, filtered 
 
 Statistical check: speaker-clustered paired bootstrap over 481 speakers, Holm-corrected across all 36 pairs ([full tables](results/aesrc/analysis/statistics_transcript_clean.md)).
 
-- 30 of the 36 pairs come out significant. The smallest difference this corpus can separate (0.53 pp) is finer than Svarah's (0.79 pp) or TIE's (0.84 pp), and its 481 clusters are real speakers.
+- 30 of the 36 pairs come out significant. The smallest significant difference on this corpus (0.53 pp) is finer than Svarah's (0.79 pp) or TIE's (0.84 pp), and its 481 clusters are real speakers.
 - Large-v3 and Qwen3 are joint leaders: inseparable from each other (5.20% vs 5.23%, Holm p=1.0). Large-v3 separates from every model below them; Qwen3 from all except Medium (p=0.103).
 - Medium, large-v3-turbo, and Parakeet-TDT (5.73-6.26%) have no significant internal pair, and Whisper Small vs Parakeet-CTC (7.23% vs 7.50%) is the remaining tie.
 
@@ -347,7 +347,7 @@ Whether in-domain fine-tuning helps is only answerable if the test split isolate
 
 All 280 test speakers, and all 986 test clips, come from speakers that also appear in train ([`speaker_overlap.md`](results/tie/analysis/speaker_overlap.md)). There is no clip-level leakage, and this is the corpus's own released partition. But every comparison it supports is speaker-matched, so a gain measured on it mixes accent and content adaptation with adaptation to those particular voices.
 
-Repairing the split in place does not work either. Removing every train speaker who appears in test leaves 567 of 7,200 train clips, a 13x reduction. Three speaker-disjoint runs at that budget all move away from the baseline, one reaching +1.75 pp (p_Holm = 0.048), while three size-matched controls land flat ([`finetune_disjoint_control.md`](results/tie/analysis/finetune_disjoint_control.md)). So the official split's +0.20 pp null was hiding a regression. The TIE fine-tuning study is archived rather than reported, see [Archived: TIE_shorts fine-tuning](archived_tasks/tie_finetuning/README.md).
+Repairing the split in place does not work either. Removing every train speaker who appears in test leaves 567 of 7,200 train clips, a 13x reduction. (The overlap report itself counts the 7,884 raw train clips before filtering; 7,200 is the filtered count used for fine-tuning.) Three speaker-disjoint runs at that budget all move away from the baseline, one reaching +1.75 pp (p_Holm = 0.048), while three size-matched controls land flat ([`finetune_disjoint_control.md`](results/tie/analysis/finetune_disjoint_control.md)). So the official split's +0.20 pp null was hiding a regression. The TIE fine-tuning study is archived rather than reported, see [Archived: TIE_shorts fine-tuning](archived_tasks/tie_finetuning/README.md).
 
 ### AESRC2020 (Indian) can
 
@@ -355,7 +355,7 @@ Its 481 test speakers share zero overlap with the 38 train and validation speake
 
 | Size | Params | HF baseline | Fine-tuned | Δ (paired, speaker-clustered) | 95% CI | p (Holm) |
 |------|:------:|:-----------:|:----------:|:------------------------------:|:------:|:--------:|
-| Whisper Tiny | 39M | 17.45% | 12.64% | -4.81 pp | [-12.30, +1.71] | 0.163 |
+| Whisper Tiny | 39M | 17.45% | 12.64% | -4.81 pp | [-12.43, +2.56] | 0.187 |
 | Whisper Small | 244M | 7.22% | 5.64% | -1.58 pp | [-2.01, -1.15] | 0.003 |
 | Whisper Medium | 769M | 5.63% | 4.48% | -1.15 pp | [-1.55, -0.77] | 0.003 |
 
@@ -426,7 +426,9 @@ Qwen3-ASR is the slowest system at batch 1 on TIE (15.8 RTFx, against 18.9 for L
 
 ### Whisper barely uses the GPU on short clips
 
-Whisper's short-form path pads every clip to a fixed 30-second window, so on 4-second audio most of the batch is padding. Whisper Tiny sits at 1.8% mean SM utilization on Svarah and 2.0% on AESRC, against 37 to 61% for Parakeet and 52 to 63% for Qwen3, and its batching speedup there is only 1.8 to 1.9x against Parakeet-CTC's 33.4x. Dividing the padded window by the real audio in each 512-clip workload gives 1.29x on TIE, 5.66x on Svarah and 6.62x on AESRC, reported as `padded_rtfx_audio_s_per_s`. So on AESRC a Whisper system credited with 67 RTFx is sustaining 442 RTFx of padded audio. The column is blank for NeMo and Qwen3, which pad dynamically. Parakeet still leads on the padded basis, but the gap narrows from roughly 20x to 3.5x.
+Whisper's short-form path pads every clip to a fixed 30-second window, so on 4-second audio most of the batch is padding. Whisper Tiny sits at 1.8% mean SM utilization on Svarah and 2.0% on AESRC, against 37 to 61% for Parakeet and 52 to 63% for Qwen3, and its batching speedup there is only 1.8 to 1.9x against Parakeet-CTC's 33.4x. Dividing the padded window by the real audio in each 512-clip workload gives 1.29x on TIE, 5.66x on Svarah and 6.62x on AESRC, reported as `padded_rtfx_audio_s_per_s`.
+
+So on AESRC a Whisper system credited with 67 RTFx is sustaining 442 RTFx of padded audio. The column is blank for NeMo and Qwen3, which pad dynamically. Parakeet still leads on the padded basis, but the lead shrinks once padding is accounted for: on AESRC, Parakeet-CTC's lead over Whisper Tiny narrows from 22x to 3.4x.
 
 ### The 0.10 pp quality gate binds asymmetrically
 
@@ -446,7 +448,7 @@ Full per-batch data: [`throughput_tie.md`](results/tie/analysis/throughput_tie.m
 
 ## Normalization
 
-Every WER number above depends on the reference field and the normalizer chosen before comparison. TIE's reference swap shifts every model 2.3 to 3.5 pp, and normalizer choice alone moves the verbatim models up to 6.5 pp on Svarah. That is as much as the gap between mid-tier models. It also reaches the conclusions: re-running the full inference stack under both normalizers changes **6 of 36 Holm-corrected pairwise verdicts on TIE**, against 0 of 36 on Svarah and AESRC.
+Every WER number above depends on the reference field and the normalizer chosen before comparison. Reference and normalizer choice together move every model 2.3 to 3.5 pp on TIE, and normalizer choice alone moves the verbatim models up to 6.5 pp on Svarah. That is as much as the gap between mid-tier models. It also reaches the conclusions: re-running the full inference stack under both normalizers changes **6 of 36 Holm-corrected pairwise verdicts on TIE**, against 0 of 36 on Svarah and AESRC.
 
 ### Normalizers and modes
 
@@ -500,12 +502,12 @@ The six TIE pairs whose verdict depends on the normalizer:
 
 | Pair | `transcript_clean` | `whisper_norm` |
 |---|---|---|
-| Base vs Large-v3 | +1.59 pp, p=0.011, significant | +1.28 pp, p=0.055, not significant |
-| Base vs Qwen3 | +0.86 pp, p=0.058, not significant | +1.63 pp, p=0.007, significant |
-| Medium vs Parakeet-TDT | -0.84 pp, p=0.031, significant | -0.69 pp, p=0.055, not significant |
-| large-v3-turbo vs Qwen3 | +1.31 pp, p=0.136, not significant | +2.35 pp, p=0.007, significant |
-| Parakeet-CTC vs Qwen3 | -0.22 pp, p=1.000, not significant | +0.79 pp, p=0.007, significant |
-| Parakeet-TDT vs Qwen3 | -1.07 pp, p=0.007, significant | -0.23 pp, p=1.000, not significant |
+| Base vs Large-v3 | +1.59 pp, p_holm=0.011, significant | +1.28 pp, p_holm=0.055, not significant |
+| Base vs Qwen3 | +0.86 pp, p_holm=0.058, not significant | +1.63 pp, p_holm=0.007, significant |
+| Medium vs Parakeet-TDT | -0.84 pp, p_holm=0.031, significant | -0.69 pp, p_holm=0.055, not significant |
+| large-v3-turbo vs Qwen3 | +1.31 pp, p_holm=0.136, not significant | +2.35 pp, p_holm=0.007, significant |
+| Parakeet-CTC vs Qwen3 | -0.22 pp, p_holm=1.000, not significant | +0.79 pp, p_holm=0.007, significant |
+| Parakeet-TDT vs Qwen3 | -1.07 pp, p_holm=0.007, significant | -0.23 pp, p_holm=1.000, not significant |
 
 The Parakeet-CTC versus Qwen3 pair reverses the sign of the difference as well as the verdict.
 
@@ -572,7 +574,7 @@ The classifier is a heuristic, not ground truth. To check it, a human transcribe
 
 Other findings from the review:
 
-- **Technical vocabulary drives a lot of this.** References regularly mangle domain terms ("singlet state" becomes "simplest state", "resolution" becomes "solution"). 14 of 49 clips show this pattern.
+- **Technical vocabulary drives a lot of this.** References regularly mangle domain terms ("singlet state" becomes "simplest state", "resolution" becomes "solution"). 13 of 49 clips show this pattern.
 - **Some reference errors flip the meaning.** One reference drops the word "no", turning "there is no functional dependency" into its opposite.
 - **Model-level pattern.** Medium comes out cleanest against the corrected reference (mean WER 15.1%, 2 of 49 clips still wrong) and Large-v3 the worst (20.9%, 8 of 49), mostly through degenerate repetition loops.
 
@@ -591,7 +593,7 @@ On TIE the correction removes three quarters of the measured error. On Svarah it
 **What goes wrong instead.** Each clip carries one or more labels from a set shared across the three sheets. The three corpora load onto different ones:
 
 - **Svarah, 29 of 60 clips: number formatting.** The references write digits, and account numbers, pincodes, UPI handles and PRAN identifiers dominate the flagged set. Whisper Large-v3 and Medium emit digits, which is what the normalizer expects, while Parakeet, Parakeet-CTC and Qwen3 read the same number aloud, a fair transcription that scores as wrong. On one 5-word clip holding a 20-digit application ID, reading it aloud pushes Parakeet past 380% WER while Large scores 0%. Part of the gap between those two groups on Svarah is formatting, not accuracy.
-- **AESRC, 16 of 28 clips: named entities.** Song, show, dish and place names, 13 of them Hindi and the rest Tamil, Malayalam, Punjabi, Spanish, Portuguese, German or French. Two clips are not real errors once spelling variants ("any more" against "anymore") and clock-time formatting are allowed for.
+- **AESRC, 21 of 28 clips: named entities.** Song, show, dish and place names: 13 Hindi, 3 other Indian-language (Tamil, Malayalam, Punjabi), and 5 foreign (Spanish, Portuguese, German or French). Two clips are not real errors once spelling variants ("any more" against "anymore") and clock-time formatting are allowed for.
 - **TIE, 42 of 49 clips: reference errors**, 5 of which are references taken from a different segment of the lecture.
 
 **Scope:** these samples are not random. They were built by requiring several strong models to agree a clip is hard, so they explain why those clips are hard and do not estimate what fraction of corpus errors are reference-caused. All three are one annotator working non-blind, chosen for diagnostic depth over a formal blind protocol.
@@ -664,8 +666,8 @@ AESRC licence position: the mirror (`pengyizhou/accented_english`) states no lic
 
 ## Limitations
 
-- The human review behind the classifier check is one annotator, working non-blind, on a targeted 49-clip sample of the hardest TIE clips. It explains why those clips are hard; it does not give a corpus-wide reference-fault rate. On that sample the classifier's precision is 12 of 12 but its recall is about a quarter, so every artifact share in this document is a lower bound.
-- Svarah can only be clustered by recording (3,232 clusters), not by its 117 true speakers, since the public release exposes no speaker IDs. True speaker clustering would widen the confidence intervals.
+- The human review behind the classifier check is one annotator, working non-blind, on targeted samples of the hardest clips in all three corpora (49 TIE, 60 Svarah, 28 AESRC). It explains why those clips are hard; it does not give a corpus-wide reference-fault rate. On the TIE sample the classifier's precision is 12 of 12 but its recall is about a quarter, so every artifact share in this document is a lower bound.
+- Svarah can only be clustered by recording (3,232 clusters), not by its 117 true speakers (per the [dataset paper](https://arxiv.org/abs/2305.15760); the public release exposes no speaker IDs to verify this in-repo). True speaker clustering would widen the confidence intervals.
 - The fine-tuning seed study has no seed-level significance test. Every seed improves on its baseline, but this is reported as strong informal evidence, not a confirmed result.
 - The throughput gate rejects only NeMo and Qwen3 entries, never a Whisper one, so the published operating points are conservative for the batched engines and unaffected for Whisper. RTFx divides by real audio seconds while Whisper pads every clip to 30 seconds, so Whisper's throughput and memory figures on the short-clip corpora reflect the padded window. The gate compares each runtime only to its own batch 1, never to the leaderboard run.
 - Training-data contamination is possible: NPTEL lectures are public and may appear in Whisper's training data. A small probe (n=10) found no memorization signal, but it is low-powered.

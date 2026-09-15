@@ -84,24 +84,10 @@ EXPECTED_PROTOCOL = {
 }
 
 
-# Post-hoc sensitivity gate.
-#
-# The pre-registered gate (utils/throughput.py) is two-sided at 0.10 pp and forbids
-# any increase in empty hypotheses. It is architecture-asymmetric in practice:
-# Whisper pads every clip to a fixed 30 s window, so batching cannot perturb its
-# output and the gate never binds; the NeMo models pad to batch-max, so batching
-# moves their corpus WER by 0.1-0.3 pp and the gate clamps them to a small batch.
-# On TIE that costs Parakeet-CTC a factor of 7.5 (batch 1 at 228 RTFx published,
-# batch 128 measured at 1723 RTFx and rejected at +0.33 pp).
-#
-# Three observations say the gate is filtering noise rather than decode drift: it
-# is non-monotonic in batch size, it is two-sided (a Svarah batch scoring 0.195 pp
-# BETTER than batch 1 was rejected), and the same two models pass at batch 128 on
-# AESRC while being clamped on TIE and Svarah.
-#
-# The pre-registered result stays the headline and is still what validate()
-# enforces. These constants only drive an additional, clearly-labelled column so
-# the cost of the pre-registered choice is visible rather than hidden.
+# Post-hoc sensitivity gate: one-sided, 0.5 pp, up to 1% more empty hypotheses.
+# The pre-registered two-sided 0.1 pp gate only ever binds on the dynamically padded
+# NeMo models (Whisper pads to 30 s, so batching cannot change its output), so this
+# column shows what that asymmetry costs. The headline stays the pre-registered result.
 SENSITIVITY_MAX_WER_INCREASE_PP = 0.5
 SENSITIVITY_MAX_EMPTY_INCREASE_FRAC = 0.01
 
@@ -113,6 +99,7 @@ SENSITIVITY_MAX_EMPTY_INCREASE_FRAC = 0.01
 # NeMo pads to batch maximum, which is dynamic, and the Qwen3 backend's windowing is
 # not recorded per batch, so neither gets a padded column rather than a guessed one.
 FIXED_WINDOW_RUNTIMES = {"huggingface_transformers_whisper_pipeline": 30.0}
+EXPECTED_TORCH_BASE = "2.5.1"
 
 
 def throughput_best(entries: list[dict]) -> dict | None:
@@ -127,7 +114,7 @@ def throughput_best(entries: list[dict]) -> dict | None:
     return select_best_entry(ok) if ok else None
 
 
-def gate_reasons(entry: dict, baseline: dict, n_clips: int) -> list[str]:
+def gate_reasons(entry: dict, baseline: dict) -> list[str]:
     """Why the pre-registered gate rejected this batch. Empty list means it passed."""
     if entry.get("status") != "ok":
         return [str(entry.get("status") or "not run")]
@@ -251,9 +238,9 @@ def validate(results: list[dict], dataset: str, require_complete: bool) -> None:
                     f"{r['_path']}: {package}={actual!r}, expected {expected!r}"
                 )
         torch_version = r.get("software", {}).get("torch")
-        if not isinstance(torch_version, str) or torch_version.split("+")[0] != "2.5.1":
+        if not isinstance(torch_version, str) or torch_version.split("+")[0] != EXPECTED_TORCH_BASE:
             errors.append(
-                f"{r['_path']}: torch={torch_version!r}, expected base version '2.5.1'"
+                f"{r['_path']}: torch={torch_version!r}, expected base version {EXPECTED_TORCH_BASE!r}"
             )
         for field, expected in EXPECTED_WORKLOAD.items():
             actual = r.get("workload", {}).get(field)
@@ -509,7 +496,7 @@ def sweep_frame(results: list[dict], dataset: str) -> pd.DataFrame:
         n_clips = r["workload"]["n_clips"]
         selected = r["selection"]["best_batch_size"]
         for e in sorted(r["batch_results"], key=lambda x: x["batch_size"]):
-            reasons = gate_reasons(e, b1, n_clips)
+            reasons = gate_reasons(e, b1)
             median = e.get("median") or {}
             quality = e.get("quality") or {}
             rows.append(
@@ -592,6 +579,21 @@ def main() -> None:
         ]
     ]
     missing = [m for m in CHART_MODELS if m not in set(df["model"])]
+    whisper = df["runtime"].isin(FIXED_WINDOW_RUNTIMES)
+    util = df.loc[whisper, "gpu_util_mean_pct"].dropna()
+    if len(util):
+        whisper_util_note = (
+            f"Whisper's mean GPU utilization on this corpus is {util.min():.1f} to "
+            f"{util.max():.1f}%, so the smaller Whisper models are bounded largely by "
+            "CPU-side audio decode rather than by the GPU."
+        )
+    else:
+        whisper_util_note = ""
+    gate_costs = df.loc[whisper, "gate_cost_x"].dropna()
+    if len(gate_costs) and (gate_costs.round(2) == 1.0).all():
+        whisper_gate_note = "Every Whisper row reads 1.00 on this corpus."
+    else:
+        whisper_gate_note = "Whisper rows are expected to read 1.00."
     with open(out_md, "w") as f:
         f.write(f"# Offline throughput: {args.dataset}\n\n")
         if missing:
@@ -611,9 +613,8 @@ def main() -> None:
             "their cost is per utterance and does not fall when clips get shorter. "
             "The NeMo systems pad to the longest clip in the batch, so their cost "
             "tracks real audio. RTFx divides by real audio seconds, which flatters "
-            "the padded systems on short-clip corpora. Whisper's mean GPU "
-            "utilization on the curated corpora is under 2%, so those numbers are "
-            "largely bounded by CPU-side audio decode rather than by the A100.\n\n"
+            "the padded systems on short-clip corpora. "
+            f"{whisper_util_note}\n\n"
         )
         f.write(build_md_table(display))
         f.write("\n")
@@ -654,8 +655,8 @@ def main() -> None:
         f.write(
             "The same comparison with no quality filter at all: `tput_*` is the "
             "fastest batch measured for each model, and `gate_cost_x` is how much "
-            "throughput the pre-registered gate gives up. Every Whisper row reads "
-            "1.00 on all three corpora: a fixed 30 s window makes Whisper's output "
+            "throughput the pre-registered gate gives up. "
+            f"{whisper_gate_note} A fixed 30 s window makes Whisper's output "
             "batch-invariant, so the WER arm of the gate cannot bind on it. Values "
             "above 1.00 are therefore a cost borne only by the dynamically padded "
             "engines, which is why the gate is better read as a diagnostic than as "
@@ -679,8 +680,7 @@ def main() -> None:
         if len(mult):
             f.write(
                 f"Padding multiplier on this corpus: {mult.iloc[0]:.2f}x "
-                f"({df['best_batch_size'].size} systems, "
-                f"{int(mult.notna().sum())} of them fixed-window).\n\n"
+                f"({len(df)} systems, {len(mult)} of them fixed-window).\n\n"
             )
         f.write(
             f"Per-batch measurements for every model, including the ones the gate "

@@ -1,7 +1,7 @@
 # Resolved environments
 
-Exact package sets captured from the NSCC cluster on 2026-07-30, the last day of access. These
-are what the published results were produced with, recovered before the account lapsed.
+Exact package sets captured from the compute cluster on 2026-07-30, after the last run. These
+are what the published results were produced with.
 
 `environments/parakeet.yaml` and `environments/qwen3.yaml` no longer solve: channel drift made
 their MKL / llvm-openmp / mkl_random build hashes mutually unsatisfiable, and conda's solver
@@ -48,7 +48,7 @@ pytorch-cuda-11.8-h7e8668a_6
 `transformers 4.57.6` for the Parakeet runs that produced the committed transcripts. The same
 holds for numpy (manifests say 2.2.6 for every Whisper, Parakeet and Qwen3 run, the pins say
 1.26.4) and jiwer (Whisper runs recorded 4.0.0, Parakeet runs 3.1.0). None of this changes a
-published number: scoring happens in the top-level `requirements.txt` environment and every
+published number: Stage 2 and 3 run in any environment satisfying the top-level `requirements.txt` (on the cluster that was the whisper env) and every
 Stage 2 table rebuilds byte-identically from the committed transcripts. Use the manifests to know
 what produced a given result, and these files to get a working environment. They answer
 different questions.

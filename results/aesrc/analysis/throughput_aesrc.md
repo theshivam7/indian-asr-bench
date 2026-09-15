@@ -2,7 +2,7 @@
 
 Best quality-valid batch size on the common duration-sorted workload, under the pre-registered gate. RTFx is audio seconds processed per wall-clock second; higher is better.
 
-> **Read RTFx together with utterances/s.** The Whisper systems run the short-form Transformers path, which zero-pads every clip to 30 s, so their cost is per utterance and does not fall when clips get shorter. The NeMo systems pad to the longest clip in the batch, so their cost tracks real audio. RTFx divides by real audio seconds, which flatters the padded systems on short-clip corpora. Whisper's mean GPU utilization on the curated corpora is under 2%, so those numbers are largely bounded by CPU-side audio decode rather than by the A100.
+> **Read RTFx together with utterances/s.** The Whisper systems run the short-form Transformers path, which zero-pads every clip to 30 s, so their cost is per utterance and does not fall when clips get shorter. The NeMo systems pad to the longest clip in the batch, so their cost tracks real audio. RTFx divides by real audio seconds, which flatters the padded systems on short-clip corpora. Whisper's mean GPU utilization on this corpus is 2.0 to 27.8%, so the smaller Whisper models are bounded largely by CPU-side audio decode rather than by the GPU.
 
 | model_display | best_batch_size | best_rtfx_audio_s_per_s | best_rtfx_min | best_rtfx_max | batching_speedup_x | utterances_per_s | gpu_util_mean_pct | device_memory_peak_mib | estimated_gpu_wh_per_audio_hour | completion_latency_p95_s | best_wer_pct | wer_delta_pp_vs_batch1 | padded_rtfx_audio_s_per_s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -23,7 +23,7 @@ No model's selection changes under the wider gate.
 
 ## Gate cost, every model
 
-The same comparison with no quality filter at all: `tput_*` is the fastest batch measured for each model, and `gate_cost_x` is how much throughput the pre-registered gate gives up. Every Whisper row reads 1.00 on all three corpora: a fixed 30 s window makes Whisper's output batch-invariant, so the WER arm of the gate cannot bind on it. Values above 1.00 are therefore a cost borne only by the dynamically padded engines, which is why the gate is better read as a diagnostic than as a neutral selection rule. Values slightly below 1.00 are possible where the wider candidate set lets the within-1% tie rule pick a smaller batch; treat those as ties.
+The same comparison with no quality filter at all: `tput_*` is the fastest batch measured for each model, and `gate_cost_x` is how much throughput the pre-registered gate gives up. Every Whisper row reads 1.00 on this corpus. A fixed 30 s window makes Whisper's output batch-invariant, so the WER arm of the gate cannot bind on it. Values above 1.00 are therefore a cost borne only by the dynamically padded engines, which is why the gate is better read as a diagnostic than as a neutral selection rule. Values slightly below 1.00 are possible where the wider candidate set lets the within-1% tie rule pick a smaller batch; treat those as ties.
 
 | model_display | best_batch_size | best_rtfx_audio_s_per_s | tput_batch_size | tput_rtfx_audio_s_per_s | tput_wer_delta_pp_vs_batch1 | gate_cost_x |
 | --- | --- | --- | --- | --- | --- | --- |

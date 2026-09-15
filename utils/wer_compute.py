@@ -101,7 +101,7 @@ def compute_corpus_wer(
         "insertion_rate": ins / total_ref_words if total_ref_words else 0.0,
     }
 
-    if per_sample_wers and len(per_sample_wers) > 0:
+    if per_sample_wers:
         sorted_wers = sorted(per_sample_wers)
         n = len(sorted_wers)
         result["mean_wer"] = statistics.mean(sorted_wers)

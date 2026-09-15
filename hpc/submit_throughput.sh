@@ -3,15 +3,15 @@
 # usage stays manageable while every model/dataset result remains separate.
 set -euo pipefail
 
-: "${PROJECT:?export PROJECT=<NSCC project id>}"
+: "${PROJECT:?export PROJECT=<PBS project id>}"
 DATASETS=${DATASETS:-tie:svarah:aesrc}
 GIT_COMMIT=$(git rev-parse HEAD)
 SUBMIT_DIR=$(pwd -P)
 mkdir -p "${SUBMIT_DIR}/logs"
 SCRATCH_DIR=${SCRATCH:-${HOME}/scratch}
 WHISPER_THROUGHPUT_ENV=${WHISPER_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/whisper_throughput}
-PARAKEET_ENV=${PARAKEET_ENV:-${SCRATCH_DIR}/envs/parakeet_throughput}
-QWEN3_ENV=${QWEN3_ENV:-${SCRATCH_DIR}/envs/qwen3_throughput}
+PARAKEET_THROUGHPUT_ENV=${PARAKEET_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/parakeet_throughput}
+QWEN3_THROUGHPUT_ENV=${QWEN3_THROUGHPUT_ENV:-${SCRATCH_DIR}/envs/qwen3_throughput}
 
 # Result files may legitimately be present or modified. Every other tracked or
 # untracked file must match GIT_COMMIT so local modules cannot silently shadow
@@ -57,18 +57,18 @@ check_common "${WHISPER_THROUGHPUT_ENV}"
 run_in_env "${WHISPER_THROUGHPUT_ENV}" ffmpeg -version >/dev/null
 run_in_env "${WHISPER_THROUGHPUT_ENV}" python -c \
   "from importlib.metadata import version; assert version('transformers')=='4.57.6' and version('accelerate')=='1.12.0' and version('safetensors')=='0.6.2'"
-check_common "${PARAKEET_ENV}"
-run_in_env "${PARAKEET_ENV}" python -c \
+check_common "${PARAKEET_THROUGHPUT_ENV}"
+run_in_env "${PARAKEET_THROUGHPUT_ENV}" python -c \
   "from importlib.metadata import version; assert version('nemo_toolkit')=='2.3.0'"
-check_common "${QWEN3_ENV}"
-run_in_env "${QWEN3_ENV}" python -c \
+check_common "${QWEN3_THROUGHPUT_ENV}"
+run_in_env "${QWEN3_THROUGHPUT_ENV}" python -c \
   "from importlib.metadata import version; assert version('qwen-asr')=='0.0.6' and version('transformers')=='4.57.6'"
 
 WHISPER_CUDA=$(run_in_env "${WHISPER_THROUGHPUT_ENV}" python -c \
   "import torch; print(f'{torch.version.cuda}|{torch.backends.cudnn.version()}')" | tr -d '\r\n')
-PARAKEET_CUDA=$(run_in_env "${PARAKEET_ENV}" python -c \
+PARAKEET_CUDA=$(run_in_env "${PARAKEET_THROUGHPUT_ENV}" python -c \
   "import torch; print(f'{torch.version.cuda}|{torch.backends.cudnn.version()}')" | tr -d '\r\n')
-QWEN3_CUDA=$(run_in_env "${QWEN3_ENV}" python -c \
+QWEN3_CUDA=$(run_in_env "${QWEN3_THROUGHPUT_ENV}" python -c \
   "import torch; print(f'{torch.version.cuda}|{torch.backends.cudnn.version()}')" | tr -d '\r\n')
 if [ "${WHISPER_CUDA}" != "${PARAKEET_CUDA}" ] || [ "${WHISPER_CUDA}" != "${QWEN3_CUDA}" ]; then
     echo "[FATAL] CUDA/cuDNN builds differ across environments:" >&2
@@ -83,7 +83,7 @@ submit() {
     model=$2
     qsub -P "${PROJECT}" \
       -o "${SUBMIT_DIR}/logs/pbs_${engine}_${model}_${GIT_COMMIT:0:7}.out" \
-      -v "ENGINE=${engine},MODEL=${model},DATASETS=${DATASETS},GIT_COMMIT=${GIT_COMMIT},SOURCE_SHA256=${SOURCE_SHA256},WHISPER_THROUGHPUT_ENV=${WHISPER_THROUGHPUT_ENV},PARAKEET_ENV=${PARAKEET_ENV},QWEN3_ENV=${QWEN3_ENV}" \
+      -v "ENGINE=${engine},MODEL=${model},DATASETS=${DATASETS},GIT_COMMIT=${GIT_COMMIT},SOURCE_SHA256=${SOURCE_SHA256},WHISPER_THROUGHPUT_ENV=${WHISPER_THROUGHPUT_ENV},PARAKEET_THROUGHPUT_ENV=${PARAKEET_THROUGHPUT_ENV},QWEN3_THROUGHPUT_ENV=${QWEN3_THROUGHPUT_ENV}" \
       hpc/job_throughput.pbs
 }
 

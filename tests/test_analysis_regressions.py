@@ -105,8 +105,8 @@ def test_build_rows_seed_aggregation_and_guards():
         by_size = {r["size"]: r for r in rows}
 
         tiny = by_size["tiny"]
-        # The 4th seed file exists on disk but is unreadable: must be EXCLUDED from
-        # n_seeds/seeds (the bug this session fixed), not silently included as a zero.
+        # Regression: an unreadable seed file must be excluded from n_seeds/seeds,
+        # not counted as a zero.
         assert tiny["n_seeds"] == 3, tiny
         assert tiny["seeds"] == "42,43,44", tiny
         assert abs(tiny["hf_baseline_wer"] - 30.0) < 1e-6
@@ -116,10 +116,8 @@ def test_build_rows_seed_aggregation_and_guards():
         assert abs(tiny["delta_pp_max"] - (-6.0)) < 1e-6
 
         small = by_size["small"]
-        # No baseline -> `deltas` is empty and `arr` falls back to absolute WERs.
-        # delta_pp_sd must be None here (the exact regression this session fixed):
-        # publishing the spread of absolute WERs under a column documented as a
-        # delta spread would be wrong even though arr.std() is well-defined.
+        # Regression: with no baseline, delta_pp_sd must be None, not the SD of
+        # absolute WERs.
         assert small["hf_baseline_wer"] is None
         assert small["delta_pp_mean"] is None
         assert small["delta_pp_sd"] is None
@@ -236,6 +234,8 @@ if __name__ == "__main__":
         try:
             fn()
             print(f"PASS {fn.__name__}")
+        except pytest.skip.Exception as e:
+            print(f"SKIP {fn.__name__}: {e}")
         except AssertionError as e:
             failed += 1
             print(f"FAIL {fn.__name__}: {e}")

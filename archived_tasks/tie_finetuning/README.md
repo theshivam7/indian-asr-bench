@@ -7,7 +7,7 @@ stays in SUMMARY.md.
 
 ## Why archived
 
-TIE's fine-tuned models did not reach a strong enough result to include in the paper. No size
+TIE's fine-tuned models did not reach a strong enough result to carry the fine-tuning story. No size
 (Tiny, Small, or Medium) showed a statistically significant gain over its pretrained baseline
 after Holm correction, and the test set is speaker-matched with training (100% speaker overlap),
 so any gain that did appear would be confounded with speaker adaptation rather than clean
@@ -40,13 +40,13 @@ early stopping on validation WER). Tiny and Small used a step-based recipe (`max
 effective batch 32, fp16, best checkpoint by validation WER), a disclosed recipe difference,
 not a bug. Every comparison decodes fine-tuned and pretrained through the identical HF pipeline,
 so fine-tuning is isolated from engine effects. Statistics use a paired speaker-clustered
-bootstrap over 280 speakers, Holm-corrected across this 3-test family.
+bootstrap over 280 speakers (10,000 resamples, seed 42), Holm-corrected across this 3-test family.
 
 | Size | Params | Pretrained (HF) | Fine-tuned | Delta (paired) | 95% CI | p (Holm) |
 |------|:------:|:---:|:---:|:---:|:---:|:---:|
-| Whisper Tiny | 39M | 22.10% | 19.14% | -2.96 pp | [-6.35, +0.13] | 0.195 |
-| Whisper Small | 244M | 17.38% | 16.21% | -1.17 pp | [-3.97, +1.21] | 0.774 |
-| Whisper Medium | 769M | 14.42% | 14.61% | +0.20 pp | [-0.46, +1.03] | 0.774 |
+| Whisper Tiny | 39M | 22.10% | 19.14% | -2.96 pp | [-6.50, +0.34] | 0.230 |
+| Whisper Small | 244M | 17.38% | 16.21% | -1.17 pp | [-4.08, +1.23] | 0.771 |
+| Whisper Medium | 769M | 14.42% | 14.61% | +0.20 pp | [-0.46, +1.06] | 0.771 |
 
 A capacity gradient, but not a significant one. Point gains shrink monotonically as capacity
 grows, exactly the shape a capacity ceiling predicts, but no delta survives Holm correction at

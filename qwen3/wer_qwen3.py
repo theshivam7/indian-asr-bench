@@ -56,7 +56,7 @@ def main():
     print(f"Model loaded in {load_timing[0]:.1f}s.\n")
 
     audio_col = get_dataset(args.dataset).audio_col
-    decode_kwargs = {"language": "English", "max_new_tokens": 512}
+    decode_kwargs = {"language": "English", "max_new_tokens": 512, "engine_defaults": "qwen-asr"}
 
     run_transcription(MODEL_KEY, args.dataset,
                       transcribe_one=lambda s: transcribe_qwen3(model, s, audio_col),

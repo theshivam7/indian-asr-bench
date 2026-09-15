@@ -86,7 +86,7 @@ from datasets import load_dataset as _load_dataset  # noqa: E402
 _HF_CACHE = _os.path.expanduser("~/hf_cache")
 ds = _load_dataset("raianand/TIE_shorts", split="test", streaming=True, cache_dir=_HF_CACHE)
 
-# Build lookup: id → audio data
+# Build lookup: id to audio data
 print(f"Scanning stream for {len(all_needed_ids)} needed IDs (stops early once all found)...")
 id_to_audio: dict[str, dict] = {}
 
@@ -118,7 +118,7 @@ for model, df in model_tops.items():
         save_wav(audio["array"].copy(), audio["sampling_rate"], out_path)
         saved += 1
 
-    print(f"Whisper {model}: {saved}/20 clips → {out_dir}/")
+    print(f"Whisper {model}: {saved}/20 clips saved to {out_dir}/")
 
 print(f"\nDone. All audio in: {OUT_BASE}/")
 print("Subfolders: base/ medium/ large/")

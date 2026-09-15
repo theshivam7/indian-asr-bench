@@ -37,29 +37,32 @@ chain phases you submit separately. Phases: `1` (TIE new models), `2` (Svarah),
 `3` (AESRC Indian pretrained benchmark), `ft-aesrc` (tiny/small/medium fine-tune on
 AESRC, three serially-chained jobs).
 
-Dependency graph (`-->` = PBS `afterok`):
-
-```
-job_new_models_tie --+              (GPU ~5h)   writes results/tie
-                     +-> job_figures (CPU)      writes cross-dataset figures (local paper/ directory, not tracked)
-job_svarah ----------+              (GPU ~10h)  writes results/svarah
-```
-
-TIE-new-models and Svarah run **in parallel** (separate result dirs); a final CPU
-figures job rebuilds the cross-dataset plots once both are done. To submit a
-single phase on its own, use `--phase 1|2` instead of `all`.
+Phase 1 (`job_new_models_tie`, GPU ~5h, writes `results/tie`) and phase 2
+(`job_svarah`, GPU ~10h, writes `results/svarah`) run independently and can be
+submitted in either order or in parallel; there is no dependency between them.
+To submit a single phase on its own, use `--phase 1|2` instead of `all`.
 
 ## Environments
 
 | conda env | created from | used by |
 |-----------|--------------|---------|
-| `whisper` | `environments/whisper.yaml` | Whisper inference **+ all CPU scoring/analysis/figures** (has `whisper_normalizer`) |
+| `whisper` | `environments/whisper.yaml` | Whisper inference **+ all CPU scoring/analysis** (has `whisper_normalizer`) |
 | `parakeet` | `bash parakeet/setup.sh` | Parakeet-TDT / Parakeet-CTC (NeMo) |
 | `qwen3` | `bash qwen3/setup.sh` | Qwen3-ASR |
 | `whisper_medium_ft` | `bash finetune/setup.sh` | fine-tuning (HF `transformers`, `datasets==4.8.5`) |
 | `$SCRATCH/envs/whisper_throughput` | `bash throughput/setup_whisper.sh` | batched Whisper throughput only; scratch prefix avoids the HOME quota |
 | `$SCRATCH/envs/parakeet_throughput` | `bash throughput/setup_native.sh parakeet` | batched Parakeet throughput, pinned to the same CUDA build |
 | `$SCRATCH/envs/qwen3_throughput` | `bash throughput/setup_native.sh qwen3` | batched Qwen3-ASR throughput, pinned to the same CUDA build |
+
+`parakeet/setup.sh` and `qwen3/setup.sh` install PyTorch with an exact CUDA 11.8
+build string via conda before the pip install, which is the path the published
+results were produced with. `submit_all.sh --setup` instead does a plain `conda
+create` + `pip install -r requirements.txt` for those two envs (see the comment
+above `_env_ok "$PARAKEET_ENV"` in `submit_all.sh`): the full conda solve for
+those specs is unsatisfiable due to channel drift, and pip's `torch==2.5.1`
+wheel bundles its own CUDA 12.1 runtime, which still runs on a CUDA 11.8 host
+driver. Use `bash parakeet/setup.sh` / `bash qwen3/setup.sh` directly if you
+want the exact pinned build instead.
 
 Before the first throughput submission (and after pulling dependency changes),
 create or refresh all three dedicated throughput environments:
@@ -77,7 +80,6 @@ qsub -P <id> -v MODEL=large_v3_turbo,DATASET=tie hpc/job_whisper.pbs   # one Whi
 qsub -P <id> -v DATASET=svarah                    hpc/job_parakeet.pbs # (parakeet/qwen3 read DATASET too)
 qsub -P <id> -v DATASET=svarah                    hpc/job_qwen3.pbs
 qsub -P <id> -v DATASET=tie                        hpc/job_score.pbs   # CPU-only rescore + analysis (no GPU)
-qsub -P <id> -v DATASETS=tie,svarah                hpc/job_figures.pbs # CPU-only combined figures
 qsub -P <id> -v DATASET=svarah                     hpc/run_pipeline.pbs # full from-scratch 9-model run
 ```
 

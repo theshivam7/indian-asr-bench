@@ -16,7 +16,7 @@ set -euo pipefail
 
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-$HOME/scratch}/envs/whisper}
+WHISPER_ENV=${WHISPER_ENV:-whisper}
 HF_CACHE=${HF_CACHE:-${SCRATCH:-$HOME/scratch}/hf_cache}
 DATASET=${DATASET:-tie}
 
@@ -38,9 +38,4 @@ python analysis/error_analysis.py --dataset "${DATASET}"
 case "${DATASET}" in
     tie|aesrc) python analysis/compare_finetune.py --dataset "${DATASET}" ;;
 esac
-if [ -f paper/figures/make_paper_figures.py ]; then
-    python paper/figures/make_paper_figures.py --dataset "${DATASET}"
-else
-    echo "[skip] paper/ is local-only (not tracked in git) - generate figures locally"
-fi
 echo "=== done $(date) ==="

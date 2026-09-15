@@ -88,7 +88,7 @@ def main(mode: str = PRIMARY_MODE) -> None:
     fig.suptitle("Corpus WER with 95% cluster-bootstrap confidence intervals "
                  f"({mode})", fontsize=10.5, y=1.02)
     fig.tight_layout(w_pad=1.6)
-    base = os.path.normpath(os.path.join(results_dir("tie"), "..", "benchmark_overview"))
+    base = os.path.join(os.path.dirname(results_dir("tie")), "benchmark_overview")
     for ext in ("png", "svg"):
         fig.savefig(f"{base}.{ext}", bbox_inches="tight")
     plt.close(fig)

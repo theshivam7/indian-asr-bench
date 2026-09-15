@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Indian-ASR-Bench, NSCC (ASPIRE2A / PBS Pro) submitter.
+# Indian-ASR-Bench PBS Pro submitter.
 #
 # Tuned for the real cluster layout: conda envs live as PREFIX envs on /scratch,
 # and $HOME is quota-limited, so ALL heavy I/O (HF dataset + model cache, fine-tune
@@ -17,9 +17,9 @@
 #                                          submitted serially (afterany-chained)
 #
 # USAGE (from the repo root on a login node):
-#     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase 1     # then 2, 3, ft-aesrc
-#     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --setup       # create/verify envs only
-#     PROJECT=<nscc_project_id> bash hpc/submit_all.sh --phase all   # submit 1+2, chained by afterok
+#     PROJECT=<project_id> bash hpc/submit_all.sh --phase 1     # then 2, 3, ft-aesrc
+#     PROJECT=<project_id> bash hpc/submit_all.sh --setup       # create/verify envs only
+#     PROJECT=<project_id> bash hpc/submit_all.sh --phase all   # submit phases 1 and 2 in parallel
 #
 # Phases write to separate results dirs, safe to submit while another phase runs:
 #     PROJECT=<id> bash hpc/submit_all.sh --phase 2
@@ -27,18 +27,18 @@
 #
 # Svarah is a GATED HF dataset, authenticate ONCE (writes token under HF cache):
 #     export HF_CACHE=$HOME/scratch/hf_cache
-#     HF_HOME=$HF_CACHE huggingface-cli login          # or: export HF_TOKEN=hf_xxx
+#     HF_HOME=$HF_CACHE hf auth login                  # or: export HF_TOKEN=hf_xxx
 # ============================================================================
 set -euo pipefail
 
-# ---- storage: default everything to /scratch (HOME is over quota) -----------
+# ---- storage: default everything to scratch (HOME is quota-limited) ---------
 SCRATCH="${SCRATCH:-$HOME/scratch}"
 WORKDIR="${WORKDIR:-$(pwd)}"
 HF_CACHE="${HF_CACHE:-$SCRATCH/hf_cache}"
 # conda's own package/repodata cache defaults to $HOME/.conda/pkgs, redirect it too,
 # or `conda install`/`conda env create` fail with the same HOME disk-quota error.
 export CONDA_PKGS_DIRS="${CONDA_PKGS_DIRS:-$SCRATCH/conda_pkgs}"
-CONDA_BASE="${CONDA_BASE:-$(conda info --base 2>/dev/null || echo /app/apps/miniforge3/25.3.1)}"
+CONDA_BASE="${CONDA_BASE:-$(conda info --base 2>/dev/null || echo /opt/conda)}"
 CUDA_MODULE="${CUDA_MODULE:-cuda/11.8.0}"
 
 # ---- conda envs: named envs in ~/.conda/envs (override if yours differ) ------
@@ -75,7 +75,7 @@ if [ ! -d "$WORKDIR/hpc" ]; then
 fi
 
 echo "=================================================================="
-echo " Indian-ASR-Bench NSCC submitter   (phase: $PHASE)"
+echo " Indian-ASR-Bench PBS submitter   (phase: $PHASE)"
 echo "   WORKDIR=$WORKDIR"
 echo "   SCRATCH=$SCRATCH"
 echo "   HF_CACHE=$HF_CACHE   CONDA_BASE=$CONDA_BASE   CUDA_MODULE=$CUDA_MODULE"
@@ -110,7 +110,7 @@ if [ "$DO_SETUP" = 1 ]; then
 
   _env_ok "$WHISPER_FT_ENV" || bash finetune/setup.sh "$WHISPER_FT_ENV"
 
-  # CRITICAL: the scoring env must have whisper_normalizer (whisper_norm mode). Existing
+  # The scoring env must have whisper_normalizer (whisper_norm mode). Existing
   # envs predate its addition to whisper.yaml, so install it explicitly.
   # Both envs need it, not just the scoring env: run_seeds.sh scores each seed inside
   # the fine-tuning env, so a missing package there kills a seed after its GPU time
@@ -132,20 +132,16 @@ if [ "$DO_SETUP" = 1 ]; then
 fi
 
 if [ -z "$PROJECT" ]; then
-  echo "ERROR: set PROJECT to your NSCC project id, e.g.  PROJECT=12345678 bash hpc/submit_all.sh --phase 1" >&2
+  echo "ERROR: set PROJECT to your PBS project id, e.g.  PROJECT=<project_id> bash hpc/submit_all.sh --phase 1" >&2
   exit 1
 fi
 
 # ---- vars forwarded to every job -------------------------------------------
 VARS="WORKDIR=${WORKDIR},HF_CACHE=${HF_CACHE},CONDA_BASE=${CONDA_BASE},CUDA_MODULE=${CUDA_MODULE}"
 VARS="${VARS},WHISPER_ENV=${WHISPER_ENV},PARAKEET_ENV=${PARAKEET_ENV},QWEN3_ENV=${QWEN3_ENV},WHISPER_FT_ENV=${WHISPER_FT_ENV}"
-# Keep fine-tune model weights off HOME (quota): write them onto scratch.
-VARS="${VARS},FT_OUTPUT_DIR=${SCRATCH}/models/whisper_medium_ft"
 [ -n "${HF_TOKEN:-}" ] && VARS="${VARS},HF_TOKEN=${HF_TOKEN}"
-# Resolve the commit HERE, on the login node, and forward it: utils.io_helpers stamps it
-# into every Stage-1 manifest, and `git` is not on PATH on every compute node. Without
-# this the manifests' git_commit field is silently blank, which is how every run before
-# this change lost its code provenance.
+# Resolve the commit here, on the login node, and forward it: utils.io_helpers stamps it
+# into every Stage-1 manifest, and `git` is not on PATH on every compute node.
 GIT_COMMIT="$(git -C "${WORKDIR:-.}" rev-parse HEAD 2>/dev/null || true)"
 if [ -n "${GIT_COMMIT}" ]; then
   VARS="${VARS},GIT_COMMIT=${GIT_COMMIT}"
@@ -158,7 +154,6 @@ qsub_job() { qsub -P "$PROJECT" -v "$VARS" "$@"; }
 submit_phase1() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_new_models_tie.pbs; }
 submit_phase2() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_svarah.pbs; }
 submit_phase3() { local d="${1:-}"; qsub_job ${d:+-W depend=afterok:$d} hpc/job_aesrc.pbs; }
-submit_figs()   { qsub_job -W depend=afterok"$1" hpc/job_figures.pbs; }
 
 # Three fine-tune jobs (tiny -> small -> medium) on AESRC, chained afterany so only one
 # GPU job runs at a time. Each needs its own SIZE/FT_SIZE_OUTPUT, so VARS is per-job.
@@ -184,10 +179,8 @@ case "$PHASE" in
   all)
      J1=$(submit_phase1)
      J2=$(submit_phase2)                       # parallel with phase 1 (separate result dirs)
-     F=$(submit_figs ":${J1}:${J2}")
      echo "  [phase 1] TIE new models : $J1"
-     echo "  [phase 2] Svarah         : $J2 (parallel)"
-     echo "  [final ] combined figs   : $F  (afterok $J1,$J2)" ;;
+     echo "  [phase 2] Svarah         : $J2 (parallel)" ;;
   *) echo "ERROR: --phase must be 1, 2, 3, ft-aesrc, or all" >&2; exit 1 ;;
 esac
 

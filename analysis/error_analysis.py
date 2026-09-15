@@ -70,6 +70,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.registry import PRIMARY_MODE, MODEL_BY_KEY, models_for_dataset, get_dataset
 from utils.io_helpers import stage2_dir, analysis_dir, build_md_table, text_value
+from analysis.statistics import _clip_errors
 
 TOP_K = 20
 RECALL_OVERRUN = 0.80
@@ -109,19 +110,6 @@ def wilson_ci(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
     return round((centre - half) * 100, 1), round((centre + half) * 100, 1)
 
 
-def _word_errors(ref: str, hyp: str) -> tuple[int, int]:
-    """(word_errors, ref_words) for one clip, matching corpus-WER accounting."""
-    ref = ref if isinstance(ref, str) else ""
-    hyp = hyp if isinstance(hyp, str) else ""
-    n_ref = len(ref.split())
-    if n_ref == 0:
-        return 0, 0
-    if not hyp.strip():
-        return n_ref, n_ref
-    out = jiwer.process_words([ref], [hyp])
-    return out.substitutions + out.deletions + out.insertions, n_ref
-
-
 def _edit_distance_words(a: str, b: str) -> int:
     """Symmetric word-level Levenshtein distance (S+D+I count)."""
     a = a if isinstance(a, str) else ""
@@ -143,7 +131,8 @@ def _load_full(dataset: str, model: str, mode: str) -> pd.DataFrame | None:
     df = pd.read_csv(path)
     need = {"ID", "wer", "ref_recall", "length_ratio", "reference", "hypothesis"}
     if not need.issubset(df.columns):
-        return None
+        raise ValueError(f"{path}: missing columns {sorted(need - set(df.columns))}; "
+                         f"re-run normalize_and_score.py")
     df = df.copy()
     df["ID"] = df["ID"].map(text_value)
     if (df["ID"] == "").any() or df["ID"].duplicated().any():
@@ -235,7 +224,7 @@ def artifact_adjusted_wer(pool: pd.DataFrame, cons: pd.DataFrame) -> pd.DataFram
     rows = []
     for model, grp in pool.groupby("model", sort=False):
         errs_words = [(e, w) for e, w in
-                      (_word_errors(r, h) for r, h in zip(grp["reference"], grp["hypothesis"]))]
+                      (_clip_errors(r, h) for r, h in zip(grp["reference"], grp["hypothesis"]))]
         ids = grp["ID"].tolist()
         E = sum(e for e, _ in errs_words)
         W = sum(w for _, w in errs_words)
@@ -262,7 +251,8 @@ def artifact_adjusted_wer(pool: pd.DataFrame, cons: pd.DataFrame) -> pd.DataFram
 def agreement_analysis(pool: pd.DataFrame, cons: pd.DataFrame) -> pd.DataFrame:
     """Per consensus-category: mean normalized inter-hypothesis distance vs.
     mean hypothesis-to-reference WER, plus per-arch-class agreement with the
-    reference. Inter-hyp distance is Levenshtein(S+D+I)/mean(word count), symmetric, comparable to WER in scale."""
+    reference. Inter-hyp distance is Levenshtein(S+D+I)/mean(word count), symmetric,
+    comparable to WER in scale."""
     hyp = pool.pivot_table(index="ID", columns="model", values="hypothesis", aggfunc="first")
     wer = pool.pivot_table(index="ID", columns="model", values="wer", aggfunc="first")
     arch = {m: MODEL_BY_KEY[m].arch_class for m in hyp.columns}
@@ -349,10 +339,14 @@ def main(dataset: str, mode: str) -> None:
     out = analysis_dir(dataset)
 
     models = [m for m in models_for_dataset(dataset) if MODEL_BY_KEY[m].chart]
-    frames = [t for m in models if (t := _load_full(dataset, m, mode)) is not None]
-    if not frames:
-        print(f"[error_analysis] {spec.display}: no scored files with recall/ratio columns found.")
-        return
+    tables = {m: t for m in models if (t := _load_full(dataset, m, mode)) is not None}
+    absent = [m for m in models if m not in tables]
+    if absent:
+        raise FileNotFoundError(
+            f"[error_analysis] {dataset}/{mode}: no Stage-2 table for {absent}. "
+            f"Dropping them would silently shrink the consensus. Run normalize_and_score.py first."
+        )
+    frames = list(tables.values())
     pool = pd.concat(frames, ignore_index=True)
     n_models = pool["model"].nunique()
 
@@ -421,7 +415,7 @@ def main(dataset: str, mode: str) -> None:
 
         f.write("## Full-corpus taxonomy (all clips)\n\n")
         f.write(f"**Artifact share over the classifiable corpus: {full_share}% "
-                f"(95% Wilson CI {lo_f}-{hi_f}%; {n_art_full}/{n_classifiable} clips with "
+                f"(95% Wilson CI {lo_f} to {hi_f}%; {n_art_full}/{n_classifiable} clips with "
                 f"references >={MIN_REF_WORDS} words).** ")
         if n_shortref:
             f.write(f"A further {n_shortref} clips "
@@ -466,10 +460,10 @@ def main(dataset: str, mode: str) -> None:
         f.write(build_md_table(agree_naive) + "\n\n")
 
         f.write(f"## Worst-{TOP_K} tail (continuity with the original hand analysis)\n\n")
-        f.write(f"Top-{TOP_K} highest-WER clips per model ({tail['n_rows']} rows -> "
-                f"{tail['n_distinct']} distinct). **Tail artifact share: "
+        f.write(f"Top-{TOP_K} highest-WER clips per model ({tail['n_rows']} rows, "
+                f"{tail['n_distinct']} distinct clips). **Tail artifact share: "
                 f"{tail['artifact_share']}%** (95% Wilson CI "
-                f"{tail['artifact_ci'][0]}-{tail['artifact_ci'][1]}%).\n\n")
+                f"{tail['artifact_ci'][0]} to {tail['artifact_ci'][1]}%).\n\n")
         f.write(build_md_table(tail["taxonomy"][["category", "n_clips", "share_pct",
                                                  "mean_recall", "mean_ratio", "mean_wer"]]) + "\n\n")
         shared_recall_std = round(float(tail["shared"]["recall_std"].mean()), 3) if n_shared else float("nan")
@@ -485,7 +479,7 @@ def main(dataset: str, mode: str) -> None:
         f.write(build_md_table(sens[sens["vary"].isin(("mismatch", "min_ref"))]) + "\n")
 
     print(f"[error_analysis] {spec.display}/{mode}: artifact share = {full_share}% of "
-          f"{n_classifiable} classifiable clips (CI {lo_f}-{hi_f}; short_ref: {n_shortref}), "
+          f"{n_classifiable} classifiable clips (CI {lo_f} to {hi_f}; short_ref: {n_shortref}), "
           f"tail share = {tail['artifact_share']}% ({tail['n_distinct']} tail clips)")
     print(tax_full.to_string(index=False))
     print("\nArtifact-adjusted WER:")

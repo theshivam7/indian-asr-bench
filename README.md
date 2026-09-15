@@ -58,7 +58,7 @@ much as swapping the model itself. Full detail in [Normalization](SUMMARY.md#nor
 - Nine pretrained models run head to head: Whisper across six sizes (Tiny, Base, Small, Medium, Large-v3, large-v3-turbo), both Parakeet variants (TDT and CTC), and Qwen3-ASR.
 - Up to five normalization modes apply symmetrically to reference and hypothesis, so ranking artifacts from text cleanup are visible instead of hidden.
 - Significance testing uses a speaker- or recording-clustered paired bootstrap, Holm-corrected across every pairwise model comparison, and is run under both normalizers rather than only the primary one.
-- A cross-model consensus classifier flags reference/audio mismatches from agreement patterns across all nine models. A human review of the 49 hardest TIE clips checks it.
+- A cross-model consensus classifier flags reference/audio mismatches from agreement patterns across all nine models. A human review of the 137 hardest clips across all three corpora checks it.
 - Inference cost sits next to accuracy: a 512-clip quality-gated batch sweep measures offline throughput, GPU utilization, memory and power for all nine systems on all three corpora on one A100-40GB, one CUDA runtime, one provenance digest.
 - Every table and chart regenerates on CPU from the committed Stage-1 transcripts; no GPU or re-transcription needed.
 
@@ -68,7 +68,7 @@ much as swapping the model itself. Full detail in [Normalization](SUMMARY.md#nor
 
 | Dataset | Type | Test clips | Link |
 |---|---|:---:|---|
-| TIE_shorts | Scraped NPTEL lecture audio | 986 | [HF Hub](https://huggingface.co/datasets/raianand/TIE_shorts) |
+| TIE_shorts | Scraped NPTEL lecture audio | 986 (985 scored) | [HF Hub](https://huggingface.co/datasets/raianand/TIE_shorts) |
 | Svarah | Curated read-speech prompts | 6,656 | [HF Hub](https://huggingface.co/datasets/ai4bharat/Svarah) |
 | AESRC2020 (Indian subset) | Short prompted read speech | 1,731 | [HF Hub](https://huggingface.co/datasets/pengyizhou/accented_english) |
 
@@ -180,10 +180,12 @@ An exploratory fine-tuning study is included for completeness. It is not part of
 claims. Whisper Tiny, Small and Medium were fine-tuned on AESRC's Indian training split, whose
 test speakers are disjoint from training, and each size was retrained from six seeds. All 18 runs
 improve on their own pretrained baseline (6-seed mean deltas of -6.85, -1.65 and -1.22 pp), but no
-seed-level significance test exists yet, so this is informal evidence. The Tiny delta is measured
-against an HF-pipeline baseline that scores 17.45% where openai-whisper scores 13.66% with the
-same weights, so counted from the leaderboard number the Tiny gain is about 3 pp, not 7. Details,
-tables and caveats: [Fine-tuning and split design (exploratory)](SUMMARY.md#fine-tuning-and-split-design-exploratory).
+seed-level significance test exists yet, so this is informal evidence.
+
+The Tiny delta is measured against an HF-pipeline baseline that scores 17.45% where openai-whisper
+scores 13.66% with the same weights, so counted from the leaderboard number the Tiny gain is about
+3 pp, not 7. Details, tables and caveats:
+[Fine-tuning and split design (exploratory)](SUMMARY.md#fine-tuning-and-split-design-exploratory).
 A matching study on TIE is archived, not reported, because TIE's official split places every test
 speaker in training ([why](archived_tasks/tie_finetuning/README.md)).
 
@@ -269,9 +271,9 @@ below are the committed ones, so a fresh checkout reproduces them exactly:
 ```
 model            transcript_raw  transcript_clean  hf_raw  hf_clean  whisper_norm
 ...
-medium                   15.11             14.76   18.01     15.76         14.48
-parakeet                 15.97             15.60   18.54     16.40         15.17
-tiny                     19.79             19.43   22.20     20.07         19.01
+medium                   15.11             14.76   18.01     15.76         14.47
+parakeet                 15.97             15.60   18.54     16.40         15.16
+tiny                     19.79             19.43   22.20     20.07         19.00
 
 Saved summary to results/tie/stage2_processed
 Done.
@@ -351,6 +353,7 @@ PBS-to-SLURM table for other schedulers.
 
 ```
 indian-asr-bench/
+├── LICENSE, CITATION.cff, CONTRIBUTING.md, INFERENCE_EFFICIENCY_PROTOCOL.md
 ├── normalize_and_score.py   Stage 2 entry point: normalize + score from committed transcripts
 ├── utils/               registry, normalization, WER computation, dataset loading, throughput protocol
 ├── whisper_asr/         Whisper transcription driver

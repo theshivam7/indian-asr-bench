@@ -19,13 +19,14 @@ if TYPE_CHECKING:
     import torch
 
 from utils.io_helpers import (
+    WHISPER_MAX_CLIP_SECONDS,
     decode_audio_value,
     raw_audio_column as _raw_audio_column,
     text_value,
 )
 from utils.normalize import strip_wrapping_quotes
 
-MAX_AUDIO_SECONDS = 30
+MAX_AUDIO_SECONDS = WHISPER_MAX_CLIP_SECONDS
 
 
 def seed_everything(seed: int) -> None:
@@ -63,11 +64,8 @@ def has_usable_text(transcript) -> bool:
 
 
 def within_duration(dur, max_seconds: float = MAX_AUDIO_SECONDS) -> bool:
-    # Fail closed on missing/unparseable duration: keeping such a clip risks pairing
-    # 30s-truncated audio (the feature extractor's hard cap) with its full, untruncated
-    # transcript. Fixed 2026-07-08 during the tiny/small capacity-study audit, historical
-    # runs (medium's official/disjoint/size-matched fine-tunes) predate this fix and are
-    # documented as-run.
+    # Fail closed on a missing duration: a clip over 30 s would pair truncated audio
+    # with its full transcript.
     try:
         return dur is not None and float(dur) <= max_seconds
     except (TypeError, ValueError):
@@ -89,8 +87,7 @@ def has_audio_array(raw_col):
 
 
 # AESRC's mirror stores every clip as fixed-format WAV (16 kHz, 16-bit, mono, 78-byte
-# header; verified corpus-wide in a local-only deep-dive doc, not committed), so exact
-# duration is (byte_length - header) / byte_rate, with no decoding.
+# header, verified corpus-wide), so exact duration is (byte_length - header) / byte_rate.
 _WAV_HEADER_BYTES = 78
 _WAV_BYTES_PER_SECOND = 32000
 
@@ -133,7 +130,7 @@ def _filter_core(ds, transcript_col: str, duration_col: str | None,
                  audio_col: str = "audio"):
     """Shared clip-usability filtering for fine-tuning splits.
 
-    Order matters (fixed 2026-07-08): text/duration filtering must run BEFORE the
+    Order matters: text/duration filtering must run BEFORE the
     no-embedded-audio filter, and BOTH must run before any downstream random subset
     selection (e.g. max-train-samples caps), otherwise a sampled clip lacking audio
     silently shrinks the realized subset below its nominal size.
@@ -191,13 +188,15 @@ def filter_tie_split(ds, has_duration_col: bool = True,
 
 
 def make_prepare_dataset(processor, raw_audio_column):
-    """Return a `.map(..., input_columns=["Transcript"], with_indices=True)` function.
+    """Return a `.map(..., input_columns=[<transcript col>], with_indices=True)` function.
 
-    raw_audio_column is the dataset's raw arrow "audio" ChunkedArray (utils.io_helpers.
-    raw_audio_column). We pull each row's audio by index directly from arrow storage, bypassing datasets' Audio feature/decode entirely (datasets>=4.0 mandates torchcodec
-    for that, a fragile torch/ffmpeg ABI dependency), then resample to 16 kHz.
-    input_columns=["Transcript"] keeps .map() from formatting the "audio" column at all
-    while building each row, same trick already used for the .filter() calls above.
+    raw_audio_column is the dataset's raw arrow "audio" ChunkedArray
+    (utils.io_helpers.raw_audio_column). Each row's audio is pulled by index straight
+    from arrow storage, bypassing datasets' Audio decode (datasets>=4.0 routes it
+    through torchcodec, a fragile torch/ffmpeg ABI dependency), then resampled to
+    16 kHz. Passing only the transcript column through input_columns keeps .map()
+    from formatting the "audio" column at all, the same trick the .filter() calls
+    above use.
     """
     feature_extractor = processor.feature_extractor
     tokenizer = processor.tokenizer

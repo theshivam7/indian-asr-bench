@@ -43,18 +43,21 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.io_helpers import stage2_dir  # noqa: E402
+from analysis.review_common import (  # noqa: E402
+    CHECK_OPTIONS, LABELS as ERROR_TYPE_OPTIONS, REVIEW_FOLDERS, REVIEW_MODELS, REVIEWER_DECISION_OPTIONS,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 MODE = "transcript_clean"
-REQUIRED_MODELS = ["large", "parakeet", "parakeet_ctc", "qwen3"]
-BONUS_MODEL = "medium"
-ALL_MODELS = REQUIRED_MODELS + [BONUS_MODEL]
+REQUIRED_MODELS = list(REVIEW_MODELS[:4])
+BONUS_MODEL = REVIEW_MODELS[4]
+ALL_MODELS = list(REVIEW_MODELS)
 WER_THRESHOLD = 40.0  # percent
 MIN_MODELS_FLAGGED = 3  # of len(REQUIRED_MODELS)
 
 # Svarah only. Filtering on reference length rather than duration keeps valid
-# fast-speech clips and drops two-word ones. Bands are (low, high] in seconds,
+# fast-speech clips and drops two-word ones. Bands are [low, high) in seconds,
 # None means no upper bound, and each quota is about 29% of its band.
 MIN_REF_WORDS = 3
 SAMPLE_PER_BAND = {(0, 2): 8, (2, 4): 16, (4, 6): 11, (6, 9): 11, (9, 14): 10, (14, None): 4}
@@ -62,32 +65,15 @@ SAMPLE_SEED = 42
 
 # Per corpus: folder, demographic column from Stage 2, and whether to sample down.
 DATASETS = {
-    "tie": {"dir": "tie_validation", "demo": ("native_region", "Native_Region"),
+    "tie": {"dir": REVIEW_FOLDERS["tie"], "demo": ("native_region", "Native_Region"),
             "ref_words": False, "sample": False},
-    "svarah": {"dir": "svarah_validation", "demo": ("native_language", "Native_Language"),
+    "svarah": {"dir": REVIEW_FOLDERS["svarah"], "demo": ("native_language", "Native_Language"),
                "ref_words": True, "sample": True},
-    "aesrc": {"dir": "aesrc_validation", "demo": None,
+    "aesrc": {"dir": REVIEW_FOLDERS["aesrc"], "demo": None,
               # AESRC's only demographic column, Accent, is constant across the subset.
               "ref_words": False, "sample": False},
 }
 
-# Closed-set dropdowns on purpose: a fixed vocabulary makes the filled sheet
-# tabulable without re-normalizing free text first.
-REFERENCE_CHECK_OPTIONS = ["Correct", "Partially correct", "Incorrect"]
-HYP_CHECK_OPTIONS = ["Correct", "Partially correct", "Incorrect"]
-REVIEWER_DECISION_OPTIONS = [
-    "Genuine model error", "Reference error", "Audio artifact",
-    "Not a real error", "Unsure",
-]
-# The shared label set, see analysis/fill_review_checks.py.
-ERROR_TYPE_OPTIONS = [
-    "Reference error", "Misalignment", "Truncated audio", "Disfluency",
-    "Number formatting", "Technical vocabulary", "Acronym or code",
-    "Hindi named entity", "Indian-language named entity",
-    "Foreign named entity", "English name or rare word",
-    "Brand or product name", "Accent / pronunciation", "Spelling variant",
-    "Short utterance",
-]
 
 
 def load_model(dataset: str, model: str) -> dict:
@@ -298,9 +284,9 @@ def write_xlsx(fieldnames, rows, xlsx_path) -> None:
         ws.add_data_validation(dv)
         dv.add(f"{letter}2:{letter}{len(rows) + 1}")
 
-    add_dropdown("reference_check", REFERENCE_CHECK_OPTIONS)
+    add_dropdown("reference_check", CHECK_OPTIONS)
     for m in ALL_MODELS:
-        add_dropdown(f"hyp_{m}_check", HYP_CHECK_OPTIONS)
+        add_dropdown(f"hyp_{m}_check", CHECK_OPTIONS)
 
     wb.save(xlsx_path)
 

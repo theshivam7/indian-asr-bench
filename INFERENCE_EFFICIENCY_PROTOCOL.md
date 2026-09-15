@@ -1,19 +1,15 @@
 # Inference-efficiency protocol
 
-## What the two measurements mean
+## What is measured
 
-Keep both results; do not merge their labels.
+**Offline saturated throughput** (`utils/throughput.py`): a common duration-sorted
+workload, native batched inference, a batch-size sweep, repeated timings, a quality
+gate, and sampled GPU telemetry. This answers how much audio one exclusive A100 can
+process when requests are already available. The batch-1 row of the sweep is the
+closest thing to a single-request latency figure, but it is measured on the same
+duration-sorted offline queue, so it is not a single-stream latency benchmark.
 
-1. **Single-stream latency** (existing `utils/efficiency.py`): batch size 1,
-   per-clip end-to-end latency, RTF, and PyTorch peak memory. This answers how
-   quickly one request finishes. It does **not** claim maximum GPU throughput.
-2. **Offline saturated throughput** (new `utils/throughput.py`): common
-   duration-sorted workload, native batched inference, batch-size sweep, repeated
-   timings, quality gate, and sampled GPU telemetry. This answers how much audio
-   one exclusive A100 can process when requests are already available.
-
-This follows the same separation used by MLPerf Inference: SingleStream is a
-latency scenario and Offline is a throughput scenario. It is not a production
+In MLPerf Inference terms this is the Offline scenario only. It is not a production
 server benchmark; server performance additionally requires controlled request
 arrivals, concurrency, queueing latency, and a stated latency SLO.
 
@@ -60,8 +56,7 @@ Primary sources:
   GPU inference, and text decoding. Dataset download, model load, and WAV
   conversion are separate fields.
 - Ordering: the selected clips are sorted by `(duration, clip_id)` for every
-  model. This gives each system the same padding-efficient offline queue; it is
-  not used for the single-stream result.
+  model. This gives each system the same padding-efficient offline queue.
 - Batch sweep: `1,2,4,8,16,32,64,128`, stopping after the first OOM or failure.
 - Warmup/repetition: 3 full batches per batch size covering the shortest, median,
   and longest duration buckets, then 3 complete timed passes over the 512 clips.
@@ -117,11 +112,25 @@ The 0.10-point tolerance is fixed before execution and is small enough to catch
 meaningful decode drift on 512 clips while allowing harmless floating-point
 differences. The report must show the observed delta rather than only `pass/fail`.
 
+## Post-hoc analyses
+
+`analysis/compare_throughput.py` reports three further columns alongside, not
+instead of, the pre-registered selection:
+
+- **Sensitivity gate**: one-sided, 0.5 pp WER increase and up to 1% more empty
+  hypotheses. The pre-registered gate only ever binds on the dynamically padded NeMo
+  models (Whisper pads to 30 s, so batching cannot change its output); this column
+  shows what that asymmetry costs.
+- **Gate-free fastest batch** (`tput_*`) and `gate_cost_x`, the throughput the
+  pre-registered gate gives up.
+- **Padded RTFx** for the fixed-window Whisper runtime: audio seconds the GPU was
+  actually handed (every clip padded to 30 s) rather than corpus audio seconds.
+
 ## Claims this supports (and does not support)
 
-Supported: single-request latency at batch 1; maximum quality-preserving offline
-throughput under the tested batch sweep; batching benefit; GPU occupancy, memory,
-and approximate device energy on A100 40 GB.
+Supported: maximum quality-preserving offline throughput under the tested batch
+sweep; batching benefit; GPU occupancy, memory, and approximate device energy on
+A100 40 GB.
 
 Not supported: price in dollars without an explicit GPU hourly rate;
 multi-client production-server QPS or tail latency; TensorRT/Riva/vLLM-optimized

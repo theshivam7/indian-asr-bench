@@ -1,4 +1,4 @@
-"""Fail-closed guards for paired statistical comparisons."""
+"""Fail-closed guards for paired statistical comparisons and the Stage-1 SIGTERM handler."""
 
 import os
 import sys

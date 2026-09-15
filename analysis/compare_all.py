@@ -98,9 +98,9 @@ def _validate_headline_panels(all_data: dict, mode: str) -> None:
             )
 
 
-def _grouped_bar(ax, groups, models, value_of, bar_width=None):
+def _grouped_bar(ax, groups, models, value_of):
     """Grouped bars coloured by the registry entity colour."""
-    bw = bar_width or 0.8 / max(len(models), 1)
+    bw = 0.8 / max(len(models), 1)
     x = range(len(groups))
     for i, m in enumerate(models):
         vals = [value_of(m, g) for g in groups]
@@ -114,7 +114,7 @@ def _grouped_bar(ax, groups, models, value_of, bar_width=None):
 def main(dataset: str) -> None:
     spec = get_dataset(dataset)
     modes = list(modes_for_dataset(dataset))
-    models = [m for m in models_for_dataset(dataset)]
+    models = list(models_for_dataset(dataset))
     out_dir = analysis_dir(dataset)
 
     print("=" * 70)

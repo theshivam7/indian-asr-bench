@@ -12,6 +12,8 @@ to fix in the registry. All currently registered schemas are verified.
 `datasets` is imported lazily so the CPU-only Stage 2/3 pipeline never needs it.
 """
 
+import os
+
 from utils.registry import get_dataset
 from utils.io_helpers import HF_CACHE, text_value
 
@@ -50,7 +52,6 @@ def extract_ids(ds, spec) -> list[str]:
     field columnar-wise, loading ds[id_col] would decode/copy every audio blob.
     Must stay consistent with utils.io_helpers.sample_id (basename of path).
     """
-    import os
     import pyarrow as pa
 
     col = ds.data.column(spec.id_col)
@@ -107,6 +108,7 @@ def load_split(dataset_key: str, role: str = "eval"):
     split = spec.splits[role]
     rev = f" @ {spec.hf_revision[:12]}" if spec.hf_revision else ""
     print(f"Loading {spec.hf_id} [{split}]{rev} ...  (cache: {HF_CACHE})")
+    os.makedirs(HF_CACHE, exist_ok=True)
     ds = load_dataset(spec.hf_id, split=split, cache_dir=HF_CACHE, revision=spec.hf_revision)
     print(f"  Loaded {len(ds)} samples")
     print(f"  Features: {ds.column_names}")

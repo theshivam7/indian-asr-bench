@@ -13,28 +13,35 @@ number is shown as a secondary reference.
 
 ## Corpus WER (%) by evaluation mode
 
-| Mode | Pretrained (HF) | Fine-tuned | Δ abs | Δ rel | _openai-whisper ref_ |
+| Mode | Pretrained (HF) | Fine-tuned | Delta abs | Delta rel | _openai-whisper ref_ |
 |------|:---------------:|:----------:|:-----:|:-----:|:--------------------:|
 | `transcript_raw` | 14.75% | 14.71% | -0.04 pp | -0.3% | 15.11% |
 | `transcript_clean` **(gold)** | 14.42% | 14.61% | +0.20 pp | +1.4% | 14.76% |
 | `hf_raw` | 17.72% | 17.70% | -0.02 pp | -0.1% | 18.01% |
 | `hf_clean` | 15.51% | 15.70% | +0.19 pp | +1.3% | 15.76% |
-| `whisper_norm` | 14.23% | 14.31% | +0.08 pp | +0.6% | 14.48% |
+| `whisper_norm` | 14.22% | 14.31% | +0.08 pp | +0.6% | 14.47% |
 
-> **Headline (transcript_clean)**: fine-tuning does NOT improve WER 14.42% → 14.61%  (+0.20 pp, +1.4% relative).
+> **Headline (transcript_clean)**: fine-tuning does NOT improve WER 14.42% to 14.61%  (+0.20 pp, +1.4% relative).
 
 ## By Region (`transcript_clean`)
 
-| Group | Pretrained (HF) | Fine-tuned | Δ abs | Samples |
+| Group | Pretrained (HF) | Fine-tuned | Delta abs | Samples |
 |-------|:---------------:|:----------:|:-----:|:-------:|
 | EAST | 14.08% | 14.66% | +0.57 pp | 352 |
 | NORTH | 13.92% | 13.31% | -0.60 pp | 202 |
 | SOUTH | 14.08% | 13.66% | -0.42 pp | 362 |
 | WEST | 18.84% | 22.53% | +3.69 pp | 69 |
 
+## By Discipline (`transcript_clean`)
+
+| Group | Pretrained (HF) | Fine-tuned | Delta abs | Samples |
+|-------|:---------------:|:----------:|:-----:|:-------:|
+| Engineering | 14.39% | 14.46% | +0.07 pp | 691 |
+| Non-Engineering | 14.48% | 14.97% | +0.49 pp | 294 |
+
 ## By Speech rate (`transcript_clean`)
 
-| Group | Pretrained (HF) | Fine-tuned | Δ abs | Samples |
+| Group | Pretrained (HF) | Fine-tuned | Delta abs | Samples |
 |-------|:---------------:|:----------:|:-----:|:-------:|
 | AVG | 14.64% | 15.75% | +1.11 pp | 199 |
 | FAST | 11.91% | 12.28% | +0.37 pp | 413 |
@@ -42,21 +49,14 @@ number is shown as a secondary reference.
 
 ## By Gender (`transcript_clean`)
 
-| Group | Pretrained (HF) | Fine-tuned | Δ abs | Samples |
+| Group | Pretrained (HF) | Fine-tuned | Delta abs | Samples |
 |-------|:---------------:|:----------:|:-----:|:-------:|
 | F | 19.08% | 24.30% | +5.23 pp | 58 |
 | M | 14.14% | 14.03% | -0.11 pp | 927 |
 
-## By Discipline (`transcript_clean`)
-
-| Group | Pretrained (HF) | Fine-tuned | Δ abs | Samples |
-|-------|:---------------:|:----------:|:-----:|:-------:|
-| Engineering | 14.39% | 14.46% | +0.07 pp | 691 |
-| Non-Engineering | 14.48% | 14.97% | +0.49 pp | 294 |
-
 ## By Audio Duration (`transcript_clean`)
 
-| Duration | Pretrained (HF) | Fine-tuned | Δ abs |
+| Duration | Pretrained (HF) | Fine-tuned | Delta abs |
 |----------|:---------------:|:----------:|:-----:|
 | 0-5s | 25.00% | 35.00% | +10.00 pp |
 | 5-15s | 21.01% | 20.92% | -0.09 pp |
@@ -73,8 +73,8 @@ number is shown as a secondary reference.
 
 ### Biggest improvements (top 10)
 
-| ID | Pretrained WER | Fine-tuned WER | Δ |
-|----|:--------------:|:--------------:|:-:|
+| ID | Pretrained WER | Fine-tuned WER | Delta |
+|----|:--------------:|:--------------:|:-----:|
 | ZvsSe5sJGdc | 71.4% | 14.3% | -57.1 pp |
 | z04lmkvw2wU | 68.2% | 12.7% | -55.5 pp |
 | sdx6E2w9Td0 | 47.1% | 11.8% | -35.3 pp |
@@ -88,8 +88,8 @@ number is shown as a secondary reference.
 
 ### Biggest regressions (top 10)
 
-| ID | Pretrained WER | Fine-tuned WER | Δ |
-|----|:--------------:|:--------------:|:-:|
+| ID | Pretrained WER | Fine-tuned WER | Delta |
+|----|:--------------:|:--------------:|:-----:|
 | RbuSM2lRW_o | 288.0% | 455.4% | +167.4 pp |
 | VVTFxiwiWB8 | 462.1% | 619.0% | +156.9 pp |
 | vlhnD_C2zWY | 25.0% | 75.0% | +50.0 pp |

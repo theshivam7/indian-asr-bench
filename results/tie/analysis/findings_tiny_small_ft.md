@@ -21,8 +21,8 @@ on its own.
 - The official-split fine-tune used **46.9h / 7,197 clips** of TIE train data, not the ~3h
   figure from an earlier conversation; that ~3.8h number is the *speaker-disjoint subset*,
   a much smaller manufactured control, not the main fine-tune's training set. Exact filter
-  cascade (identical for tiny and small, logged from the real run): 7,884 raw clips → 7,200
-  after dropping empty transcripts / >30s clips → **7,197** after dropping clips with no
+  cascade (identical for tiny and small, logged from the real run): 7,884 raw clips to 7,200
+  after dropping empty transcripts / >30s clips to **7,197** after dropping clips with no
   embedded audio. This is 3 clips fewer than Medium's previously-reported ~7,200 figure
   the audio-availability filter wasn't separately logged in Medium's original run, so its
   realized count was likely also ~7,197 rather than exactly 7,200; the delta is noise, not a
@@ -30,7 +30,7 @@ on its own.
 
 ## 2. Pretrained capacity curve (context, not a fine-tuning statistic)
 
-Speaker-clustered bootstrap CIs, `transcript_clean`, N=985 clips / G=280 speakers, B=2000
+Speaker-clustered bootstrap CIs, `transcript_clean`, N=985 clips / G=280 speakers, B=10000
 (from `analysis/statistics.py:analyze()`, write-free, this study did not regenerate the
 shared pairwise-statistics files; see §7).
 
@@ -53,16 +53,16 @@ HuggingFace chunked pipeline** (`*_hf` keys), isolates the true fine-tuning effe
 decoding/engine difference between `openai-whisper` and `transformers`. Paired,
 speaker-clustered bootstrap (985 clips, 280 speaker clusters, `transcript_clean`).
 
-| Size | Params | Pretrained (openai) | HF baseline | Fine-tuned | Δ (paired) | 95% CI | p | p (Holm, family of 3) |
+| Size | Params | Pretrained (openai) | HF baseline | Fine-tuned | Delta (paired) | 95% CI | p | p (Holm, family of 3) |
 |------|:------:|:--------------------:|:-----------:|:----------:|:-----------:|:------:|:-:|:----------------------:|
-| Whisper Tiny | 39M | 19.43% | 22.10% | 19.14% | **−2.96 pp** | [−6.35, +0.13] | 0.065 | 0.195 |
-| Whisper Small | 244M | 16.05% | 17.38% | 16.21% | **−1.17 pp** | [−3.97, +1.21] | 0.387 | 0.774 |
-| Whisper Medium | 769M | 14.76% | 14.42% | 14.61% | +0.20 pp | [−0.46, +1.03] | 0.642 | 0.774 |
+| Whisper Tiny | 39M | 19.43% | 22.10% | 19.14% | **-2.96 pp** | [-6.50, +0.34] | 0.077 | 0.230 |
+| Whisper Small | 244M | 16.05% | 17.38% | 16.21% | **-1.17 pp** | [-4.08, +1.23] | 0.386 | 0.771 |
+| Whisper Medium | 769M | 14.76% | 14.42% | 14.61% | +0.20 pp | [-0.46, +1.06] | 0.665 | 0.771 |
 
-**Read carefully:** the point-estimate gradient (−2.96pp → −1.17pp → +0.20pp) is exactly the
+**Read carefully:** the point-estimate gradient (-2.96pp to -1.17pp to +0.20pp) is exactly the
 shape the capacity hypothesis predicts, and it's the cleanest signal this whole project has
 produced on the "capacity vs. dataset" question. But **none of the three deltas clears
-significance after Holm correction**, tiny gets closest (uncorrected p=0.065) but the
+significance after Holm correction**, tiny gets closest (uncorrected p=0.077) but the
 985-clip/280-speaker test set is underpowered to confirm a ~3pp effect at the 5% level once
 multiple-comparison correction is applied. Report the gradient as suggestive, not proven.
 
@@ -73,7 +73,7 @@ see §4)
 | Size | Best step | Best val-WER (Whisper-normalizer) | val-WER at step 2000 | Shape |
 |------|:---------:|:----------------------------------:|:---------------------:|-------|
 | Tiny | 600 (of 2000, ~2.7 epochs) | 21.50% | 25.64% | learns to step 600, then overfits, val-WER rises monotonically after |
-| Small | 800 (of 2000, ~3.6 epochs) | 16.82% | 19.37% | learns to step 800, then overfits, with a sharper val-loss blowup (0.66→0.93) than tiny |
+| Small | 800 (of 2000, ~3.6 epochs) | 16.82% | 19.37% | learns to step 800, then overfits, with a sharper val-loss blowup (0.66to0.93) than tiny |
 
 Both show the textbook "learn then overfit" curve, a real, healthy training signal, not the
 "no-learning" degenerate case (see §5, contingency check). This is the opposite failure mode
@@ -113,7 +113,7 @@ locked-down minimal-protocol scope.
 ## 5. The result is real but non-uniform, read past the corpus-WER headline
 
 Per-sample paired analysis (`analysis/compare_finetune.py`, `transcript_clean`) tells a much
-less clean story than the aggregate Δ:
+less clean story than the aggregate Delta:
 
 | Size | Improved | Regressed | Unchanged | Net |
 |------|:--------:|:---------:|:---------:|:---:|
@@ -125,17 +125,17 @@ improvement is driven by a small number of extreme-outlier swaps, not a broad-ba
 Concretely:
 
 - **Tiny's biggest wins are runaway repetition-loop fixes.** The top improvement, sample
-  `lMIVXmVvqBM`, went from **977.8% WER pretrained → 55.6% fine-tuned**; several more of
+  `lMIVXmVvqBM`, went from **977.8% WER pretrained to 55.6% fine-tuned**; several more of
   tiny's top-10 improvements start above 300-850% WER. Whisper Tiny is known to occasionally
   degenerate into repeated-token loops on short/noisy clips (a `hf_clean` insertion-rate of
   9.08% pretrained vs. 6.38% fine-tuned, roughly back down to the 6.22% baseline of the
   non-HF-pipeline `tiny` engine, is consistent with this). Fine-tuning is fixing a decoding
   pathology on a handful of clips as much as it's teaching accented-English content.
 - **The same pathology cuts both ways for Small.** Its top *regression*, `jtMZfLViZu8`, went
-  from 66.2% → **445.1%** WER post-fine-tuning, fine-tuning didn't eliminate the
+  from 66.2% to **445.1%** WER post-fine-tuning, fine-tuning didn't eliminate the
   repetition-loop failure mode, it relocated it to different clips.
 
-**Implication:** the −2.96pp/−1.17pp headline deltas are directionally real and support the
+**Implication:** the -2.96pp/-1.17pp headline deltas are directionally real and support the
 capacity hypothesis, but a meaningful share of the effect is Whisper-tiny/small's decoding
 instability on a handful of pathological clips rather than a broad, reliable
 accented-English-content improvement. This is worth stating plainly rather than oversold as
@@ -196,7 +196,7 @@ independently by design, not as a temporary gap.
 
 | Observed pattern | Interpretation |
 |---|---|
-| **This study's actual result**: monotonic Δ gradient (tiny > small > medium), tiny closest to significance, but non-uniform per-sample and driven partly by decoding-pathology fixes | **Partial support for capacity ceiling.** Smaller models do show a real, larger fine-tuning gain on identical data, but the effect is noisier than a clean "capacity explains everything" story, and doesn't reach significance after correction. Best read as "capacity is *part* of the explanation; dataset quality (label noise, TIE's speaker-overlap structure) still caps how much any size can gain." |
+| **This study's actual result**: monotonic Delta gradient (tiny > small > medium), tiny closest to significance, but non-uniform per-sample and driven partly by decoding-pathology fixes | **Partial support for capacity ceiling.** Smaller models do show a real, larger fine-tuning gain on identical data, but the effect is noisier than a clean "capacity explains everything" story, and doesn't reach significance after correction. Best read as "capacity is *part* of the explanation; dataset quality (label noise, TIE's speaker-overlap structure) still caps how much any size can gain." |
 | (not observed) Flat deltas across all three sizes | would have pointed to dataset (labels/speaker structure) as the limiter, not capacity |
 | (not observed) Significant, uniform gains at all sizes including medium | would have suggested Medium's null was a training-setup artifact, not capacity |
 

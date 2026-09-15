@@ -1,7 +1,7 @@
 """HF-transformers transcription with chunked long-form decoding.
 
-Analogue of utils/transcribe.py (which uses the openai-whisper package). Used for the
-fine-tuned Whisper Medium model and the same-engine pretrained baseline (medium_hf).
+Analogue of utils/transcribe.py (which uses the openai-whisper package). Used by
+finetune/evaluate_finetuned.py for every registry model with engine hf_whisper.
 
 We use transformers' ASR pipeline with chunk_length_s=30 so clips longer than Whisper's
 30s receptive field are windowed automatically, matching how openai-whisper's
@@ -23,7 +23,7 @@ CHUNK_LENGTH_S = 30
 # left+right context overlap is what gives correct word boundaries when stitching chunks.
 
 
-def build_asr_pipeline(model_path: str, device: str = None):
+def build_asr_pipeline(model_path: str, device: str | None = None):
     """Load a Whisper model + processor and wrap them in a chunked ASR pipeline.
 
     model_path may be a local fine-tuned directory or an HF hub id (e.g. openai/whisper-medium).
@@ -73,9 +73,7 @@ def transcribe_sample_hf(pipe, sample: dict, audio_value: dict) -> str:
     are raised so they cannot be published as genuine empty model hypotheses.
     """
     try:
-        # Inside the try: some rows have no embedded array, only a stale local path from
-        # the original dataset upload (e.g. "E:\\TIE_shorts\\...") that isn't reachable
-        # here, so decode_audio_value's soundfile fallback can raise for those rows too.
+        # Some TIE rows carry only a stale local path, so decode can raise for them too.
         audio_array, sr = decode_audio_value(audio_value)
         result = pipe(
             {"raw": audio_array, "sampling_rate": sr},

@@ -10,17 +10,17 @@
 
 set -euo pipefail
 
-# One openai-whisper model on one dataset (replaces the old job_base/medium/large).
+# One openai-whisper model on one dataset.
 #   qsub -P <project_id> -v MODEL=large,DATASET=tie hpc/job_whisper.pbs
 #   qsub -P <project_id> -v MODEL=large_v3_turbo,DATASET=svarah hpc/job_whisper.pbs
 # MODEL in {tiny, base, small, medium, large, large_v3_turbo}; DATASET in {tie, svarah, aesrc}.
 
-# Fixed 2026-07-08: $(pwd) in a PBS batch shell defaults to $HOME (quota-limited, and the
+# $(pwd) in a PBS batch shell defaults to $HOME (quota-limited, and the
 # wrong directory) unless WORKDIR is passed explicitly via -v or PBS_O_WORKDIR survives
 # (it does with #PBS -V, added above). Fall back through both before $(pwd).
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
-WHISPER_ENV=${WHISPER_ENV:-${SCRATCH:-$HOME/scratch}/envs/whisper}
+WHISPER_ENV=${WHISPER_ENV:-whisper}
 # Default to scratch: $HOME is quota-limited on this cluster and a dataset cache
 # will exhaust it mid-run, while scratch has room. Override with -v HF_CACHE=...
 HF_CACHE=${HF_CACHE:-${SCRATCH:-$HOME/scratch}/hf_cache}
@@ -36,7 +36,7 @@ cd "${WORKDIR}"
 conda activate "${WHISPER_ENV}" || { echo "[FATAL] conda activate failed for '${WHISPER_ENV}'"; conda info --envs; exit 1; }
 export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 
-# Fixed 2026-07-08: a broken/CPU-fallback env never crashes the job, it silently produces
+# A broken or CPU-fallback env never crashes the job; it silently produces
 # an all-empty-hypothesis, near-100%-WER transcript CSV that "completes successfully". Fail
 # fast instead (same guard as hpc/job_finetune_size.pbs).
 echo "--- GPU / CUDA diagnostics (${MODEL} on ${DATASET}) ---"

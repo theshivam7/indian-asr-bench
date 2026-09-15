@@ -84,7 +84,7 @@ class ModelSpec:
     display: str
     engine: str
     model_id: str        # checkpoint / load id for the engine
-    env: str             # conda env name (see environments/)
+    env: str             # conda env name; whisper/parakeet/qwen3 have files in environments/, whisper_medium_ft uses finetune/requirements.txt
     arch_class: str
     params: str          # human-readable parameter count
     color: str           # Okabe-Ito hex, fixed across all figures
@@ -93,9 +93,7 @@ class ModelSpec:
     only_datasets: tuple | None = None
 
 
-# Okabe-Ito colourblind-safe palette (kept identical to the previous figures):
-#   blue #0072B2 · orange #E69F00 · green #009E73 · vermillion #D55E00 ·
-#   reddish-purple #CC79A7 · sky-blue #56B4E9 · black #000000
+# Colours: Okabe-Ito colourblind-safe palette, plus #882255 for Parakeet-CTC.
 MODEL_SPECS = (
     ModelSpec("tiny",   "Whisper Tiny",   "openai_whisper", "tiny",   "whisper", "enc_dec",    "39M",   "#000000", 5),
     ModelSpec("base",   "Whisper Base",   "openai_whisper", "base",   "whisper", "enc_dec",    "74M",   "#0072B2", 10),
@@ -140,9 +138,9 @@ MODEL_ORDER = [m.key for m in sorted(MODEL_SPECS, key=lambda m: m.order)]
 # ============================================================================
 # Datasets
 # ============================================================================
-# The dataset adapter (utils/datasets.py) uses `column_map` to translate each
-# dataset's raw HF columns into the canonical raw-CSV schema, so everything after
-# Stage 1 is dataset-agnostic. `subgroup_dims` drives the Stage-3 breakdown
+# The dataset adapter (utils/datasets.py) reads reference, id, audio and metadata
+# columns through the spec fields below, so everything after Stage 1 is
+# dataset-agnostic. `subgroup_dims` drives the Stage-3 breakdown
 # tables (each entry = (raw_csv_column, display_label)). `applicable_modes` gates
 # which evaluation modes make sense (Svarah has no pre-normalized field, so the
 # hf_* modes are excluded).
@@ -165,7 +163,7 @@ class DatasetSpec:
     license: str
     citation: str
     hf_revision: str | None = None   # pinned HF dataset commit sha (reproducibility; None = latest)
-    verified: bool = True        # False -> column_map is provisional, adapter must confirm against ds.features
+    verified: bool = True        # False -> column names are provisional; adapter warns instead of raising on a missing column
     cluster_id_regex: str | None = None  # regex with ONE capture group applied to the clip ID to
     #                               recover a resampling-cluster tag when no speaker column exists.
     #                               Used by analysis/statistics.py as the bootstrap cluster unit.
@@ -219,10 +217,7 @@ TIE = DatasetSpec(
 # 'highest_qualification', 'job_category', 'native_place_district',
 # 'native_place_state', 'occupation_domain', 'primary_language', 'text'].
 # No speaker-id column is exposed in this Hub config, despite the dataset card
-# describing that split conceptually -> speaker_col is None. The use-case
-# register column is missing too, so any register-gated metric would need a
-# field derived from audio_filepath naming, or the original AI4Bharat release
-# rather than this HF mirror.
+# describing that split conceptually -> speaker_col is None.
 SVARAH = DatasetSpec(
     key="svarah",
     hf_id="ai4bharat/Svarah",
@@ -266,10 +261,9 @@ SVARAH = DatasetSpec(
 # transcription / speaker / accent; splits train (118,927) / valid (5,614) / test (14,493);
 # Indian rows: 12,820 / 532 / 1,731. Test speakers (481) are fully disjoint from the 38
 # train and valid speakers; valid shares train's speaker set exactly, so validation WER
-# measures fit, not speaker generalization. Full population analysis (exact durations,
-# speaker structure, label sanity, licensing) is in a local-only deep-dive doc, not
-# committed (see docs/ in .git/info/exclude) -- the load-bearing findings from it are
-# inlined above and in this spec's `license` field below.
+# measures fit, not speaker generalization. The full population analysis is in a
+# local-only doc, not committed; the load-bearing findings are inlined above and in
+# this spec's `license` field.
 AESRC = DatasetSpec(
     key="aesrc",
     hf_id="pengyizhou/accented_english",

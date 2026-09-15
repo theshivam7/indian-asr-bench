@@ -36,7 +36,7 @@ import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from utils.io_helpers import analysis_dir, stage2_dir
+from utils.io_helpers import analysis_dir, stage2_dir, text_value
 from utils.registry import MODEL_BY_KEY, PRIMARY_MODE
 from utils.wer_compute import compute_corpus_wer
 
@@ -70,10 +70,10 @@ def corpus_wer(path: str) -> float | None:
 def _identity(path: str) -> pd.Series:
     """ID-indexed normalized references used to enforce a fixed evaluation panel."""
     df = pd.read_csv(path, usecols=["ID", "reference"])
-    ids = df["ID"].map(lambda value: "" if pd.isna(value) else str(value).strip())
+    ids = df["ID"].map(text_value)
     if (ids == "").any() or ids.duplicated().any():
         raise ValueError(f"{path}: empty or duplicate clip IDs invalidate seed comparison")
-    refs = df["reference"].map(lambda value: "" if pd.isna(value) else str(value))
+    refs = df["reference"].map(text_value)
     return pd.Series(refs.to_numpy(), index=ids, name="reference").sort_index()
 
 
@@ -91,8 +91,6 @@ def find_seed_tables(dataset: str, mode: str, size: str) -> dict[int, str]:
 
 def baseline_wer(dataset: str, mode: str, size: str) -> float | None:
     key = f"{size}_hf"
-    if key not in MODEL_BY_KEY:
-        return None
     return corpus_wer(os.path.join(stage2_dir(dataset), mode, f"wer_{key}_{mode}.csv"))
 
 
@@ -163,7 +161,7 @@ def build_rows(dataset: str, mode: str) -> tuple[list[dict], list[dict]]:
         rows.append({
             "size": size,
             "display_name": DISPLAY.get(size, size),
-            "params": MODEL_BY_KEY[f"{size}_hf"].params if f"{size}_hf" in MODEL_BY_KEY else "",
+            "params": MODEL_BY_KEY[f"{size}_hf"].params,
             "n_seeds": len(ft_wers),
             "seeds": ",".join(str(s) for s in used_seeds),
             "hf_baseline_wer": round(base, 3) if base is not None else None,
@@ -192,7 +190,7 @@ def to_markdown(rows: list[dict], per_seed: list[dict], dataset: str, mode: str)
         "in `finetune_capacity_summary.csv`, which describes sampling error over test clips. "
         "Report both, and do not pool them.",
         "",
-        "| Size | Params | Seeds | Baseline WER | FT WER (mean) | Δ mean (pp) | Δ SD (pp) | Δ min | Δ max |",
+        "| Size | Params | Seeds | Baseline WER | FT WER (mean) | Delta mean (pp) | Delta SD (pp) | Delta min | Delta max |",
         "|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|",
     ]
     def fmt(value):
@@ -213,7 +211,7 @@ def to_markdown(rows: list[dict], per_seed: list[dict], dataset: str, mode: str)
             "checkable: whether every run improved on its baseline, and how the SD was "
             "computed, are both questions the summary table cannot answer on its own.",
             "",
-            "| Size | Seed | Baseline WER | FT WER | Δ (pp) |",
+            "| Size | Seed | Baseline WER | FT WER | Delta (pp) |",
             "|---|:---:|:---:|:---:|:---:|",
         ]
         for r in per_seed:
@@ -239,8 +237,8 @@ def run_one(dataset: str, mode: str) -> bool:
     rows, per_seed = build_rows(dataset, mode)
     if not rows:
         print(f"[compare_seeds] no per-seed tables under {stage2_dir(dataset)}/{mode}")
-        print("  Expected files named wer_<size>_%s_ft_seed<N>_%s.csv" % (dataset, mode))
-        print("  Produce them with: bash finetune/run_seeds.sh --size tiny --dataset %s" % dataset)
+        print(f"  Expected files named wer_<size>_{dataset}_ft_seed<N>_{mode}.csv")
+        print(f"  Produce them with: bash finetune/run_seeds.sh --size tiny --dataset {dataset}")
         return False
 
     out_dir = analysis_dir(dataset)

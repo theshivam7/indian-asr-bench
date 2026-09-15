@@ -53,13 +53,9 @@ def _aesrc_like(rows: list[dict]) -> Dataset:
     """Dataset with AESRC's exact schema. `audio` entries are wav-bytes dicts or None."""
     features = Features({
         "id": Value("string"),
-        # The arrow struct that datasets' Audio feature stores, declared directly
-        # instead of via Audio(...). datasets 4.x routes Audio.encode_example through
-        # torchcodec, which requirements.txt deliberately does not carry, so using
-        # Audio here made this whole module skip in CI and left the AESRC accent
-        # filter untested. The code under test reads the arrow column raw
-        # (utils.io_helpers.raw_audio_column) and never invokes the Audio decoder,
-        # so the storage layout is what these tests actually depend on.
+        # Declare the arrow struct Audio stores instead of Audio(...): datasets 4.x
+        # routes Audio.encode_example through torchcodec, which is not installed.
+        # The code under test reads the column raw anyway.
         "audio": {"bytes": Value("binary"), "path": Value("string")},
         "transcription": Value("string"),
         "speaker": Value("string"),

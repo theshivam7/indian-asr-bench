@@ -6,7 +6,7 @@
 | validation | 986 | 280 |
 | test | 986 | 280 |
 
-## Train ∩ Test (the relevant leakage)
+## Train and test overlap (the relevant leakage)
 
 - Test speakers also present in train: **280 / 280** (100.0% of test speakers)
 - Test clips spoken by a train-seen speaker: **986 / 986** (100.0% of test clips)

@@ -1,9 +1,8 @@
 #!/bin/bash
 set -e
 # Run from repo root: bash parakeet/setup.sh
-# Recommended: use environments/parakeet.yaml for a fully reproducible env:
-#   conda env create -f environments/parakeet.yaml
-#   conda activate parakeet
+# For the exact package set behind the published results, see
+# environments/resolved/parakeet.pipfreeze.txt (environments/parakeet.yaml no longer solves).
 
 ENV_NAME="${1:-parakeet}"
 

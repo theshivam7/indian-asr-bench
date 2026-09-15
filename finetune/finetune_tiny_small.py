@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """Fine-tune Whisper on a registry dataset using a step-based training recipe.
 
-Adapted from an externally supplied reference script (`step4_train_whisper.py`) for the
-tiny/small capacity study, see results/tie/analysis/findings_tiny_small_ft.md. Kept
-faithful to the source script's structure and hyperparameters; the substantive changes are
-the data source (TIE_shorts via HF, not local JSONL+wav manifests) and the disclosed
-additions below, needed for this to produce a model our pipeline can evaluate.
+Adapted from a colleague-supplied step-based reference recipe for the tiny/small capacity
+study, see results/tie/analysis/findings_tiny_small_ft.md. Kept faithful to the source
+recipe's structure and hyperparameters; the substantive changes are the data source
+(registry datasets via HF, not local JSONL+wav manifests) and the disclosed additions
+below, needed for this to produce a model our pipeline can evaluate.
 
 Recipe (verbatim from the source script): STEP-based training (not epoch-based, unlike
 finetune/finetune_medium.py's medium study), max_steps=2000, warmup_steps=100,
 lr=1e-5, batch=8, grad_accum=4 (effective batch 32), fp16, eval/save every 200 steps,
 greedy predict_with_generate, checkpoint-selection WER computed with OpenAI's
 EnglishTextNormalizer, NOT this project's `transcript_clean` normalizer used by
-finetune.py's medium study. This is a disclosed recipe difference, not a bug; see the
+finetune_medium.py's medium study. This is a disclosed recipe difference, not a bug; see the
 findings report for the full list of deltas vs the medium recipe (effective batch 32 vs
 16, fp16 vs bf16, no SpecAugment, no early stopping, different selection-metric normalizer).
 
@@ -37,9 +37,7 @@ Disclosed additions (the source script lacked these; needed for a usable, compar
     generation_config.language leaves generate() free to fall back to language
     auto-detection during predict_with_generate eval, which could silently corrupt the
     very WER metric checkpoint selection depends on. This is the one place we deviate from
-    "keep the recipe verbatim": it's the standard step in every published Whisper
-    fine-tuning recipe (including finetune_medium.py's own medium study) and its absence risks the
-    whole run's checkpoint selection, not just a cosmetic recipe difference.
+    "keep the recipe verbatim".
 
 Datasets: --dataset selects any registry dataset with train+validation splits.
     tie   (default), loads TIE_shorts directly, preserving the original capacity-study
@@ -187,7 +185,7 @@ def main() -> None:
     )
     model = WhisperForConditionalGeneration.from_pretrained(args.base_model)
 
-    # Transformers >=5: generation knobs live on generation_config, not model.config
+    # Set generation knobs on generation_config (the API the Trainer reads).
     model.generation_config.forced_decoder_ids = None
     if hasattr(model.generation_config, "suppress_tokens"):
         model.generation_config.suppress_tokens = None
@@ -202,8 +200,8 @@ def main() -> None:
     if args.max_train_samples:
         # Smoke-test path: subset the RAW dataset BEFORE filtering. The filters call
         # flatten_indices(), which materializes every surviving clip's full audio into a
-        # new arrow table -- expensive enough to OOM-kill a memory-constrained node
-        # (observed 2026-07-09), and it happens regardless of --max-train-samples if the
+        # new arrow table, expensive enough to OOM-kill a memory-constrained node,
+        # and it happens regardless of --max-train-samples if the
         # cap is only applied afterward. 3x headroom on the raw slice comfortably survives
         # the ~91% filter pass-rate for any reasonable smoke-test sample size.
         train_hf = train_hf.select(range(min(args.max_train_samples * 3, len(train_hf))))

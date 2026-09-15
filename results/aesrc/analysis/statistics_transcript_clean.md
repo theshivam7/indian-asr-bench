@@ -1,8 +1,8 @@
 # Statistical significance: AESRC2020 (Indian), mode `transcript_clean`
 
-Corpus WER with 95% bootstrap CI: 10000 resamples, seed 42, N=1731 clips, resampled by **speaker** (481 clusters). Headline (chart) models only, the fine-tuning study is a separate hypothesis family with its own paired test in `finetune_comparison.md`. Speaker-level resampling accounts for within-speaker correlation (clips from one speaker share accent/channel); clip-level CIs are in the CSV for comparison and are narrower, i.e. anti-conservative.
+Corpus WER with 95% bootstrap CI: 10000 resamples, seed 42, N=1731 clips, resampled by **speaker** (481 clusters). Headline (chart) models only; the fine-tuning study is a separate hypothesis family with its own paired test. Speaker-level resampling accounts for within-speaker correlation (clips from one speaker share accent/channel); clip-level CIs are in the CSV for comparison and are narrower, i.e. anti-conservative.
 
-| Model | Corpus WER % | CI low | CI high | ±pp |
+| Model | Corpus WER % | CI low | CI high | CI half-width (pp) |
 | --- | --- | --- | --- | --- |
 | Whisper Large-v3 | 5.2 | 4.75 | 5.68 | 0.46 |
 | Qwen3-ASR-1.7B | 5.23 | 4.75 | 5.74 | 0.5 |

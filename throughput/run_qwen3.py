@@ -11,7 +11,7 @@ import torch
 
 from throughput.common_cli import parser, run_kwargs
 from utils.registry import MODEL_BY_KEY
-from utils.throughput import parse_batch_sizes, run_throughput_benchmark
+from utils.throughput import run_throughput_benchmark
 
 
 def main() -> None:
@@ -22,7 +22,7 @@ def main() -> None:
 
     from qwen_asr import Qwen3ASRModel
 
-    sizes = parse_batch_sizes(args.batch_sizes)
+    kwargs = run_kwargs(args)
     model_id = MODEL_BY_KEY[args.model].model_id
     print(f"Loading {model_id} in bfloat16 on cuda:0 ...", flush=True)
     torch.cuda.synchronize()
@@ -31,7 +31,7 @@ def main() -> None:
         model_id,
         dtype=torch.bfloat16,
         device_map="cuda:0",
-        max_inference_batch_size=max(sizes),
+        max_inference_batch_size=max(kwargs["batch_sizes"]),
         max_new_tokens=512,
         attn_implementation="sdpa",
     )
@@ -61,10 +61,10 @@ def main() -> None:
             "language": "English",
             "timestamps": False,
             "max_new_tokens": 512,
-            "max_inference_batch_size": max(sizes),
+            "max_inference_batch_size": max(kwargs["batch_sizes"]),
             "checkpoint": model_id,
         },
-        **run_kwargs(args),
+        **kwargs,
     )
 
 

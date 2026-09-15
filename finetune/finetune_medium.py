@@ -1,8 +1,7 @@
 """
 Stage 0: Fine-tune Whisper Medium on raianand/TIE_shorts (train split).
 
-Full fine-tuning (all 769M params) following the standard HuggingFace Whisper recipe,
-with the correctness + best-practice details that prevent the common pitfalls:
+Full fine-tuning (all 769M params) following the standard HuggingFace Whisper recipe:
 
   - Train on `train`, select checkpoint on `validation`, NEVER touch `test`  (no clip-level
     leakage; note the dataset's official splits share speakers, see check_speaker_overlap.py)
@@ -16,7 +15,7 @@ with the correctness + best-practice details that prevent the common pitfalls:
     final benchmark metric (utils.normalize.normalize_text)
   - Resumable: auto-detects the latest checkpoint and resumes
 
-Output: models/whisper_medium_ft/  (best model + processor, ready for HF upload)
+Output: models/whisper_medium_ft/ (best checkpoint and processor)
 
 Usage:
     python finetune/finetune_medium.py

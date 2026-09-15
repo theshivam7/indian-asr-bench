@@ -49,19 +49,16 @@ def main() -> int:
     for i in range(n):
         sample = ds[i]
         sid = sample_id(sample, spec)
-        assert sid == ids[i], (
-            f"sample_id() and extract_ids() disagree at row {i}: {sid!r} != {ids[i]!r} "
-            f", per-sample and columnar ID paths must be identical."
-        )
+        if sid != ids[i]:
+            print(f"[smoke] FATAL: sample_id() and extract_ids() disagree at row {i}: "
+                  f"{sid!r} != {ids[i]!r}. Per-sample and columnar ID paths must match.")
+            return 1
         samples_arr, sr = decode_audio_value(sample[spec.audio_col], target_sr=16000)
         ref = text_value(sample.get(spec.gold_ref_col))
         row = build_sample_row(sample, sid, ref, "smoke-test-hypothesis", spec=spec,
                                split=spec.splits["eval"])
         print(f"[smoke] sample {i}: id={sid}  audio={len(samples_arr)/sr:.2f}s@{sr}Hz  "
               f"ref_words={len(ref.split())}  row_cols={len(row)}")
-        if len(samples_arr) == 0:
-            print(f"[smoke] FATAL: sample {i} decoded to zero-length audio.")
-            return 1
         if not ref:
             print(f"[smoke] WARNING: sample {i} has an empty reference (will be skipped in Stage 1).")
 

@@ -1,8 +1,8 @@
 """
 Stage 1: ASR transcription. Whisper family (openai-whisper engine).
 
-One driver for all openai-whisper checkpoints, replacing the former identical
-task1/2/3 scripts. The model set and checkpoint ids come from utils.registry.
+One driver for all openai-whisper checkpoints. The model set and checkpoint ids come
+from utils.registry.
 
 Usage:
     python whisper_asr/run_whisper.py --model base            # TIE (default)

@@ -35,21 +35,20 @@ logs/
 # Fine-tuned model checkpoints (too large for git; uploaded to Hugging Face instead)
 models/
 
-# NSCC collector output: contains project id, uid, quota, internal hostnames.
-# Kept locally under docs/nscc/ which is git-excluded.
+# Local account records (never published)
 nscc_final/
 nscc_final.tar.gz
 
 # Local-only, never published. Duplicated in .git/info/exclude, but that file is NOT
 # versioned and does not survive a fresh clone, so the protection lives here too.
 #   paper/   manuscript, figures, review notes
-#   docs/    NSCC account records, audit scripts, working notes
+#   docs/    account records, audit scripts, working notes
 paper/
 docs/
 
 # Per-clip Stage-2 output (one CSV per model x mode, about 200 MB across the three corpora)
 # and the flat per-model top-20 dumps. normalize_and_score.py rebuilds all of it in minutes
-# from the committed Stage-1 transcripts, and CI proves the rebuild is byte-identical, so
+# from the committed Stage-1 transcripts, and tests/test_pipeline.py checks the rebuild, so
 # only the aggregate wer_summary_all_models.{csv,md} is tracked. Run Stage 2 first on a
 # fresh clone before any analysis/ script.
 results/*/stage2_processed/*/
@@ -60,5 +59,5 @@ results/*/stage2_processed/top_20_high_wer_*.csv
 # regeneration. The PNG that README embeds is byte-reproducible and stays tracked.
 results/benchmark_overview.svg
 
-# Staging area for removed code and results, kept locally until confirmed. See _deprecated/README.md.
+# Staging area for removed code and results, kept locally until confirmed.
 _deprecated/

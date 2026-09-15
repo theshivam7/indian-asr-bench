@@ -6,7 +6,7 @@
 | valid | 532 | 38 |
 | test | 1731 | 481 |
 
-## Train ∩ Test (the relevant leakage)
+## Train and test overlap (the relevant leakage)
 
 - Test speakers also present in train: **0 / 481** (0.0% of test speakers)
 - Test clips spoken by a train-seen speaker: **0 / 1731** (0.0% of test clips)

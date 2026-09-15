@@ -9,15 +9,17 @@ tests** (one per size), kept separate from the headline cross-model pairwise fam
 the fine-tuned variants run through a different decoding engine, so mixing them in would
 confound fine-tuning with an engine change, see `analysis/statistics.py`).
 
-| Size | Params | Pretrained (openai) | HF baseline | Fine-tuned | Δ (paired, speaker-clustered) | 95% CI | p | p (Holm) | n clips | n speakers |
-|------|:------:|:--------------------:|:-----------:|:----------:|:-----------------------------:|:------:|:-:|:--------:|:-------:|:----------:|
-| Whisper Tiny | 39M | 13.66% | 17.45% | 12.64% | -4.81 pp | [-12.30, +1.71] | 0.163 | 0.163 | 1731 | 481 |
-| Whisper Small | 244M | 7.23% | 7.22% | 5.64% | -1.58 pp | [-2.01, -1.15] | 0.001 | 0.003 | 1731 | 481 |
-| Whisper Medium | 769M | 5.73% | 5.63% | 4.48% | -1.15 pp | [-1.55, -0.77] | 0.001 | 0.003 | 1731 | 481 |
+Paired speaker-clustered bootstrap, B=10000 resamples, seed 42.
+
+| Size | Params | Pretrained (openai) | HF baseline | Fine-tuned | Delta (paired, speaker-clustered) | 95% CI | p | p (Holm) | n clips | n speakers |
+|------|:------:|:--------------------:|:-----------:|:----------:|:---------------------------------:|:------:|:-:|:--------:|:-------:|:----------:|
+| Whisper Tiny | 39M | 13.66% | 17.45% | 12.64% | -4.81 pp | [-12.43, +2.56] | 0.187 | 0.187 | 1731 | 481 |
+| Whisper Small | 244M | 7.23% | 7.22% | 5.64% | -1.58 pp | [-2.03, -1.14] | 0.000 | 0.001 | 1731 | 481 |
+| Whisper Medium | 769M | 5.73% | 5.63% | 4.48% | -1.15 pp | [-1.55, -0.76] | 0.000 | 0.001 | 1731 | 481 |
 
 ## Pretrained capacity curve (for context; not a fine-tuning statistic)
 
-Speaker-clustered bootstrap CIs from `analysis/statistics.py:analyze()` (N=1731 clips, G=481 speakers, B=10000). Point estimates only , no Holm correction applied or needed here (these are per-model CIs, not pairwise tests).
+Speaker-clustered bootstrap CIs from `analysis/statistics.py:analyze()` (N=1731 clips, G=481 speakers, B=10000). Point estimates only; no Holm correction is applied here (per-model CIs, not pairwise tests).
 
 | Model | Params | Corpus WER | 95% CI |
 |-------|:------:|:----------:|:------:|

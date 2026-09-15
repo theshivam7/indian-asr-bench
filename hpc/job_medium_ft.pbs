@@ -22,9 +22,6 @@ set -euo pipefail
 #   JOBID=$(qsub -P <project_id> hpc/job_finetune.pbs)
 #   qsub -P <project_id> -W depend=afterok:$JOBID hpc/job_medium_ft.pbs
 
-# PBS_O_WORKDIR is set automatically by the scheduler to the directory `qsub` was run from
-# a much safer fallback than $(pwd), which for a PBS batch job defaults to $HOME, not the
-# submission directory, if WORKDIR wasn't explicitly exported before qsub.
 WORKDIR=${WORKDIR:-${PBS_O_WORKDIR:-$(pwd)}}
 CONDA_BASE=${CONDA_BASE:-$(conda info --base 2>/dev/null || echo "/opt/conda")}
 WHISPER_FT_ENV=${WHISPER_FT_ENV:-whisper_medium_ft}
@@ -51,7 +48,7 @@ mkdir -p "${HF_CACHE}" "${WORKDIR}/logs"
 
 cd "${WORKDIR}"
 
-echo "=== STAGE 1: pretrained Whisper Medium via HF (apples-to-apples baseline) ==="
+echo "=== STAGE 1: pretrained Whisper Medium via HF (same-engine pretrained baseline) ==="
 MODEL_NAME=medium_hf python finetune/evaluate_finetuned.py
 
 echo "=== STAGE 1: fine-tuned Whisper Medium ==="

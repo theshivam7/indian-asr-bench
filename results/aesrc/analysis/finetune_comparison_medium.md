@@ -12,17 +12,17 @@ number is shown as a secondary reference.
 
 ## Corpus WER (%) by evaluation mode
 
-| Mode | Pretrained (HF) | Fine-tuned | Δ abs | Δ rel | _openai-whisper ref_ |
+| Mode | Pretrained (HF) | Fine-tuned | Delta abs | Delta rel | _openai-whisper ref_ |
 |------|:---------------:|:----------:|:-----:|:-----:|:--------------------:|
 | `transcript_raw` | 5.92% | 4.37% | -1.55 pp | -26.2% | 6.05% |
 | `transcript_clean` **(gold)** | 5.63% | 4.48% | -1.15 pp | -20.5% | 5.73% |
 | `whisper_norm` | 5.26% | 4.18% | -1.08 pp | -20.5% | 5.41% |
 
-> **Headline (transcript_clean)**: fine-tuning improves WER 5.63% → 4.48%  (-1.15 pp, -20.5% relative).
+> **Headline (transcript_clean)**: fine-tuning improves WER 5.63% to 4.48%  (-1.15 pp, -20.5% relative).
 
 ## By Audio Duration (`transcript_clean`)
 
-| Duration | Pretrained (HF) | Fine-tuned | Δ abs |
+| Duration | Pretrained (HF) | Fine-tuned | Delta abs |
 |----------|:---------------:|:----------:|:-----:|
 | 0-5s | 6.20% | 4.52% | -1.68 pp |
 | 5-15s | 4.73% | 4.41% | -0.32 pp |
@@ -36,8 +36,8 @@ number is shown as a secondary reference.
 
 ### Biggest improvements (top 10)
 
-| ID | Pretrained WER | Fine-tuned WER | Δ |
-|----|:--------------:|:--------------:|:-:|
+| ID | Pretrained WER | Fine-tuned WER | Delta |
+|----|:--------------:|:--------------:|:-----:|
 | AESRC2020-INDIAN-ACCENT-G13915-G13915S5399 | 110.0% | 0.0% | -110.0 pp |
 | AESRC2020-INDIAN-ACCENT-G33434-G33434S2355 | 87.5% | 12.5% | -75.0 pp |
 | AESRC2020-INDIAN-ACCENT-G02684-G02684S2355 | 66.7% | 0.0% | -66.7 pp |
@@ -51,8 +51,8 @@ number is shown as a secondary reference.
 
 ### Biggest regressions (top 10)
 
-| ID | Pretrained WER | Fine-tuned WER | Δ |
-|----|:--------------:|:--------------:|:-:|
+| ID | Pretrained WER | Fine-tuned WER | Delta |
+|----|:--------------:|:--------------:|:-----:|
 | AESRC2020-INDIAN-ACCENT-G13083-G13083S2364 | 150.0% | 200.0% | +50.0 pp |
 | AESRC2020-INDIAN-ACCENT-G22609-G22609S2354 | 0.0% | 50.0% | +50.0 pp |
 | AESRC2020-INDIAN-ACCENT-G64015-G64015S2373 | 0.0% | 50.0% | +50.0 pp |

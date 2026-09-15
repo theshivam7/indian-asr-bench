@@ -37,7 +37,7 @@ less data it appears in both.
 Speaker-clustered bootstrap over 280 speakers, 985 scored clips, `transcript_clean`,
 Holm-corrected within each family of three.
 
-| Run | WER | Δ vs. baseline | 95% CI | p | p (Holm) |
+| Run | WER | Delta vs. baseline | 95% CI | p | p (Holm) |
 |---|---:|---:|:---:|---:|---:|
 | disjoint, seed 42 | 16.17% | **+1.75 pp** | [+0.13, +4.17] | 0.016 | **0.048** |
 | disjoint, seed 43 | 14.80% | +0.38 pp | [-0.01, +0.74] | 0.058 | 0.116 |
